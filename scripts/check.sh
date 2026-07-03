@@ -79,13 +79,13 @@ echo "== comparator =="
 # It needs landrun + systemd-run (Linux-only) and lean4export, so it cannot
 # run on macOS: probe for the toolchain and degrade gracefully — a missing
 # Linux-only tool must NEVER fail this script.  Status artifact:
-# challenge/comparator-status.json ("configured" until CI flips it).
+# comparator-status.json ("configured" until CI flips it).
 COMPARATOR="${COMPARATOR_BIN:-$(command -v comparator || true)}"
 if [[ -n "$COMPARATOR" ]] && command -v landrun >/dev/null 2>&1 \
     && command -v systemd-run >/dev/null 2>&1; then
   echo "comparator toolchain found ($COMPARATOR) — verifying comparator.json"
   if "$COMPARATOR" comparator.json; then
-    cat > challenge/comparator-status.json <<EOF
+    cat > comparator-status.json <<EOF
 {
   "status": "verified",
   "config": "comparator.json",
@@ -96,15 +96,15 @@ if [[ -n "$COMPARATOR" ]] && command -v landrun >/dev/null 2>&1 \
   "note": "Comparator requires Linux (landrun/systemd-run); run on CI to flip status to verified."
 }
 EOF
-    echo "comparator: VERIFIED (challenge/comparator-status.json updated)"
+    echo "comparator: VERIFIED (comparator-status.json updated)"
   else
     echo "FATAL: comparator ran and rejected the solution" >&2
     exit 1
   fi
 else
   echo "comparator toolchain absent (Linux-only: landrun/systemd-run) — skipping"
-  if [[ ! -f challenge/comparator-status.json ]]; then
-    cat > challenge/comparator-status.json <<'EOF'
+  if [[ ! -f comparator-status.json ]]; then
+    cat > comparator-status.json <<'EOF'
 {
   "status": "configured",
   "config": "comparator.json",
@@ -116,7 +116,7 @@ else
 }
 EOF
   fi
-  echo "comparator: status $(grep -o '"status": "[^"]*"' challenge/comparator-status.json || echo unknown)"
+  echo "comparator: status $(grep -o '"status": "[^"]*"' comparator-status.json || echo unknown)"
 fi
 
 echo
