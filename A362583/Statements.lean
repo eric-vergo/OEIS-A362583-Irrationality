@@ -10,8 +10,12 @@ import Mathlib.NumberTheory.Real.Irrational
 /-!
 # A362583: theorem statements (spec §2, §3)
 
-Every theorem/lemma target of the project, with placeholder proofs pending the
-proof phases (each tracked in `SORRIES.md`).  Statements follow the §3
+Remaining theorem/lemma targets of the project, with placeholder proofs pending
+the proof phases (each tracked in `SORRIES.md`).  Proved targets move to their
+layer files with signatures verbatim (lock preserved; see `git tag statement-lock`):
+Steps A–B (`bits_infinite_ones`, `bits_infinite_zeros`,
+`eventuallyPeriodic_of_not_irrational`) live in `A362583/DigitLayer.lean`.
+Statements follow the §3
 statement-hygiene principle: elementary `if`/`%` arithmetic, `Nat.primeCounting`,
 `Irrational`, and the `Defs.lean` objects only.
 
@@ -30,23 +34,6 @@ theorem raceSum_not_linear :
 
 /-- **Primary deliverable** (spec §2.2): the A362583 constant is irrational. -/
 theorem irrational_x : Irrational x := by
-  sorry
-
-/-- Step A (spec §2.3): infinitely many primes are `≡ 3 (mod 4)`, so the bit
-sequence contains infinitely many ones. -/
-lemma bits_infinite_ones : {k | bit k = 1}.Infinite := by
-  sorry
-
-/-- Step A (spec §2.3): infinitely many primes are `≡ 1 (mod 4)`, so the bit
-sequence contains infinitely many zeros. -/
-lemma bits_infinite_zeros : {k | bit k = 0}.Infinite := by
-  sorry
-
-/-- Step B (spec §2.4): if `x` is rational, its bit sequence is eventually
-periodic (binary-expansion pigeonhole on the tails `t_k = fract (2^k x)`;
-uses Step A for the strict bounds `0 < t_k < 1`). -/
-lemma eventuallyPeriodic_of_not_irrational :
-    ¬ Irrational x → ∃ N P, 0 < P ∧ ∀ k ≥ N, bit (k + P) = bit k := by
   sorry
 
 /-- Step C (spec §2.5): an eventually periodic bit sequence makes the race sum
