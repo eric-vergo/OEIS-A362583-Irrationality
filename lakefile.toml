@@ -1,7 +1,7 @@
 name = "A362583"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["A362583", "Audit"]
+defaultTargets = ["A362583", "Audit", "Challenge"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -23,4 +23,11 @@ leanOptions = { weak.linter.style.header = false }
 [[lean_lib]]
 name = "Audit"
 # Audit MWE files are scratch — skip the copyright-header linter (CC0 project).
+leanOptions = { weak.linter.style.header = false }
+
+[[lean_lib]]
+name = "Challenge"
+# Comparator challenge (see comparator.json): a self-contained restatement of
+# the locked claims with `sorry` proofs — sorry *warnings* here are expected
+# and by design.  CC0 headers, so skip the Mathlib header linter.
 leanOptions = { weak.linter.style.header = false }

@@ -40,13 +40,13 @@ status:
       file: "A362583/Main.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
-      comparator_config: ""
+      comparator_config: "comparator.json"
       literature_dependencies: []    # everything is proved here or in mathlib
     - declaration: "A362583.raceSum_not_linear"
       file: "A362583/CaseZero.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
-      comparator_config: ""
+      comparator_config: "comparator.json"
       literature_dependencies: []
 
 automation:

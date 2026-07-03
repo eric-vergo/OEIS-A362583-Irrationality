@@ -19,6 +19,10 @@ fi
 
 echo
 echo "== hygiene grep (A362583/ Audit/) =="
+# Challenge/ is deliberately NOT swept here: the comparator challenge
+# (Challenge/Challenge.lean) restates the locked claims with `sorry` BY
+# DESIGN — it is the comparator's input, not part of the proof.  The
+# sorry/axiom gates below still cover the real library (A362583/ Audit/).
 PATTERNS=('\bsorry\b' '\badmit\b' '\bnative_decide\b' '^axiom' 'maxHeartbeats')
 LABELS=('sorry' 'admit' 'native_decide' 'axiom' 'maxHeartbeats')
 TOTAL=0
@@ -66,6 +70,53 @@ if [[ -s scripts/AxiomsCheck.lean ]] && grep -q '#print axioms' scripts/AxiomsCh
   fi
 else
   echo "scripts/AxiomsCheck.lean has no #print axioms yet — skipped"
+fi
+
+echo
+echo "== comparator =="
+# The comparator (leanprover/comparator) certifies that the A362583 library
+# proves the exact statements in the Challenge module (see comparator.json).
+# It needs landrun + systemd-run (Linux-only) and lean4export, so it cannot
+# run on macOS: probe for the toolchain and degrade gracefully — a missing
+# Linux-only tool must NEVER fail this script.  Status artifact:
+# challenge/comparator-status.json ("configured" until CI flips it).
+COMPARATOR="${COMPARATOR_BIN:-$(command -v comparator || true)}"
+if [[ -n "$COMPARATOR" ]] && command -v landrun >/dev/null 2>&1 \
+    && command -v systemd-run >/dev/null 2>&1; then
+  echo "comparator toolchain found ($COMPARATOR) — verifying comparator.json"
+  if "$COMPARATOR" comparator.json; then
+    cat > challenge/comparator-status.json <<EOF
+{
+  "status": "verified",
+  "config": "comparator.json",
+  "solution_module": "A362583",
+  "theorem_names": ["A362583.irrational_x", "A362583.raceSum_not_linear"],
+  "permitted_axioms": ["propext", "Quot.sound", "Classical.choice"],
+  "verified_at": "$(date -u +%Y-%m-%dT%H:%M:%SZ)",
+  "note": "Comparator requires Linux (landrun/systemd-run); run on CI to flip status to verified."
+}
+EOF
+    echo "comparator: VERIFIED (challenge/comparator-status.json updated)"
+  else
+    echo "FATAL: comparator ran and rejected the solution" >&2
+    exit 1
+  fi
+else
+  echo "comparator toolchain absent (Linux-only: landrun/systemd-run) — skipping"
+  if [[ ! -f challenge/comparator-status.json ]]; then
+    cat > challenge/comparator-status.json <<'EOF'
+{
+  "status": "configured",
+  "config": "comparator.json",
+  "solution_module": "A362583",
+  "theorem_names": ["A362583.irrational_x", "A362583.raceSum_not_linear"],
+  "permitted_axioms": ["propext", "Quot.sound", "Classical.choice"],
+  "verified_at": null,
+  "note": "Comparator requires Linux (landrun/systemd-run); run on CI to flip status to verified."
+}
+EOF
+  fi
+  echo "comparator: status $(grep -o '"status": "[^"]*"' challenge/comparator-status.json || echo unknown)"
 fi
 
 echo
