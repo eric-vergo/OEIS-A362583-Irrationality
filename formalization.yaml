@@ -1,0 +1,167 @@
+# formalization.yaml (v0.3) — see https://github.com/mathlib-initiative/formalization.yaml
+version: "v0.3"
+
+project:
+  name: "A362583 Irrationality"
+  authors:
+    - "Eric Vergo"
+    - "Claude Fable 5 (Anthropic, via Claude Code)"
+  license: "CC0-1.0"
+
+sources:
+  - title: "A362583 Irrationality — Lean 4 Formalization Specification"
+    authors: ["Eric Vergo"]
+    id: "prime_race repo, a362583-lean-irrationality-spec.md (2026-07-03; §2 transcribed verbatim into PROOF.md here)"
+    type: "specification / informal blueprint"
+    license: "CC0-1.0"
+    author_contacted: "n/a"          # self-authored
+    prior_work: ""                   # none known; novelty of the race-oscillation statement not yet independently verified
+  - title: "OEIS A362583 — Concatenation of ((p mod 4) - 1)/2 for primes 3..prime(n), read as binary"
+    authors: ["Eric Vergo"]
+    id: "https://oeis.org/A362583"
+    type: "OEIS entry (defines the constant; a(35) = 12032782746 used as a numeric cross-pin)"
+    license: "CC BY-NC 4.0 (OEIS)"
+    author_contacted: "n/a"          # self-authored
+
+status:
+  scope: >-
+    Complete. The constant x = 0.b0b1b2... (binary; b_k = 1 iff the k-th odd prime
+    is ≡ 3 mod 4) is irrational, via a non-degeneracy theorem for the mod-4
+    Chebyshev prime race: the race sum is never c·π(N) + O(1). The analytic
+    engine needs only the continued L(s, χ₄), L(1, χ₄) ≠ 0, the Euler product,
+    the divergence of Σ 1/p, and the identity theorem — no PNT, no PNT in APs,
+    no zero-free regions, no quantitative oscillation (Littlewood/Shiu avoided
+    by design).
+  sorry_count: 0
+  sorry_in_definitions: 0
+  axioms: ["propext", "Classical.choice", "Quot.sound"]
+  main_results:
+    - declaration: "A362583.irrational_x"
+      file: "A362583/Main.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: ""
+      literature_dependencies: []    # everything is proved here or in mathlib
+    - declaration: "A362583.raceSum_not_linear"
+      file: "A362583/CaseZero.lean"
+      sorry_count: 0
+      axioms: ["propext", "Classical.choice", "Quot.sound"]
+      comparator_config: ""
+      literature_dependencies: []
+
+automation:
+  methods:
+    - method: "agent"
+      models: ["claude-fable-5"]
+      framework: "Claude Code"
+      tool_setup: >-
+        A main-session orchestrator spawning specialized subagents per phase:
+        (0) two firewalled agents independently re-derived the analytic core
+        from the theorem statement alone, then an adversarial referee checked
+        both against the spec before any code; a parallel audit fan-out
+        verified every Mathlib dependency with compiling minimal working
+        examples; (1) author + independent reviewer produced the frozen
+        statement set (statement lock, git tag); (2-4) one agent per proof
+        layer, each owning a single file, checked via lake env lean against a
+        shared warm build, merged and committed centrally by the orchestrator;
+        (5) two independent auditor agents re-verified the acceptance criteria
+        (including a mechanical diff of all locked statements against the
+        freeze tag) and the informal-to-formal correspondence, with
+        adversarial spot-checks. Accumulated Mathlib-pin gotchas were fed
+        forward into every subsequent agent prompt.
+      cost:
+        wall_time: "~1 day (2026-07-03)"
+        spend_usd: "subscription-based usage"
+        hardware: "API-only; local builds on a MacBook (24 GB RAM), warm Mathlib cache"
+      prompting_notes: >-
+        Spec-first workflow: a detailed human-authored specification with two
+        blocking human sign-off gates (Phase-0 audit/re-derivation exit;
+        Phase-1 statement lock). Statements were frozen before any proof work;
+        proof agents received the informal blueprint (PROOF.md), the verified
+        Mathlib name table (DEPENDENCIES.md), compiling usage examples
+        (Audit/), and hard guardrails (no PNT-strength imports, no axiom
+        patches, no statement changes without a lock-break escalation).
+  spend_usd: "subscription-based usage"
+  notes: >-
+    Human role: specification, mathematical review at the two gates, license &
+    attribution decisions. All Lean code was written by agents; the human did
+    not hand-edit proofs.
+
+fidelity:
+  divergences: >-
+    Statements are byte-identical to the spec's §3 draft (git tag
+    statement-lock). Proof-route deviations from the spec's informal argument
+    are documented in PROOF.md ("route decisions"): the k=1 layer's analytic
+    continuation is *defined* as the discrete by-parts series rather than
+    continued after the fact; the Euler-sum split uses a per-prime identity
+    instead of a double-sum rearrangement; both endgame contradictions are
+    evaluated at a single explicit point instead of via limits (one plain
+    one-sided limit remains, pinning L(1) real-positive); constants are
+    deliberately generous rather than sharp.
+
+review:
+  status: "agent-reviewed"
+  reviewers: []
+  notes: >-
+    Pre-code: the analytic core was independently re-derived by two agents
+    firewalled from the spec's proof text and adversarially refereed (verdict:
+    sound; the spec's two self-flagged weak points independently verified).
+    Post-code: an acceptance auditor re-ran build/hygiene/axiom checks and
+    mechanically diffed all locked statements against the freeze tag; a
+    correspondence auditor mapped every informal proof label to its
+    implementing declaration with adversarial spot-checks of the five most
+    load-bearing translations (indexing conventions, quantifier structure,
+    bound chains). Kernel-checked throughout; no human line-by-line proof
+    review has been performed.
+
+alignment:
+  namespace: "A362583"
+  statements:
+    - source: "§1 definitions (odd primes, bits, the constant x, race sum S)"
+      lean: "A362583.oddPrime, A362583.bit, A362583.x, A362583.raceSum"
+      module: "A362583/Defs.lean"
+      status: "proved"
+      note: "statement-hygiene: elementary %-arithmetic and tsums only; sanity pins proved in A362583/Pins.lean"
+    - source: "§2.3 Step A (both residue classes infinite)"
+      lean: "A362583.bits_infinite_ones, A362583.bits_infinite_zeros"
+      module: "A362583/DigitLayer.lean"
+      status: "proved"
+    - source: "§2.4 Step B (rational ⇒ eventually periodic bits; B1–B5 pigeonhole)"
+      lean: "A362583.eventuallyPeriodic_of_not_irrational"
+      module: "A362583/DigitLayer.lean"
+      status: "proved"
+    - source: "§2.5 Step C (eventually periodic ⇒ linear race)"
+      lean: "A362583.raceSum_linear_of_eventuallyPeriodic"
+      module: "A362583/RaceCount.lean"
+      status: "proved"
+    - source: "§2.6 Step D, D1/N1 (bounded-partial-sum Dirichlet series holomorphy)"
+      lean: "bpSeries, differentiableOn_bpSeries, tsum_mul_cpow_neg_eq_bpSeries"
+      module: "A362583/BoundedHolo.lean"
+      status: "proved"
+      note: "general-purpose, Mathlib-style; upstream candidate (incl. the cpow increment bound absent from mathlib)"
+    - source: "§2.6 Step D, D0a–D0c (B/T layers, log series, per-prime split)"
+      lean: "A362583.layerB, A362583.layerT, A362583.neg_log_split, A362583.exists_layerBReal_gt"
+      module: "A362583/Layers.lean"
+      status: "proved"
+    - source: "§2.6 Step D, D0c–D0d (Euler product wired to the continued L-function)"
+      lean: "A362583.layerA, A362583.tsum_neg_log_eq_layers, A362583.exp_layers_eq_LFunction"
+      module: "A362583/EulerLog.lean"
+      status: "proved"
+    - source: "§2.6 Step D, case c ≠ 0 (forcing c = 0)"
+      lean: "A362583.c_eq_zero_of_raceSum_linear"
+      module: "A362583/CaseNonzero.lean"
+      status: "proved"
+    - source: "§2.6 Step D, case c = 0 / D2–D4 (identity theorem, blow-up at 1/2⁺) — main analytic theorem"
+      lean: "A362583.raceSum_not_linear"
+      module: "A362583/CaseZero.lean"
+      status: "proved"
+    - source: "§2.7 assembly — main theorem"
+      lean: "A362583.irrational_x"
+      module: "A362583/Main.lean"
+      status: "proved"
+
+acknowledgements: >-
+  Built on mathlib4 (pinned v4.31.0). The proof route is only feasible because
+  mathlib already contains the analytically continued Dirichlet L-function,
+  its nonvanishing at s = 1, the exponential form of the Euler product, the
+  divergence of the sum of prime reciprocals, and the identity theorem.

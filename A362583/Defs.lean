@@ -1,7 +1,7 @@
 /-
-Copyright (c) 2026 Eric Vergo. All rights reserved.
-Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Eric Vergo
+Copyright (c) 2026 Eric Vergo. Dedicated to the public domain.
+Released under CC0 1.0 Universal as described in the file LICENSE.
+Authors: Eric Vergo, Claude Fable 5 (Claude Code)
 -/
 import Mathlib.Data.Nat.Nth
 import Mathlib.Data.Nat.Prime.Basic

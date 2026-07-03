@@ -16,8 +16,11 @@ rev = "v4.31.0"
 
 [[lean_lib]]
 name = "A362583"
+# The project is CC0 (public domain); headers use CC0 wording, which the
+# Mathlib header linter (expecting its Apache-2.0 phrasing) would reject.
+leanOptions = { weak.linter.style.header = false }
 
 [[lean_lib]]
 name = "Audit"
-# Audit MWE files are scratch — skip the copyright-header linter (no LICENSE file yet).
+# Audit MWE files are scratch — skip the copyright-header linter (CC0 project).
 leanOptions = { weak.linter.style.header = false }
