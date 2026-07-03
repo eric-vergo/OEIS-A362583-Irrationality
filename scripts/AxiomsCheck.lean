@@ -1,0 +1,6 @@
+-- AxiomsCheck.lean — placeholder.
+-- Once `A362583.irrational_x` exists, this file will hold:
+--   import A362583
+--   #print axioms A362583.irrational_x
+--   #print axioms A362583.raceSum_not_linear
+-- Acceptance: axiom set ⊆ {propext, Classical.choice, Quot.sound} (spec §7).
