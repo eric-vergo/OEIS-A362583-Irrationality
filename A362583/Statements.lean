@@ -26,13 +26,6 @@ periodic) → C (periodic ⇒ linear race) → D (no linear race) → contradict
 
 namespace A362583
 
-/-- **Main analytic theorem** (Step D, spec §2.6): the mod-4 prime race is never
-linear — there are no constants `c`, `C` with `|S(N) - c·π(N)| ≤ C` for all `N`,
-where `S = raceSum` and `π = Nat.primeCounting` (# primes `≤ N`). -/
-theorem raceSum_not_linear :
-    ¬ ∃ (c C : ℝ), ∀ N : ℕ, |(raceSum N : ℝ) - c * (Nat.primeCounting N : ℝ)| ≤ C := by
-  sorry
-
 /-- **Primary deliverable** (spec §2.2): the A362583 constant is irrational. -/
 theorem irrational_x : Irrational x := by
   sorry

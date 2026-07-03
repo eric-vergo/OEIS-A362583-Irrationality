@@ -1,5 +1,6 @@
 import A362583.BoundedHolo
 import A362583.CaseNonzero
+import A362583.CaseZero
 import A362583.Defs
 import A362583.DigitLayer
 import A362583.EulerLog
