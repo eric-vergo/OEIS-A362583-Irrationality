@@ -14,7 +14,8 @@ Remaining theorem/lemma targets of the project, with placeholder proofs pending
 the proof phases (each tracked in `SORRIES.md`).  Proved targets move to their
 layer files with signatures verbatim (lock preserved; see `git tag statement-lock`):
 Steps A–B (`bits_infinite_ones`, `bits_infinite_zeros`,
-`eventuallyPeriodic_of_not_irrational`) live in `A362583/DigitLayer.lean`.
+`eventuallyPeriodic_of_not_irrational`) live in `A362583/DigitLayer.lean`;
+Step C (`raceSum_linear_of_eventuallyPeriodic`) lives in `A362583/RaceCount.lean`.
 Statements follow the §3
 statement-hygiene principle: elementary `if`/`%` arithmetic, `Nat.primeCounting`,
 `Irrational`, and the `Defs.lean` objects only.
@@ -34,14 +35,6 @@ theorem raceSum_not_linear :
 
 /-- **Primary deliverable** (spec §2.2): the A362583 constant is irrational. -/
 theorem irrational_x : Irrational x := by
-  sorry
-
-/-- Step C (spec §2.5): an eventually periodic bit sequence makes the race sum
-linear in the prime count: `raceSum N = c·π(N) + O(1)` with
-`c = (P - 2j)/P`, where `j` is the number of ones per period. -/
-lemma raceSum_linear_of_eventuallyPeriodic :
-    (∃ N P, 0 < P ∧ ∀ k ≥ N, bit (k + P) = bit k) →
-    ∃ c C : ℝ, ∀ N : ℕ, |(raceSum N : ℝ) - c * (Nat.primeCounting N : ℝ)| ≤ C := by
   sorry
 
 end A362583
