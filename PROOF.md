@@ -101,6 +101,12 @@ Throughout, for a prime $p$ and $\mathrm{Re}\,s > 0$: $|\chi(p)p^{-s}| \le 2^{-\
 
 ## Independent re-derivation (Phase 0b) — VERIFIED
 
+> **Label provenance.** Step labels A, B1–B5, C, D0a–D0d, D1–D4 refer to this
+> document (§2 transcription above + the consolidated Step D below). Labels
+> N1–N3 (new-lemma estimates) and M1–M16 (Mathlib audit items) refer to the
+> project spec (§5, §4) and to `DEPENDENCIES.md`, where each M-item's verified
+> Mathlib name lives. Code docstrings cite whichever is most specific.
+
 > **Provenance.** Two mathematician agents independently derived Step D from the
 > theorem statement plus the Available-facts list only (firewalled from §2.6):
 > Derivation A (integral Abel summation, DCT-free) and Derivation B (integral
@@ -183,7 +189,7 @@ Route decisions (feeding Phases 1 and 4):
 1. **D1/N1 via discrete Abel summation** (as specced), restructured so the continuation is *defined* as the by-parts series $\tilde A$: the analysis quarantines into the single FTC increment lemma (M12), and the rest is `Finset.sum_Ioc_by_parts` index work, positive telescoping, and a Weierstrass M-test feeding `TendstoLocallyUniformlyOn.differentiableOn` — no measurability of $S$ as a function of a real variable, no `IntegrableOn` side goals, no improper-integral limits, no DCT. **Fallback** (decide at audit item M10): Derivation A's L3 via `Mathlib/NumberTheory/AbelSummation.lean` (`sum_mul_eq_sub_sub_integral_mul` + limit forms) — the identity comes pre-built, at the cost of integrability/measurability side conditions at each of the three call sites; prefer it only if the by-parts index gymnastics blow past ~1 day. If the integral fallback is taken, formalize A's DCT-free proof shape, not B's DCT truncation (fewer moving parts).
 2. **D0c via the per-p split** (Derivation A's P3), not double-sum rearrangement: shrinks risk R4 from `tsum_sigma` gymnastics to "subtract two terms from a convergent series, then add three series".
 3. **Branch pin (R2) is a real proof obligation** the spec preamble glosses: audit whether Mathlib has $-\log(1-z) = \sum z^k/k$ for `Complex.log` (look near `EulerProduct`/`LogTaylor`-adjacent files; add as audit item M16). If present, done; if not, formalize R2 route (ii) if `Complex.log` differentiability on the slit plane has convenient API, else route (i) (needs only `Complex.exp` facts + the $2\pi i\mathbb{Z}$ pin).
-4. **Single-point endgames** everywhere (P8/P12-style $s^*$): the Lean proof never needs `Filter.Tendsto` toward $1^+$ or $1/2^+$ — risk R7 is retired. R1's statement should be phrased as "∀ M, ∃ s ∈ (lo, hi), Q(s) > M"-with-δ, consumed by direct instantiation.
+4. **Single-point endgames** everywhere (P8/P12-style $s^*$): neither endgame (forcing $c=0$; the $D4$ blow-up) needs `Filter.Tendsto` toward $1^+$ or $1/2^+$ — risk R7 is retired. R1's statement should be phrased as "∀ M, ∃ s ∈ (lo, hi), Q(s) > M"-with-δ, consumed by direct instantiation. *(One plain one-sided limit does survive elsewhere: pinning $L(1)$ real-positive in case $c\ne0$ step 2 uses `Tendsto` along `𝓝[>] 1`, exactly as the consolidated text's "limit of the positive values" prescribes — as-built note, 2026-07-03.)*
 5. **Constants:** keep the spec's generous $2C$, $3C$, $K$ in Lean statements (weakest sufficient bounds formalize fastest); the sharp values verified here ($C\,2^{-s}$, $C_T = K/3$) are available if any inequality gets tight.
 6. Two cosmetic spec fixes, no re-lock needed: D0a's parenthetical should say "finite set of **odd** primes" (or note the $p{=}2$ slack); the preamble's "valid termwise for $\mathrm{Re}\,s > 0$" over-claims the domain actually used ($\sigma > 1$, where $|z_p| < 1/2$) — true as stated (R2 route (ii)) but the $\sigma>1$ instance is all that is consumed.
 
