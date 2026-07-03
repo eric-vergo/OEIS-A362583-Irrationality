@@ -176,7 +176,7 @@ open right half-plane `{s | 0 < s.re}`.
 Consumers needing a smaller half-plane `{s | δ < s.re}` (e.g. `δ = 1/2`) can compose with
 `DifferentiableOn.mono`.  The proof applies the Weierstrass `M`-test
 (`Complex.differentiableOn_tsum_of_summable_norm`) on a small open box
-`{s | δ < s.re} ∩ ball 0 R` around each point, where the terms admit the single summable
+`{s | δ < s.re} ∩ ball 0 R` around each point, where the terms satisfy the single summable
 bound `C * R * n ^ (-δ - 1)`. -/
 theorem differentiableOn_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f k‖ ≤ C) :
     DifferentiableOn ℂ (bpSeries f) {s : ℂ | 0 < s.re} := by
