@@ -16,7 +16,15 @@ Main results (`#print axioms` = `{propext, Classical.choice, Quot.sound}` for bo
   regions).
 
 Verify with `bash scripts/check.sh --strict` (build + hygiene greps + axiom
-assertion). Statements are frozen at `git tag statement-lock`. Layout: `A362583/` — the
+assertion). Statements are frozen at `git tag statement-lock`.
+
+License: **CC0 1.0 Universal** (public domain — see `LICENSE`). Project metadata
+per the [formalization.yaml](https://github.com/mathlib-initiative/formalization.yaml)
+standard lives in `formalization.yaml`. A browsable blueprint site (per-node pages,
+dependency graph, dashboard) is generated from this repo by the `verso-a362583`
+consumer in the local `verso-workspace`.
+
+Layout: `A362583/` — the
 formalization library; `Audit/` — Mathlib dependency MWEs; `PROOF.md` — the informal
 proof (source of truth; every lemma cites a §2 label); `DEPENDENCIES.md` — the Mathlib
 audit table; `SORRIES.md` — tracked sorries; `scripts/check.sh` — build + hygiene gate.
