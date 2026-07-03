@@ -186,3 +186,12 @@ Route decisions (feeding Phases 1 and 4):
 4. **Single-point endgames** everywhere (P8/P12-style $s^*$): the Lean proof never needs `Filter.Tendsto` toward $1^+$ or $1/2^+$ — risk R7 is retired. R1's statement should be phrased as "∀ M, ∃ s ∈ (lo, hi), Q(s) > M"-with-δ, consumed by direct instantiation.
 5. **Constants:** keep the spec's generous $2C$, $3C$, $K$ in Lean statements (weakest sufficient bounds formalize fastest); the sharp values verified here ($C\,2^{-s}$, $C_T = K/3$) are available if any inequality gets tight.
 6. Two cosmetic spec fixes, no re-lock needed: D0a's parenthetical should say "finite set of **odd** primes" (or note the $p{=}2$ slack); the preamble's "valid termwise for $\mathrm{Re}\,s > 0$" over-claims the domain actually used ($\sigma > 1$, where $|z_p| < 1/2$) — true as stated (R2 route (ii)) but the $\sigma>1$ instance is all that is consumed.
+
+---
+
+## Numeric cross-pin (spec §10, Phase 1)
+
+Independently recomputed at statement-lock review: the first 34 bits of `x`, read as a
+binary integer, equal **12032782746 = a(35)** — exact match against the OEIS A362583
+b-file value. (In-Lean §10 pins: first eight bits, `raceSum 10 = -1`, `1/2 < x < 1` —
+all proved sorry-free in `A362583/Pins.lean`.)
