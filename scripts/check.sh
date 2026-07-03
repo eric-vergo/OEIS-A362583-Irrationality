@@ -43,8 +43,25 @@ fi
 echo
 echo "== axioms check =="
 if [[ -s scripts/AxiomsCheck.lean ]] && grep -q '#print axioms' scripts/AxiomsCheck.lean; then
-  if ! lake env lean scripts/AxiomsCheck.lean; then
-    echo "FATAL: axioms check failed" >&2
+  AXOUT=$(lake env lean scripts/AxiomsCheck.lean 2>&1)
+  STATUS=$?
+  printf '%s\n' "$AXOUT"
+  if [[ $STATUS -ne 0 ]]; then
+    echo "FATAL: axioms check failed to run" >&2
+    exit 1
+  fi
+  # Assert every reported axiom is in the allowed set (spec §7.2):
+  # strip the declaration-name prefix, split the bracketed list, check each entry.
+  BAD=$(printf '%s\n' "$AXOUT" | grep "depends on axioms" \
+        | sed -E 's/^.*depends on axioms: \[//; s/\]$//' | tr ',' '\n' \
+        | sed -E 's/^ +| +$//g' | sort -u \
+        | grep -vE '^(propext|Classical\.choice|Quot\.sound)$' || true)
+  if [[ -n "$BAD" ]]; then
+    echo "FATAL: disallowed axiom(s) in output: $BAD" >&2
+    exit 1
+  fi
+  if ! printf '%s\n' "$AXOUT" | grep -q "depends on axioms"; then
+    echo "FATAL: axioms output missing 'depends on axioms' lines" >&2
     exit 1
   fi
 else
