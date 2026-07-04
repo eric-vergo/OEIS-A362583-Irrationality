@@ -84,11 +84,9 @@ jobs:
       - name: Flip comparator-status.json to verified and commit
         run: |
           set -euo pipefail
-          current="$(jq -r '.status' comparator-status.json)"
-          if [ "$current" = "verified" ]; then
-            echo "comparator-status.json is already 'verified'; nothing to do."
-            exit 0
-          fi
+          # Always refresh the record: status, verified_at, note, and run_url all
+          # describe the latest successful certifying run, so the timestamp
+          # matches the linked run.
           ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           note="Verified in CI by leanprover/comparator (.github/workflows/comparator.yml): the A362583 library's proofs kernel-check the exact Challenge statements A362583.irrational_x and A362583.raceSum_not_linear, using only the permitted axioms propext, Quot.sound, and Classical.choice. Statement equality, axiom whitelist, and Lean-kernel replay all confirmed."
           run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
