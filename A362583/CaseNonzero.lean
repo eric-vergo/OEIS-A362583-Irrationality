@@ -9,10 +9,10 @@ import A362583.BoundedHolo
 import A362583.EulerLog
 
 /-!
-# Case `c ≠ 0` of Step D (PROOF.md "Case c ≠ 0", steps 1–3)
+# Case `c ≠ 0` of Step D
 
 If the race sum were linear, `|S(N) - c·π(N)| ≤ C` for all `N`, then `c = 0`.  This is the
-first half of PROOF.md's consolidated Step D; the entry point `c_eq_zero_of_raceSum_linear`
+first half of the consolidated Step D; the entry point `c_eq_zero_of_raceSum_linear`
 reduces the full non-linearity theorem to the bounded-race case `|S(N)| ≤ C`.
 
 * **Step 1 (Abel bound).**  The coefficients `fSub c n = fChi n - c·1_prime(n)` have partial
@@ -26,10 +26,10 @@ reduces the full non-linearity theorem to the bounded-race case `|S(N)| ≤ C`.
   (`exp_layers_eq_LFunction` + the three `ofReal` lemmas) shows `L(χ, σ)` is the positive
   real number `exp (A(σ) + B(σ) + T(σ))` (`LFunction_ofReal_eq_exp`), so
   `A(σ) = log (Re L(χ, σ)) - B(σ) - T(σ)`.  `Re L(χ, ·)` is continuous and positive on the
-  compact `[1, 2]` — positivity at `σ = 1` combines M3 (`LFunction_apply_one_ne_zero`) with
-  one-sided limits pinning `Im L = 0` and `Re L ≥ 0` (`LFunction_one_re_pos`) — so its `log`
-  is bounded there; with the `B`/`T` bounds this gives `|layerAReal σ| ≤ K` on `(1, 2]`
-  (`exists_bound_abs_layerAReal`).
+  compact `[1, 2]` — positivity at `σ = 1` combines the nonvanishing of `L(χ, ·)` at `1`
+  (`LFunction_apply_one_ne_zero`) with one-sided limits pinning `Im L = 0` and `Re L ≥ 0`
+  (`LFunction_one_re_pos`) — so its `log` is bounded there; with the `B`/`T` bounds this
+  gives `|layerAReal σ| ≤ K` on `(1, 2]` (`exists_bound_abs_layerAReal`).
 * **Step 3 (conclusion).**  If `c ≠ 0` then steps 1–2 force `P(σ) ≤ (C + K)/|c|` on
   `(1, 2]`, contradicting the single point `σ* ∈ (1, 2)` with `P(σ*)` large supplied by R1
   (`exists_one_lt_tsum_primes_rpow_gt`, the only prime input).
@@ -43,7 +43,7 @@ namespace A362583
 
 open Complex Filter Topology
 
-/-! ## Step 1: the Abel bound (PROOF.md c≠0 step 1) -/
+/-! ## Step 1: the Abel bound -/
 
 /-- Step 1 coefficients: `fSub c n = fChi n - c·1_prime(n)`, the ℕ-indexed coefficients of
 `A(s) - c·P(s)`.  Partial sums: `sum_range_fSub`. -/
@@ -157,7 +157,7 @@ lemma bpSeries_fSub_eq {c C : ℝ}
     _ = layerA s - (c : ℂ) * ∑' p : Nat.Primes, ((p : ℕ) : ℂ) ^ (-s) := by
         rw [layerA_eq_tsum_fChi, tsum_mul_left, tsum_primes_cpow_eq_tsum_ite]
 
-/-- Step 1: the real prime series `P(σ) = Σ_p p^(-σ)` (PROOF.md case c ≠ 0). -/
+/-- Step 1: the real prime series `P(σ) = Σ_p p^(-σ)`. -/
 noncomputable def primeSum (σ : ℝ) : ℝ := ∑' p : Nat.Primes, ((p : ℕ) : ℝ) ^ (-σ)
 
 /-- `P(σ)` is the real restriction of the complex prime series (unconditional
@@ -171,7 +171,7 @@ lemma primeSum_ofReal (σ : ℝ) :
   push_cast
   rfl
 
-/-- PROOF.md c≠0 **step 1** (Abel bound, real form): under the linearity hypothesis,
+/-- **Step 1** (Abel bound, real form): under the linearity hypothesis,
 `|A(σ) - c·P(σ)| ≤ C` for real `σ > 1`. -/
 lemma abs_layerAReal_sub_mul_primeSum_le {c C : ℝ}
     (hC : ∀ N : ℕ, |(raceSum N : ℝ) - c * (Nat.primeCounting N : ℝ)| ≤ C)
@@ -189,7 +189,7 @@ lemma abs_layerAReal_sub_mul_primeSum_le {c C : ℝ}
   rw [hid, Complex.norm_real, Real.norm_eq_abs] at hb
   exact hb
 
-/-! ## Step 2: `layerAReal` is bounded on `(1, 2]` (PROOF.md c≠0 step 2) -/
+/-! ## Step 2: `layerAReal` is bounded on `(1, 2]` -/
 
 /-- Step 2: on the real axis right of `1`, the continued `L(χ, σ)` is the cast of the
 positive real number `exp (A(σ) + B(σ) + T(σ))` (Euler wiring + the three `ofReal`
@@ -212,7 +212,7 @@ lemma LFunction_ofReal_im_eq_zero {σ : ℝ} (hσ : 1 < σ) :
     (DirichletCharacter.LFunction χ (σ : ℂ)).im = 0 := by
   rw [LFunction_ofReal_eq_exp hσ, Complex.ofReal_im]
 
-/-- Step 2: continuity of `σ ↦ Re L(χ, σ)` on the real line (M2 differentiability). -/
+/-- Step 2: continuity of `σ ↦ Re L(χ, σ)` on the real line (from differentiability of `L`). -/
 lemma continuous_LFunction_ofReal_re :
     Continuous fun σ : ℝ ↦ (DirichletCharacter.LFunction χ (σ : ℂ)).re :=
   Complex.continuous_re.comp
@@ -226,9 +226,9 @@ lemma continuous_LFunction_ofReal_im :
     ((DirichletCharacter.differentiable_LFunction χ_ne_one).continuous.comp
       Complex.continuous_ofReal)
 
-/-- Step 2 (M3 + one-sided limits): `Re L(χ, 1) > 0`.  The imaginary part at `1` is a limit
-of zeros, the real part a limit of positive values, and the complex value is nonzero by M3
-(`DirichletCharacter.LFunction_apply_one_ne_zero`). -/
+/-- Step 2 (nonvanishing at `1` + one-sided limits): `Re L(χ, 1) > 0`.  The imaginary part
+at `1` is a limit of zeros, the real part a limit of positive values, and the complex value
+is nonzero (`DirichletCharacter.LFunction_apply_one_ne_zero`). -/
 lemma LFunction_one_re_pos : 0 < (DirichletCharacter.LFunction χ ((1 : ℝ) : ℂ)).re := by
   have him : (DirichletCharacter.LFunction χ ((1 : ℝ) : ℂ)).im = 0 := by
     have h1 : Tendsto (fun σ : ℝ ↦ (DirichletCharacter.LFunction χ (σ : ℂ)).im)
@@ -272,7 +272,7 @@ lemma layerAReal_eq_log_sub {σ : ℝ} (hσ : 1 < σ) :
   rw [h, Real.log_exp]
   ring
 
-/-- PROOF.md c≠0 **step 2**: a uniform bound `|A(σ)| ≤ K` on `(1, 2]`, from continuity and
+/-- **Step 2**: a uniform bound `|A(σ)| ≤ K` on `(1, 2]`, from continuity and
 positivity of `Re L(χ, ·)` on the compact `[1, 2]` plus the `B`/`T` bounds. -/
 lemma exists_bound_abs_layerAReal :
     ∃ K : ℝ, ∀ σ : ℝ, 1 < σ → σ ≤ 2 → |layerAReal σ| ≤ K := by
@@ -294,11 +294,11 @@ lemma exists_bound_abs_layerAReal :
   · linarith [hlog.1, hT.2]
   · linarith [hlog.2, hT.1]
 
-/-! ## Step 3: conclusion (PROOF.md c≠0 step 3) -/
+/-! ## Step 3: conclusion -/
 
-/-- **Case `c ≠ 0` of PROOF.md Step D** (steps 1–3): if the race sum is `c·π + O(1)`, then
-`c = 0`.  Entry point for track 4e, which uses it to reduce `raceSum_not_linear` to the
-bounded-race case `|raceSum N| ≤ C`.
+/-- **Case `c ≠ 0` of Step D** (steps 1–3): if the race sum is `c·π + O(1)`, then
+`c = 0`.  This is what reduces `raceSum_not_linear` to the bounded-race case
+`|raceSum N| ≤ C`.
 
 If `c ≠ 0`, steps 1–2 give `|c|·P(σ) ≤ C + K` for all `σ ∈ (1, 2]`, but R1
 (`exists_one_lt_tsum_primes_rpow_gt`, the sole prime input `Σ 1/p = ∞`) produces a single

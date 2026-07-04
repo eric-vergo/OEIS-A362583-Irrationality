@@ -9,9 +9,9 @@ project:
   license: "CC0-1.0"
 
 sources:
-  - title: "A362583 Irrationality — Lean 4 Formalization Specification"
+  - title: "A362583 Irrationality — informal proof blueprint"
     authors: ["Eric Vergo"]
-    id: "prime_race repo, a362583-lean-irrationality-spec.md (2026-07-03; §2 transcribed verbatim into PROOF.md here)"
+    id: "self-authored informal proof blueprint for this project; realized as the browsable blueprint site generated from this repository"
     type: "specification / informal blueprint"
     license: "CC0-1.0"
     author_contacted: "n/a"          # self-authored
@@ -58,15 +58,15 @@ automation:
         A main-session orchestrator spawning specialized subagents per phase:
         (0) two firewalled agents independently re-derived the analytic core
         from the theorem statement alone, then an adversarial referee checked
-        both against the spec before any code; a parallel audit fan-out
-        verified every Mathlib dependency with compiling minimal working
+        both against the specification before any code; a parallel dependency
+        fan-out verified every Mathlib dependency with compiling minimal working
         examples; (1) author + independent reviewer produced the frozen
-        statement set (statement lock, git tag); (2-4) one agent per proof
+        statement set; (2-4) one agent per proof
         layer, each owning a single file, checked via lake env lean against a
         shared warm build, merged and committed centrally by the orchestrator;
         (5) two independent auditor agents re-verified the acceptance criteria
         (including a mechanical diff of all locked statements against the
-        freeze tag) and the informal-to-formal correspondence, with
+        frozen set) and the informal-to-formal correspondence, with
         adversarial spot-checks. Accumulated Mathlib-pin gotchas were fed
         forward into every subsequent agent prompt.
       cost:
@@ -74,13 +74,13 @@ automation:
         spend_usd: "subscription-based usage"
         hardware: "API-only; local builds on a MacBook (24 GB RAM), warm Mathlib cache"
       prompting_notes: >-
-        Spec-first workflow: a detailed human-authored specification with two
-        blocking human sign-off gates (Phase-0 audit/re-derivation exit;
-        Phase-1 statement lock). Statements were frozen before any proof work;
-        proof agents received the informal blueprint (PROOF.md), the verified
-        Mathlib name table (DEPENDENCIES.md), compiling usage examples
-        (Audit/), and hard guardrails (no PNT-strength imports, no axiom
-        patches, no statement changes without a lock-break escalation).
+        Specification-first workflow: a detailed human-authored specification
+        with two blocking human sign-off gates (Phase-0 audit/re-derivation
+        exit; Phase-1 statement lock). Statements were frozen before any proof
+        work; proof agents received the informal blueprint, a verified table of
+        Mathlib dependencies, compiling usage examples, and hard guardrails (no
+        PNT-strength imports, no axiom patches, no statement changes without a
+        lock-break escalation).
   spend_usd: "subscription-based usage"
   notes: >-
     Human role: specification, mathematical review at the two gates, license &
@@ -89,13 +89,12 @@ automation:
 
 fidelity:
   divergences: >-
-    Statements are byte-identical to the spec's §3 draft (git tag
-    statement-lock). Proof-route deviations from the spec's informal argument
-    are documented in PROOF.md ("route decisions"): the k=1 layer's analytic
-    continuation is *defined* as the discrete by-parts series rather than
-    continued after the fact; the Euler-sum split uses a per-prime identity
-    instead of a double-sum rearrangement; both endgame contradictions are
-    evaluated at a single explicit point instead of via limits (one plain
+    Statements were frozen before any proof work and are byte-identical to that
+    frozen set. Proof-route deviations from the informal argument: the k=1
+    layer's analytic continuation is *defined* as the discrete by-parts series
+    rather than continued after the fact; the Euler-sum split uses a per-prime
+    identity instead of a double-sum rearrangement; both endgame contradictions
+    are evaluated at a single explicit point instead of via limits (one plain
     one-sided limit remains, pinning L(1) real-positive); constants are
     deliberately generous rather than sharp.
 
@@ -104,58 +103,58 @@ review:
   reviewers: []
   notes: >-
     Pre-code: the analytic core was independently re-derived by two agents
-    firewalled from the spec's proof text and adversarially refereed (verdict:
-    sound; the spec's two self-flagged weak points independently verified).
-    Post-code: an acceptance auditor re-ran build/hygiene/axiom checks and
-    mechanically diffed all locked statements against the freeze tag; a
-    correspondence auditor mapped every informal proof label to its
-    implementing declaration with adversarial spot-checks of the five most
-    load-bearing translations (indexing conventions, quantifier structure,
-    bound chains). Kernel-checked throughout; no human line-by-line proof
-    review has been performed.
+    firewalled from the informal proof text and adversarially refereed (verdict:
+    sound; the two self-flagged weak points of the informal argument were
+    independently verified). Post-code: an acceptance auditor re-ran
+    build/hygiene/axiom checks and mechanically diffed all locked statements
+    against the frozen statement set; a correspondence auditor mapped every
+    informal proof label to its implementing declaration with adversarial
+    spot-checks of the five most load-bearing translations (indexing
+    conventions, quantifier structure, bound chains). Kernel-checked throughout;
+    no human line-by-line proof review has been performed.
 
 alignment:
   namespace: "A362583"
   statements:
-    - source: "§1 definitions (odd primes, bits, the constant x, race sum S)"
+    - source: "definitions (odd primes, bits, the constant x, race sum S)"
       lean: "A362583.oddPrime, A362583.bit, A362583.x, A362583.raceSum"
       module: "A362583/Defs.lean"
       status: "proved"
       note: "statement-hygiene: elementary %-arithmetic and tsums only; sanity pins proved in A362583/Pins.lean"
-    - source: "§2.3 Step A (both residue classes infinite)"
+    - source: "Step A (both residue classes mod 4 contain infinitely many primes)"
       lean: "A362583.bits_infinite_ones, A362583.bits_infinite_zeros"
       module: "A362583/DigitLayer.lean"
       status: "proved"
-    - source: "§2.4 Step B (rational ⇒ eventually periodic bits; B1–B5 pigeonhole)"
+    - source: "Step B (rational ⇒ eventually periodic bits; B1–B5 pigeonhole)"
       lean: "A362583.eventuallyPeriodic_of_not_irrational"
       module: "A362583/DigitLayer.lean"
       status: "proved"
-    - source: "§2.5 Step C (eventually periodic ⇒ linear race)"
+    - source: "Step C (eventually periodic bits ⇒ linear race sum)"
       lean: "A362583.raceSum_linear_of_eventuallyPeriodic"
       module: "A362583/RaceCount.lean"
       status: "proved"
-    - source: "§2.6 Step D, D1/N1 (bounded-partial-sum Dirichlet series holomorphy)"
+    - source: "Step D, D1 (bounded-partial-sum Dirichlet series holomorphy)"
       lean: "bpSeries, differentiableOn_bpSeries, tsum_mul_cpow_neg_eq_bpSeries"
       module: "A362583/BoundedHolo.lean"
       status: "proved"
       note: "general-purpose, Mathlib-style; upstream candidate (incl. the cpow increment bound absent from mathlib)"
-    - source: "§2.6 Step D, D0a–D0c (B/T layers, log series, per-prime split)"
+    - source: "Step D, D0a–D0c (B/T layers, log series, per-prime split)"
       lean: "A362583.layerB, A362583.layerT, A362583.neg_log_split, A362583.exists_layerBReal_gt"
       module: "A362583/Layers.lean"
       status: "proved"
-    - source: "§2.6 Step D, D0c–D0d (Euler product wired to the continued L-function)"
+    - source: "Step D, D0c–D0d (Euler product wired to the continued L-function)"
       lean: "A362583.layerA, A362583.tsum_neg_log_eq_layers, A362583.exp_layers_eq_LFunction"
       module: "A362583/EulerLog.lean"
       status: "proved"
-    - source: "§2.6 Step D, case c ≠ 0 (forcing c = 0)"
+    - source: "Step D, case c ≠ 0 (forcing c = 0)"
       lean: "A362583.c_eq_zero_of_raceSum_linear"
       module: "A362583/CaseNonzero.lean"
       status: "proved"
-    - source: "§2.6 Step D, case c = 0 / D2–D4 (identity theorem, blow-up at 1/2⁺) — main analytic theorem"
+    - source: "Step D, case c = 0 / D2–D4 (identity theorem, blow-up at 1/2⁺) — main analytic theorem"
       lean: "A362583.raceSum_not_linear"
       module: "A362583/CaseZero.lean"
       status: "proved"
-    - source: "§2.7 assembly — main theorem"
+    - source: "assembly — main theorem"
       lean: "A362583.irrational_x"
       module: "A362583/Main.lean"
       status: "proved"

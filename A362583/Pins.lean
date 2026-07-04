@@ -7,22 +7,22 @@ import A362583.Defs
 import Mathlib.Data.Nat.Prime.Nth
 
 /-!
-# A362583: sanity pins (spec §10)
+# A362583: sanity pins
 
-Proved checks that the `Defs.lean` objects mean what spec §1 says they mean:
+Proved checks that the `Defs.lean` objects mean what they are intended to mean:
 the indexing of `oddPrime`, the first eight bits (primes `3,5,7,11,13,17,19,23`
 give `1 0 1 1 0 0 1 1`), the bracketing `1/2 < x < 1`, and `raceSum 10 = -1`
 (`χ₄(2) = 0, χ₄(3) = -1, χ₄(5) = 1, χ₄(7) = -1`).
 
-The helper lemmas are `private`: their statements are pin-scoped and Phase 2
-will develop the real API.
+The helper lemmas are `private`: they exist only to state these pins.  The API
+that the proof proper uses is developed in the layer files.
 -/
 
 namespace A362583
 
 /-! ## Small values of `oddPrime` and `bit` -/
 
-/-- `Nat.nth Nat.Prime` pin via the `nth`/`count` Galois connection (audit M7):
+/-- `Nat.nth Nat.Prime` pin via the `nth`/`count` Galois connection:
 `Nat.count Nat.Prime m` evaluates by `decide` for small `m`. -/
 private lemma oddPrime_eq_of_count {k m : ℕ} (hm : Nat.Prime m)
     (h : Nat.count Nat.Prime m = k + 1) : oddPrime k = m := by
@@ -47,7 +47,7 @@ private lemma bit_five : bit 5 = 0 := by simp [bit, oddPrime_five]
 private lemma bit_six : bit 6 = 1 := by simp [bit, oddPrime_six]
 private lemma bit_seven : bit 7 = 1 := by simp [bit, oddPrime_seven]
 
-/-! ## The §10 pins -/
+/-! ## The pins -/
 
 example : oddPrime 0 = 3 := oddPrime_zero
 

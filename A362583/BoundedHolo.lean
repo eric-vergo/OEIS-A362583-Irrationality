@@ -27,15 +27,15 @@ the Dirichlet series.  On the real axis the increments `n^(-σ) - (n+1)^(-σ)` a
 and telescope, giving the uniform bound `‖bpSeries f σ‖ ≤ C * n₀ ^ (-σ)` when the first `n₀`
 partial sums vanish (`norm_bpSeries_le`).
 
-This is item **(D1)** of `PROOF.md` (the by-parts series is the continuation object), stated
-for an arbitrary `f : ℕ → ℂ`; only the increment bound (audit item M12, absent from Mathlib)
-requires analysis, via the fundamental theorem of calculus.
+This is the analytic-continuation object (D1) of the proof, stated for an arbitrary
+`f : ℕ → ℂ`; only the increment bound (absent from Mathlib) requires analysis, via the
+fundamental theorem of calculus.
 
 ## Main results
 
 * `Complex.norm_ofReal_cpow_sub_ofReal_cpow_le`: for `r.re ≤ 1` and `0 < a ≤ b`,
   `‖(b : ℂ) ^ r - (a : ℂ) ^ r‖ ≤ ‖r‖ * (b - a) * a ^ (r.re - 1)` (FTC increment bound).
-* `Complex.norm_natCast_cpow_sub_add_one_cpow_le`: the specialization
+* `Complex.norm_natCast_cpow_sub_add_one_cpow_le`: the natural-number case
   `‖(n : ℂ) ^ (-s) - ((n : ℂ) + 1) ^ (-s)‖ ≤ ‖s‖ * (n : ℝ) ^ (-s.re - 1)` for `1 ≤ n`,
   `-1 ≤ s.re`.
 * `Real.natCast_rpow_neg_sub_add_one_nonneg`: `0 ≤ (n : ℝ) ^ (-σ) - ((n : ℝ) + 1) ^ (-σ)` for
@@ -101,7 +101,7 @@ theorem norm_ofReal_cpow_sub_ofReal_cpow_le {r : ℂ} (hr : r.re ≤ 1) {a b : �
     _ = ‖r‖ * (b - a) * a ^ (r.re - 1) := by
         rw [abs_of_nonneg (sub_nonneg.2 hab)]; ring
 
-/-- **Increment bound for Dirichlet weights** (audit item M12, PROOF.md D1): for `1 ≤ n` and
+/-- **Increment bound for Dirichlet weights**: for `1 ≤ n` and
 `-1 ≤ s.re`, `‖(n : ℂ) ^ (-s) - ((n : ℂ) + 1) ^ (-s)‖ ≤ ‖s‖ * (n : ℝ) ^ (-s.re - 1)`.
 This is `Complex.norm_ofReal_cpow_sub_ofReal_cpow_le` at `r = -s`, `[a, b] = [n, n + 1]`. -/
 theorem norm_natCast_cpow_sub_add_one_cpow_le {s : ℂ} (hs : -1 ≤ s.re) {n : ℕ} (hn : 1 ≤ n) :
@@ -135,7 +135,7 @@ If the partial sums `∑ k ∈ Finset.range (n + 1), f k = ∑_{k ≤ n} f k` ar
 series converges and is holomorphic on `{s | 0 < s.re}` (`differentiableOn_bpSeries`) and it
 agrees with the Dirichlet series `∑' n, f n * (n : ℂ) ^ (-s)` for `1 < s.re`
 (`tsum_mul_cpow_neg_eq_bpSeries`): it is the analytic continuation of that Dirichlet series
-to the right half-plane.  This is PROOF.md's continuation object `Ã` (item D1). -/
+to the right half-plane.  This is the analytic-continuation object `Ã` (D1). -/
 noncomputable def bpSeries (f : ℕ → ℂ) (s : ℂ) : ℂ :=
   ∑' n : ℕ, (∑ k ∈ Finset.range (n + 1), f k) * ((n : ℂ) ^ (-s) - ((n : ℂ) + 1) ^ (-s))
 
@@ -169,7 +169,7 @@ theorem hasSum_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f k‖ �
       (bpSeries f s) :=
   (summable_bpSeries hC hs).hasSum
 
-/-- **Bounded partial sums give a holomorphic by-parts series** (PROOF.md D1): if
+/-- **Bounded partial sums give a holomorphic by-parts series** (D1): if
 `‖∑ k ∈ Finset.range (n + 1), f k‖ ≤ C` for all `n`, then `bpSeries f` is holomorphic on the
 open right half-plane `{s | 0 < s.re}`.
 
@@ -255,7 +255,7 @@ theorem differentiableOn_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1)
   have hdiff := Complex.differentiableOn_tsum_of_summable_norm hu hFdiff hVopen hFle
   exact ((hdiff s₀ hs₀V).differentiableAt (hVopen.mem_nhds hs₀V)).differentiableWithinAt
 
-/-- **Real-segment bound** (PROOF.md D1, real-axis telescoping): if the partial sums of `f`
+/-- **Real-segment bound** (D1, real-axis telescoping): if the partial sums of `f`
 are bounded by `C` and vanish for `n < n₀` (with `1 ≤ n₀`), then for real `σ ≥ 0`
 
 `‖bpSeries f σ‖ ≤ C * (n₀ : ℝ) ^ (-σ)`.
@@ -345,7 +345,7 @@ theorem norm_bpSeries_le_const (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f
           hC0
     _ = C := mul_one C
 
-/-- **Identification with the Dirichlet series** (PROOF.md D1): if the partial sums of `f`
+/-- **Identification with the Dirichlet series** (D1): if the partial sums of `f`
 are bounded by `C`, then for `1 < s.re`
 
 `∑' n, f n * (n : ℂ) ^ (-s) = bpSeries f s`.

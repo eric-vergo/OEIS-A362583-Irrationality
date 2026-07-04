@@ -12,17 +12,18 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Deriv
 import A362583.Defs
 
 /-!
-# Layer infrastructure for Step D (PROOF.md R1, R2/M16, D0a, D0b, D0c-prep)
+# Layer infrastructure for Step D (divergence transfer, log series, the B/T layers)
 
-Proof-layer declarations for the analytic Step D of PROOF.md:
+Proof-layer declarations for the analytic Step D:
 
-* `A362583.χ` — the project Dirichlet character mod 4 (audit item M1), with value
-  lemmas and the elementary bridge `χ_natCast_eq_kernel` / `χ_natCast_eq_ite` to
-  `raceSum`'s integrand (`raceKernel`).
+* `A362583.χ` — the project Dirichlet character mod 4, with value lemmas and the
+  elementary bridge `χ_natCast_eq_kernel` / `χ_natCast_eq_ite` to `raceSum`'s
+  integrand (`raceKernel`).
 * R1 divergence transfer: `exists_one_lt_tsum_primes_rpow_gt` (instance (i), `P(s)`
   blows up at `s ↓ 1`) and `exists_layerBReal_gt` (instance (ii) = D0a blow-up at
-  `s ↓ 1/2`).  Only prime input anywhere: `Nat.Primes.not_summable_one_div` (M5).
-* R2/M16 log series: `hasSum_neg_log_one_sub`, `neg_log_one_sub_eq_tsum`.
+  `s ↓ 1/2`).  Only prime input anywhere: the divergence of `Σ 1/p`
+  (`Nat.Primes.not_summable_one_div`).
+* R2 log series: `hasSum_neg_log_one_sub`, `neg_log_one_sub_eq_tsum`.
 * D0a/D0b layers `layerB`, `layerT` (real companions `layerBReal`, `layerTReal`),
   summability, holomorphy on `Ω = {1/2 < re}`, explicit bounds `C_B`, `C_T`,
   positivity, and real-axis agreement lemmas (`layerB_ofReal` etc.).
@@ -35,7 +36,7 @@ namespace A362583
 
 open Complex
 
-/-! ## The race kernel and the character χ (M1) -/
+/-! ## The race kernel and the character χ -/
 
 /-- The integrand of `raceSum`, named: `+1` on `1 mod 4`, `-1` on `3 mod 4`, `0` else. -/
 def raceKernel (n : ℕ) : ℤ := if n % 4 = 1 then 1 else if n % 4 = 3 then -1 else 0
@@ -44,11 +45,11 @@ def raceKernel (n : ℕ) : ℤ := if n % 4 = 1 then 1 else if n % 4 = 3 then -1 
 lemma raceSum_eq_sum_raceKernel (N : ℕ) :
     raceSum N = ∑ p ∈ (Finset.range (N + 1)).filter Nat.Prime, raceKernel p := rfl
 
-/-- M1: the project Dirichlet character mod 4, `ZMod.χ₄` pushed to `ℂ`. -/
+/-- The project Dirichlet character mod 4, `ZMod.χ₄` pushed to `ℂ`. -/
 noncomputable def χ : DirichletCharacter ℂ 4 :=
   ZMod.χ₄.ringHomComp (Int.castRingHom ℂ)
 
-/-- M1: `χ ≠ 1` (they differ at `3`, a unit of `ZMod 4`). -/
+/-- `χ ≠ 1` (they differ at `3`, a unit of `ZMod 4`). -/
 lemma χ_ne_one : χ ≠ 1 := by
   refine (MulChar.ringHomComp_ne_one_iff (Int.castRingHom ℂ).injective_int).mpr ?_
   intro h
@@ -57,8 +58,8 @@ lemma χ_ne_one : χ ≠ 1 := by
   rw [MulChar.one_apply (IsUnit.of_mul_eq_one 3 (by decide))] at h3
   norm_num at h3
 
-/-- M1 elementary bridge: on natural casts, `χ` is `raceKernel` (the integrand of
-`raceSum`).  Consumed by track 4d to connect the analytic layer to `raceSum`. -/
+/-- Elementary bridge: on natural casts, `χ` is `raceKernel` (the integrand of
+`raceSum`), connecting the analytic layer to `raceSum`. -/
 lemma χ_natCast_eq_kernel (n : ℕ) : χ (n : ZMod 4) = ((raceKernel n : ℤ) : ℂ) := by
   unfold χ raceKernel
   rw [MulChar.ringHomComp_apply, ZMod.χ₄_nat_eq_if_mod_four]
@@ -66,31 +67,31 @@ lemma χ_natCast_eq_kernel (n : ℕ) : χ (n : ZMod 4) = ((raceKernel n : ℤ) :
   have h2 : n % 2 = n % 4 % 2 := by omega
   rcases h4 with h | h | h | h <;> rw [h2, h] <;> norm_num
 
-/-- M1 elementary bridge, literal `if`-chain form (matching `raceSum`'s integrand). -/
+/-- Elementary bridge, literal `if`-chain form (matching `raceSum`'s integrand). -/
 lemma χ_natCast_eq_ite (n : ℕ) :
     χ (n : ZMod 4) = ((if n % 4 = 1 then 1 else if n % 4 = 3 then -1 else 0 : ℤ) : ℂ) := by
   rw [χ_natCast_eq_kernel]
   rfl
 
-/-- M1 value lemma: `χ = 1` on `1 mod 4`. -/
+/-- Value lemma: `χ = 1` on `1 mod 4`. -/
 lemma χ_natCast_one_mod_four {n : ℕ} (h : n % 4 = 1) : χ (n : ZMod 4) = 1 := by
   unfold χ
   rw [MulChar.ringHomComp_apply, ZMod.χ₄_nat_one_mod_four h]
   norm_num
 
-/-- M1 value lemma: `χ = -1` on `3 mod 4`. -/
+/-- Value lemma: `χ = -1` on `3 mod 4`. -/
 lemma χ_natCast_three_mod_four {n : ℕ} (h : n % 4 = 3) : χ (n : ZMod 4) = -1 := by
   unfold χ
   rw [MulChar.ringHomComp_apply, ZMod.χ₄_nat_three_mod_four h]
   norm_num
 
-/-- M1 value lemma: `χ = 0` on even numbers. -/
+/-- Value lemma: `χ = 0` on even numbers. -/
 lemma χ_natCast_even {n : ℕ} (h : n % 2 = 0) : χ (n : ZMod 4) = 0 := by
   unfold χ
   rw [MulChar.ringHomComp_apply, ZMod.χ₄_nat_eq_if_mod_four, if_pos h]
   norm_num
 
-/-- M1: `‖χ n‖ ≤ 1`. -/
+/-- `‖χ n‖ ≤ 1`. -/
 lemma norm_χ_le_one (a : ZMod 4) : ‖χ a‖ ≤ 1 := χ.norm_le_one a
 
 /-- `χ(p)² = 1` at odd primes, `0` at `2` — identifies the `k = 2` layer with `layerB`
@@ -108,9 +109,9 @@ lemma χ_sq_eq_ite (p : Nat.Primes) :
     · rw [χ_natCast_one_mod_four h4]; ring
     · rw [χ_natCast_three_mod_four h4]; ring
 
-/-! ## Norm estimates for the Euler factors (M12-based) -/
+/-! ## Norm estimates for the Euler factors -/
 
-/-- `‖χ(p) p^(-s)‖ ≤ p^(-Re s)` (audit M12 norm identity + `‖χ‖ ≤ 1`). -/
+/-- `‖χ(p) p^(-s)‖ ≤ p^(-Re s)` (the `norm_natCast_cpow` identity + `‖χ‖ ≤ 1`). -/
 lemma norm_χ_mul_cpow_le (p : Nat.Primes) (s : ℂ) :
     ‖χ ((p : ℕ) : ZMod 4) * ((p : ℕ) : ℂ) ^ (-s)‖ ≤ ((p : ℕ) : ℝ) ^ (-s.re) := by
   rw [norm_mul, Complex.norm_natCast_cpow_of_pos p.prop.pos, Complex.neg_re]
@@ -166,17 +167,17 @@ lemma norm_χ_mul_cpow_le_rpow_neg_half (p : Nat.Primes) {s : ℂ} (hs : 1 / 2 �
 lemma neg_two_mul_re (s : ℂ) : (-(2 * s)).re = -(2 * s.re) := by
   simp [Complex.mul_re]
 
-/-! ## R2 / M16: the logarithm series (branch pinned inside Mathlib's `logTaylor` API) -/
+/-! ## R2: the logarithm series (branch pinned inside Mathlib's `logTaylor` API) -/
 
-/-- R2/M16: `-log(1-z) = Σ_{k≥1} z^k/k` in `HasSum` form.  The `k = 0` term is `0`
+/-- R2: `-log(1-z) = Σ_{k≥1} z^k/k` in `HasSum` form.  The `k = 0` term is `0`
 (Lean's `z^0/0 = 0`).  Thin wrapper around `Complex.hasSum_taylorSeries_neg_log`;
-the branch of `Complex.log` is pinned inside Mathlib's proof, so R2's exp-inversion
-argument is not needed. -/
+the branch of `Complex.log` is pinned inside Mathlib's proof, so no separate
+exp-inversion argument is needed. -/
 lemma hasSum_neg_log_one_sub {z : ℂ} (hz : ‖z‖ < 1) :
     HasSum (fun k : ℕ ↦ z ^ k / k) (-Complex.log (1 - z)) :=
   Complex.hasSum_taylorSeries_neg_log hz
 
-/-- R2/M16 in PROOF.md's shifted `tsum` form: `-log(1-z) = Σ_{k≥0} z^(k+1)/(k+1)` for
+/-- R2 in shifted `tsum` form: `-log(1-z) = Σ_{k≥0} z^(k+1)/(k+1)` for
 `‖z‖ ≤ 1/2`. -/
 lemma neg_log_one_sub_eq_tsum {z : ℂ} (hz : ‖z‖ ≤ 1 / 2) :
     -Complex.log (1 - z) = ∑' k : ℕ, z ^ (k + 1) / (k + 1) := by
@@ -219,10 +220,10 @@ noncomputable def layerTReal (σ : ℝ) : ℝ := ∑' p : Nat.Primes, tpReal p �
 noncomputable def C_B : ℝ := (1 / 2) * ∑' p : Nat.Primes, ((p : ℕ) : ℝ) ^ (-2 : ℝ)
 
 /-- D0b: explicit uniform bound for `layerT` on `Re s ≥ 1/2`:
-`C_T = (4/3) Σ_p p^(-3/2)` (crude `κ ≤ 4` version of PROOF.md's `κ/3 · Σ n^(-3/2)`). -/
+`C_T = (4/3) Σ_p p^(-3/2)` (a crude `κ ≤ 4` version of the `κ/3 · Σ n^(-3/2)` bound). -/
 noncomputable def C_T : ℝ := (4 / 3) * ∑' p : Nat.Primes, ((p : ℕ) : ℝ) ^ (-(3 / 2) : ℝ)
 
-/-! ## R1: divergence transfer (sole consumer of M5) -/
+/-! ## R1: divergence transfer (the sole use of the divergence of Σ 1/p) -/
 
 /-- R1 step 1: a nonneg non-summable family has unbounded finite subsums. -/
 private lemma exists_finset_gt_of_not_summable {f : Nat.Primes → ℝ} (h0 : ∀ p, 0 ≤ f p)
@@ -247,7 +248,7 @@ private lemma not_summable_one_div_odd :
   exact Nat.Primes.not_summable_one_div h1
 
 /-- R1 step 1'' packaged: finite sets of *odd* primes with `Σ 1/p > M` exist for every
-`M` (PROOF.md R1 instance (ii) input; `Σ_{p odd} 1/p = Σ_p 1/p − 1/2`). -/
+`M` (input to R1 instance (ii); `Σ_{p odd} 1/p = Σ_p 1/p − 1/2`). -/
 private lemma exists_odd_finset_one_div_gt (M : ℝ) :
     ∃ F : Finset Nat.Primes, (∀ p ∈ F, (p : ℕ) ≠ 2) ∧ M < ∑ p ∈ F, 1 / ((p : ℕ) : ℝ) := by
   obtain ⟨F, hF⟩ := exists_finset_gt_of_not_summable
@@ -293,8 +294,9 @@ private lemma exists_right_of_sum_rpow_gt {F : Finset Nat.Primes} {a u₀ M : �
     linarith [min_le_left ε η]
   exact hball hmem
 
-/-- **R1 instance (i)** (PROOF.md R1, `a = 1`): for every `M` and `η > 0` there is a
-real `σ ∈ (1, 1+η)` with `P(σ) = Σ_p p^(-σ) > M`.  Only prime input: M5. -/
+/-- **R1 instance (i)** (`a = 1`): for every `M` and `η > 0` there is a
+real `σ ∈ (1, 1+η)` with `P(σ) = Σ_p p^(-σ) > M`.  Only prime input: the
+divergence of `Σ 1/p`. -/
 theorem exists_one_lt_tsum_primes_rpow_gt (M : ℝ) {η : ℝ} (hη : 0 < η) :
     ∃ σ : ℝ, 1 < σ ∧ σ < 1 + η ∧ M < ∑' p : Nat.Primes, ((p : ℕ) : ℝ) ^ (-σ) := by
   obtain ⟨F, hF⟩ := exists_finset_gt_of_not_summable (fun p ↦ by positivity)
@@ -324,7 +326,8 @@ lemma summable_layerBReal_term {σ : ℝ} (hσ : 1 / 2 < σ) :
     · simp [h]
 
 /-- **R1 instance (ii) = D0a blow-up**: for every `M` and `η > 0` there is a real
-`σ ∈ (1/2, 1/2+η)` with `layerBReal σ > M`.  Only prime input: M5. -/
+`σ ∈ (1/2, 1/2+η)` with `layerBReal σ > M`.  Only prime input: the divergence
+of `Σ 1/p`. -/
 theorem exists_layerBReal_gt (M : ℝ) {η : ℝ} (hη : 0 < η) :
     ∃ σ : ℝ, 1 / 2 < σ ∧ σ < 1 / 2 + η ∧ M < layerBReal σ := by
   obtain ⟨F, hFodd, hF⟩ := exists_odd_finset_one_div_gt (2 * M)
@@ -476,7 +479,7 @@ theorem layerBReal_le_C_B {σ : ℝ} (hσ : 1 ≤ σ) : layerBReal σ ≤ C_B :=
   have := h2.tsum_le_tsum hle h1
   linarith
 
-/-! ## Real-valuedness on the real axis (consumed by 4d/4e) -/
+/-! ## Real-valuedness on the real axis -/
 
 /-- D0a: for real `σ`, `layerB` is the cast of `layerBReal` (unconditional). -/
 lemma layerB_ofReal (σ : ℝ) : layerB (σ : ℂ) = ((layerBReal σ : ℝ) : ℂ) := by
@@ -621,7 +624,7 @@ theorem differentiableOn_layerB :
   exact ((differentiableOn_layerB_aux h1).differentiableAt
     (hU.mem_nhds h2)).differentiableWithinAt
 
-/-! ## D0c preparation: the per-prime split (consumed by 4c) -/
+/-! ## D0c preparation: the per-prime split -/
 
 /-- D0c: summing the `k = 2` terms over primes gives exactly `layerB` (via
 `χ_sq_eq_ite`; unconditional). -/
@@ -664,11 +667,11 @@ lemma summable_norm_term_two {s : ℂ} (hs : 1 / 2 < s.re) :
       ≤ 1 * ((p : ℕ) : ℝ) ^ (-(2 * s.re)) := mul_le_mul_of_nonneg_right hχ hpos
   linarith
 
-/-- **D0c per-prime split** (consumed by 4c): for `Re s > 1`,
+/-- **D0c per-prime split**: for `Re s > 1`,
 `-log(1 - χ(p) p^(-s)) = χ(p) p^(-s) + χ(p)² p^(-2s)/2 + t_p(s)`.
-Proof: peel three terms off M16's series with the verified M13 incantation
-(`Summable.sum_add_tsum_nat_add 3` + `Finset.sum_range_succ`); the `k = 0` term is
-`0`, the tail is definitionally `tp p s`.  No rearrangement is involved. -/
+Proof: peel three terms off the log series with `Summable.sum_add_tsum_nat_add 3`
++ `Finset.sum_range_succ`; the `k = 0` term is `0`, the tail is definitionally
+`tp p s`.  No rearrangement is involved. -/
 theorem neg_log_split (p : Nat.Primes) {s : ℂ} (hs : 1 < s.re) :
     -Complex.log (1 - χ ((p : ℕ) : ZMod 4) * ((p : ℕ) : ℂ) ^ (-s))
       = χ ((p : ℕ) : ZMod 4) * ((p : ℕ) : ℂ) ^ (-s)

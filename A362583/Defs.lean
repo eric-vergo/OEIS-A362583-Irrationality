@@ -8,37 +8,38 @@ import Mathlib.Data.Nat.Prime.Basic
 import Mathlib.Analysis.SpecificLimits.Basic
 
 /-!
-# A362583: definitions (spec §1, §3)
+# A362583: definitions
 
 The four objects of the formalization, stated elementarily so that the
-statements are auditable by a reader who trusts only Mathlib (spec §3
-statement-hygiene principle): only `Nat.nth`, `%`-arithmetic,
-`if`-expressions, finite sums and a `tsum` appear here.  `ZMod.χ₄`,
-`DirichletCharacter`, `LFunction` and friends are confined to proofs.
+statements are auditable by a reader who trusts only Mathlib: only `Nat.nth`,
+`%`-arithmetic, `if`-expressions, finite sums and a `tsum` appear here.  The
+heavier machinery — `ZMod.χ₄`, `DirichletCharacter`, `LFunction` and friends —
+is confined to proofs, never to statements.
 
-* `A362583.oddPrime k` — the `k`-th odd prime (`oddPrime 0 = 3`), spec §1 `p_{k+1}`.
-* `A362583.bit k` — the `k`-th binary digit of the constant, spec §1 `b_{k+1}`.
-* `A362583.x` — the A362583 constant `x = 0.b₀b₁b₂…₂ ≈ 0.7004001…`, spec §1.
-* `A362583.raceSum N` — the Chebyshev race sum `S(N) = Σ_{p ≤ N} χ₄(p)`, spec §1.
+* `A362583.oddPrime k` — the `k`-th odd prime (`oddPrime 0 = 3`); the `p_{k+1}`
+  of the 1-based enumeration of odd primes.
+* `A362583.bit k` — the `k`-th binary digit of the constant.
+* `A362583.x` — the A362583 constant `x = 0.b₀b₁b₂…₂ ≈ 0.7004001…`.
+* `A362583.raceSum N` — the Chebyshev race sum `S(N) = Σ_{p ≤ N} χ₄(p)`.
 -/
 
 namespace A362583
 
 /-- The `k`-th odd prime: `oddPrime 0 = 3`, `oddPrime 1 = 5`, `oddPrime 2 = 7`, ….
-This is spec §1's `p_{k+1}` (the spec indexes odd primes from 1); since
+Writing the odd primes as `p_1, p_2, …`, this is `p_{k+1}`; since
 `Nat.nth Nat.Prime 0 = 2`, skipping index 0 skips exactly the prime 2. -/
 noncomputable def oddPrime (k : ℕ) : ℕ := Nat.nth Nat.Prime (k + 1)
 
 /-- `k`-th bit of the constant: `1` iff the `k`-th odd prime is `≡ 3 (mod 4)`.
-This is spec §1's `b_{k+1}`; first values `1 0 1 1 0 0 1 1` (primes
-`3, 5, 7, 11, 13, 17, 19, 23`). -/
+The `b_{k+1}` of the 1-based bit sequence; first values `1 0 1 1 0 0 1 1`
+(primes `3, 5, 7, 11, 13, 17, 19, 23`). -/
 noncomputable def bit (k : ℕ) : ℕ := if oddPrime k % 4 = 3 then 1 else 0
 
-/-- The A362583 constant, `x = 0.b₀b₁b₂…₂ ≈ 0.7004001…` (spec §1:
-`x = Σ_{k ≥ 1} b_k 2^{-k}`, reindexed here from `k = 0`). -/
+/-- The A362583 constant, `x = 0.b₀b₁b₂…₂ ≈ 0.7004001…`, the real number whose
+`k`-th binary digit is `bit k`: `x = Σ_{k ≥ 0} bit k · 2^{-(k+1)}`. -/
 noncomputable def x : ℝ := ∑' k : ℕ, (bit k : ℝ) / 2 ^ (k + 1)
 
-/-- Chebyshev race sum `S(N) = Σ_{p ≤ N} χ₄(p)` (spec §1), stated elementarily:
+/-- Chebyshev race sum `S(N) = Σ_{p ≤ N} χ₄(p)`, stated elementarily:
 `+1` for primes `≡ 1 (mod 4)`, `-1` for primes `≡ 3 (mod 4)`, `0` for `p = 2`.
 The range `Finset.range (N + 1)` means primes `≤ N`, matching the convention of
 `Nat.primeCounting N` (# primes `≤ N`). -/

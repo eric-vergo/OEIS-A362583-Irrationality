@@ -8,18 +8,18 @@ import Mathlib.Data.Nat.Prime.Nth
 import A362583.Defs
 
 /-!
-# A362583: Step C — eventually periodic bits ⇒ linear race (spec §2.5)
+# A362583: Step C — eventually periodic bits ⇒ linear race
 
 The RACE BOOKKEEPING layer.  If the bit sequence `bit` is eventually periodic
 (period `P`, from index `N₀`), then the Chebyshev race sum is linear in the
 prime count: `raceSum N = c·π(N) + O(1)` with `c = (P - 2j)/P` (here realized
 as `c = W/P` where `W = ∑_{k∈[N₀,N₀+P)} (1 - 2·bit k)` is the exact window sum).
 
-Structure (labels refer to PROOF.md §2.5):
+Structure:
 
 * **C1 (bridge)**: `raceSum N = ∑_{k < π(N) - 1} (1 - 2·bit k)` — the filtered
-  χ₄-sum over primes `≤ N` reindexed by odd-prime index, by induction on `N`
-  (route (a) of §2.5), with `Nat.nth_count` supplying the enumeration step.
+  χ₄-sum over primes `≤ N` reindexed by odd-prime index, by induction on `N`,
+  with `Nat.nth_count` supplying the enumeration step.
 * **C2 (periodic counting)**: an eventually periodic ±1 sequence has partial
   sums `c·m + O(1)`; crude explicit bound `2·N₀ + 2·P`.
 * **C3 (assembly)**: absorb the `m = π(N) - 1` shift (cost `|c| ≤ 1`) into the
@@ -30,10 +30,10 @@ namespace A362583
 
 /-! ### C1: the χ₄ summand reindexed by odd-prime index -/
 
-/-- The χ₄ value at a natural number, exactly as it appears in `raceSum` (§2.5 C1). -/
+/-- The χ₄ value at a natural number, exactly as it appears in `raceSum` (C1). -/
 private def chi (p : ℕ) : ℤ := if p % 4 = 1 then 1 else if p % 4 = 3 then -1 else 0
 
-/-- χ₄ at the `k`-th odd prime through the bit sequence: `1 - 2·bit k ∈ {±1}` (§2.5 C1). -/
+/-- χ₄ at the `k`-th odd prime through the bit sequence: `1 - 2·bit k ∈ {±1}` (C1). -/
 private noncomputable def term (k : ℕ) : ℤ := 1 - 2 * (bit k : ℤ)
 
 private lemma abs_term_le_one (k : ℕ) : |term k| ≤ 1 := by
@@ -48,13 +48,13 @@ private lemma two_lt_oddPrime (k : ℕ) : 2 < oddPrime k := by
   have h := (Nat.nth_lt_nth Nat.infinite_setOf_prime).mpr k.succ_pos
   rwa [Nat.nth_prime_zero_eq_two] at h
 
-/-- Odd primes are `1` or `3` mod `4` (§2.5 C1, the "3-liner"). -/
+/-- Odd primes are `1` or `3` mod `4` (C1). -/
 private lemma oddPrime_mod_four (k : ℕ) : oddPrime k % 4 = 1 ∨ oddPrime k % 4 = 3 := by
   rcases (oddPrime_prime k).eq_two_or_odd with h2 | hodd
   · exact absurd h2 (by have := two_lt_oddPrime k; omega)
   · omega
 
-/-- The χ₄ value at the `k`-th odd prime is `1 - 2·bit k` (§2.5 C1). -/
+/-- The χ₄ value at the `k`-th odd prime is `1 - 2·bit k` (C1). -/
 private lemma chi_oddPrime (k : ℕ) : chi (oddPrime k) = term k := by
   unfold chi term bit
   rcases oddPrime_mod_four k with h | h <;> rw [h] <;> norm_num
@@ -85,7 +85,7 @@ private lemma primeCounting_succ_of_not_prime {n : ℕ} (hp : ¬ Nat.Prime (n + 
   show Nat.count Nat.Prime ((n + 1) + 1) = Nat.count Nat.Prime (n + 1)
   rw [Nat.count_succ, if_neg hp, add_zero]
 
-/-- **C1, the bridge** (§2.5): the race sum over primes `≤ N` equals the sum of
+/-- **C1, the bridge**: the race sum over primes `≤ N` equals the sum of
 `1 - 2·bit k` over the first `π(N) - 1` odd-prime indices.  Natural subtraction
 makes the small cases uniform: `π(0) = π(1) = 0`, `π(2) = 1` all give the empty
 range, matching `raceSum 0 = raceSum 1 = raceSum 2 = 0` (χ₄(2) = 0). -/
@@ -127,14 +127,14 @@ private lemma raceSum_bridge (N : ℕ) :
 
 /-! ### C2: partial sums of an eventually periodic ±1 sequence are linear + O(1) -/
 
-/-- Any `n` consecutive `term`s sum to at most `n` in absolute value (§2.5 C2). -/
+/-- Any `n` consecutive `term`s sum to at most `n` in absolute value (C2). -/
 private lemma abs_sum_term_le (a n : ℕ) : |∑ k ∈ Finset.range n, term (a + k)| ≤ (n : ℤ) :=
   calc |∑ k ∈ Finset.range n, term (a + k)|
       ≤ ∑ k ∈ Finset.range n, |term (a + k)| := Finset.abs_sum_le_sum_abs _ _
     _ ≤ ∑ _k ∈ Finset.range n, 1 := Finset.sum_le_sum fun k _ => abs_term_le_one _
     _ = (n : ℤ) := by simp
 
-/-- Shifting a full window by whole periods does not change its sum (§2.5 C2). -/
+/-- Shifting a full window by whole periods does not change its sum (C2). -/
 private lemma sum_term_window {N₀ P : ℕ} (hper : ∀ k ≥ N₀, bit (k + P) = bit k) (q : ℕ) :
     ∑ k ∈ Finset.range P, term (N₀ + q * P + k) = ∑ k ∈ Finset.range P, term (N₀ + k) := by
   induction q with
@@ -147,7 +147,7 @@ private lemma sum_term_window {N₀ P : ℕ} (hper : ∀ k ≥ N₀, bit (k + P)
       unfold term
       rw [hper _ (le_trans (Nat.le_add_right _ _) (Nat.le_add_right _ _))]
 
-/-- `q` complete periods contribute exactly `q` window sums (§2.5 C2). -/
+/-- `q` complete periods contribute exactly `q` window sums (C2). -/
 private lemma sum_term_blocks {N₀ P : ℕ} (hper : ∀ k ≥ N₀, bit (k + P) = bit k) (q : ℕ) :
     ∑ k ∈ Finset.range (N₀ + q * P), term k
       = (∑ k ∈ Finset.range N₀, term k)
@@ -160,9 +160,10 @@ private lemma sum_term_blocks {N₀ P : ℕ} (hper : ∀ k ≥ N₀, bit (k + P)
       push_cast
       ring
 
-/-- **C2** (§2.5): with `c = W/P` (window sum over period), the `term`-partial
-sums track `c·m` within the generous constant `2·N₀ + 2·P`.  The spec explicitly
-wants weakest-sufficient bounds, so prefix and partial window are bounded crudely. -/
+/-- **C2**: with `c = W/P` (window sum over period), the `term`-partial
+sums track `c·m` within the generous constant `2·N₀ + 2·P`.  Only a
+weakest-sufficient bound is needed, so prefix and partial window are bounded
+crudely. -/
 private lemma exists_c_bound {N₀ P : ℕ} (hP : 0 < P)
     (hper : ∀ k ≥ N₀, bit (k + P) = bit k) :
     ∃ c : ℝ, |c| ≤ 1 ∧ ∀ m : ℕ,
@@ -246,7 +247,7 @@ private lemma exists_c_bound {N₀ P : ℕ} (hP : 0 < P)
 
 /-! ### C3: assembly -/
 
-/-- **Step C** (spec §2.5, lemma N3): an eventually periodic bit sequence makes
+/-- **Step C**: an eventually periodic bit sequence makes
 the race sum linear in the prime count, `raceSum N = c·π(N) + O(1)`.  The slope
 is `c = W/P` for the exact window sum `W = ∑_{k∈[N₀,N₀+P)} (1 - 2·bit k) = P - 2j`,
 and the constant `C = 2·N₀ + 2·P + 1` absorbs the `m = π(N) - 1` reindexing

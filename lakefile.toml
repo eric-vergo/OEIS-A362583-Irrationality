@@ -1,7 +1,7 @@
 name = "A362583"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["A362583", "Audit", "Challenge"]
+defaultTargets = ["A362583", "Challenge"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -18,11 +18,6 @@ rev = "v4.31.0"
 name = "A362583"
 # The project is CC0 (public domain); headers use CC0 wording, which the
 # Mathlib header linter (expecting its Apache-2.0 phrasing) would reject.
-leanOptions = { weak.linter.style.header = false }
-
-[[lean_lib]]
-name = "Audit"
-# Audit MWE files are scratch — skip the copyright-header linter (CC0 project).
 leanOptions = { weak.linter.style.header = false }
 
 [[lean_lib]]

@@ -8,7 +8,7 @@ import Mathlib.NumberTheory.LSeries.DirichletContinuation
 import A362583.Layers
 
 /-!
-# Euler product / L-function wiring for Step D (PROOF.md D0c, D0d)
+# Euler product / L-function wiring for Step D
 
 The `k = 1` layer `A(s)` and the two consolidated Step D identities on `{Re s > 1}`:
 
@@ -16,7 +16,7 @@ The `k = 1` layer `A(s)` and the two consolidated Step D identities on `{Re s > 
   `Σ_p -log(1 - χ(p) p^(-s)) = A(s) + B(s) + T(s)` — the per-prime split
   `neg_log_split` summed with linearity of three absolutely convergent series
   (no double-sum rearrangement).
-* **D0d (Euler wiring, audit items M2/M4)**: `exp_layers_eq_LFunction`,
+* **D0d (Euler wiring)**: `exp_layers_eq_LFunction`,
   `exp (A(s) + B(s) + T(s)) = L(s, χ)` for the analytically continued
   `DirichletCharacter.LFunction`, via `DirichletCharacter.LSeries_eulerProduct_exp_log`
   and `DirichletCharacter.LFunction_eq_LSeries`.
@@ -36,7 +36,7 @@ open Complex
 
 /-! ## The k = 1 layer (D0c) -/
 
-/-- D0c: the `k = 1` layer `A(s) = Σ_p χ(p) p^(-s)` (PROOF.md `A_ser`). -/
+/-- D0c: the `k = 1` layer `A(s) = Σ_p χ(p) p^(-s)`. -/
 noncomputable def layerA (s : ℂ) : ℂ :=
   ∑' p : Nat.Primes, χ ((p : ℕ) : ZMod 4) * ((p : ℕ) : ℂ) ^ (-s)
 
@@ -74,14 +74,14 @@ theorem tsum_neg_log_eq_layers {s : ℂ} (hs : 1 < s.re) :
           + ∑' p : Nat.Primes, tp p s := by rw [h1.tsum_add h2]
     _ = layerA s + layerB s + layerT s := by rw [tsum_term_two_eq_layerB]; rfl
 
-/-! ## D0d: the Euler wiring (audit items M2/M4) -/
+/-! ## D0d: the Euler wiring -/
 
 /-- **D0d (Euler wiring)**: for `Re s > 1`,
 `exp (A(s) + B(s) + T(s)) = L(s, χ)` with `L` the analytically continued
 `DirichletCharacter.LFunction`.  This is D0c + the exp-form Euler product
-(audit item M4, `DirichletCharacter.LSeries_eulerProduct_exp_log`) + the
-identification of `LFunction` with the Dirichlet series on `Re s > 1`
-(audit item M2, `DirichletCharacter.LFunction_eq_LSeries`). -/
+(`DirichletCharacter.LSeries_eulerProduct_exp_log`) + the identification of
+`LFunction` with the Dirichlet series on `Re s > 1`
+(`DirichletCharacter.LFunction_eq_LSeries`). -/
 theorem exp_layers_eq_LFunction {s : ℂ} (hs : 1 < s.re) :
     Complex.exp (layerA s + layerB s + layerT s) = DirichletCharacter.LFunction χ s := by
   rw [← tsum_neg_log_eq_layers hs, DirichletCharacter.LFunction_eq_LSeries χ hs]
