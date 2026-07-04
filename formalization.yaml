@@ -98,21 +98,6 @@ fidelity:
     one-sided limit remains, pinning L(1) real-positive); constants are
     deliberately generous rather than sharp.
 
-review:
-  status: "agent-reviewed"
-  reviewers: []
-  notes: >-
-    Pre-code: the analytic core was independently re-derived by two agents
-    firewalled from the informal proof text and adversarially refereed (verdict:
-    sound; the two self-flagged weak points of the informal argument were
-    independently verified). Post-code: an acceptance auditor re-ran
-    build/hygiene/axiom checks and mechanically diffed all locked statements
-    against the frozen statement set; a correspondence auditor mapped every
-    informal proof label to its implementing declaration with adversarial
-    spot-checks of the five most load-bearing translations (indexing
-    conventions, quantifier structure, bound chains). Kernel-checked throughout;
-    no human line-by-line proof review has been performed.
-
 alignment:
   namespace: "A362583"
   statements:
