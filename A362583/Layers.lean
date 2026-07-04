@@ -363,16 +363,11 @@ lemma summable_layerB_term {s : ℂ} (hs : 1 / 2 < s.re) :
     positivity
   · rw [if_neg h, Complex.norm_natCast_cpow_of_pos p.prop.pos, neg_two_mul_re]
 
-/-- D0b per-prime bound: `‖t_p(s)‖ ≤ (4/3) p^(-3/2)` on `Re s ≥ 1/2` (geometric tail
-with `‖z_p‖ ≤ p^(-1/2) ≤ 2^(-1/2) ≤ 3/4`, so `(1-‖z_p‖)⁻¹ ≤ 4` and `1/(k+3) ≤ 1/3`). -/
-lemma norm_tp_le (p : Nat.Primes) {s : ℂ} (hs : 1 / 2 ≤ s.re) :
-    ‖tp p s‖ ≤ 4 / 3 * ((p : ℕ) : ℝ) ^ (-(3 / 2) : ℝ) := by
-  obtain ⟨z, hzdef⟩ : ∃ z : ℂ, z = χ ((p : ℕ) : ZMod 4) * ((p : ℕ) : ℂ) ^ (-s) := ⟨_, rfl⟩
-  have htp : tp p s = ∑' k : ℕ, z ^ (k + 3) / ((k + 3 : ℕ) : ℂ) := by rw [hzdef]; rfl
-  have hz34 : ‖z‖ ≤ 3 / 4 := by rw [hzdef]; exact norm_χ_mul_cpow_le_three_quarters p hs
-  have hzp : ‖z‖ ≤ ((p : ℕ) : ℝ) ^ (-(1 / 2) : ℝ) := by
-    rw [hzdef]; exact norm_χ_mul_cpow_le_rpow_neg_half p hs
-  have hz1 : ‖z‖ < 1 := lt_of_le_of_lt hz34 (by norm_num)
+/-- Geometric-tail norm bound for the shape of `tp`: for `‖z‖ < 1`,
+`‖∑' k, z^(k+3)/(k+3)‖ ≤ ‖z‖³·(1-‖z‖)⁻¹/3`.  Each term is dominated by `‖z‖^(k+3)/3`
+(since `1/(k+3) ≤ 1/3`) and the resulting geometric series sums in closed form. -/
+private lemma norm_tsum_pow_add_three_div_le {z : ℂ} (hz1 : ‖z‖ < 1) :
+    ‖∑' k : ℕ, z ^ (k + 3) / ((k + 3 : ℕ) : ℂ)‖ ≤ ‖z‖ ^ 3 * (1 - ‖z‖)⁻¹ / 3 := by
   have hterm : ∀ k : ℕ, ‖z ^ (k + 3) / ((k + 3 : ℕ) : ℂ)‖ ≤ ‖z‖ ^ (k + 3) / 3 := by
     intro k
     rw [norm_div, norm_pow, Complex.norm_natCast]
@@ -385,9 +380,8 @@ lemma norm_tp_le (p : Nat.Primes) {s : ℂ} (hs : 1 / 2 ≤ s.re) :
     exact (hgeom0.mul_left (‖z‖ ^ 3)).congr fun k ↦ by rw [← pow_add, Nat.add_comm 3 k]
   have hnorms : Summable (fun k : ℕ ↦ ‖z ^ (k + 3) / ((k + 3 : ℕ) : ℂ)‖) :=
     Summable.of_nonneg_of_le (fun k ↦ norm_nonneg _) hterm hgeom
-  have h1 : ‖tp p s‖ ≤ ∑' k : ℕ, ‖z‖ ^ (k + 3) / 3 := by
-    rw [htp]
-    exact (norm_tsum_le_tsum_norm hnorms).trans (hnorms.tsum_le_tsum hterm hgeom)
+  have h1 : ‖∑' k : ℕ, z ^ (k + 3) / ((k + 3 : ℕ) : ℂ)‖ ≤ ∑' k : ℕ, ‖z‖ ^ (k + 3) / 3 :=
+    (norm_tsum_le_tsum_norm hnorms).trans (hnorms.tsum_le_tsum hterm hgeom)
   have h2 : ∑' k : ℕ, ‖z‖ ^ (k + 3) / 3 = ‖z‖ ^ 3 * (1 - ‖z‖)⁻¹ / 3 := by
     rw [tsum_div_const]
     congr 1
@@ -395,6 +389,19 @@ lemma norm_tp_le (p : Nat.Primes) {s : ℂ} (hs : 1 / 2 ≤ s.re) :
           tsum_congr fun k ↦ by rw [← pow_add, Nat.add_comm 3 k]
       _ = ‖z‖ ^ 3 * ∑' k : ℕ, ‖z‖ ^ k := tsum_mul_left
       _ = ‖z‖ ^ 3 * (1 - ‖z‖)⁻¹ := by rw [tsum_geometric_of_lt_one (norm_nonneg z) hz1]
+  rw [h2] at h1
+  exact h1
+
+/-- D0b per-prime bound: `‖t_p(s)‖ ≤ (4/3) p^(-3/2)` on `Re s ≥ 1/2` (geometric tail
+with `‖z_p‖ ≤ p^(-1/2) ≤ 2^(-1/2) ≤ 3/4`, so `(1-‖z_p‖)⁻¹ ≤ 4` and `1/(k+3) ≤ 1/3`). -/
+lemma norm_tp_le (p : Nat.Primes) {s : ℂ} (hs : 1 / 2 ≤ s.re) :
+    ‖tp p s‖ ≤ 4 / 3 * ((p : ℕ) : ℝ) ^ (-(3 / 2) : ℝ) := by
+  obtain ⟨z, hzdef⟩ : ∃ z : ℂ, z = χ ((p : ℕ) : ZMod 4) * ((p : ℕ) : ℂ) ^ (-s) := ⟨_, rfl⟩
+  have htp : tp p s = ∑' k : ℕ, z ^ (k + 3) / ((k + 3 : ℕ) : ℂ) := by rw [hzdef]; rfl
+  have hz34 : ‖z‖ ≤ 3 / 4 := by rw [hzdef]; exact norm_χ_mul_cpow_le_three_quarters p hs
+  have hzp : ‖z‖ ≤ ((p : ℕ) : ℝ) ^ (-(1 / 2) : ℝ) := by
+    rw [hzdef]; exact norm_χ_mul_cpow_le_rpow_neg_half p hs
+  have hz1 : ‖z‖ < 1 := lt_of_le_of_lt hz34 (by norm_num)
   have hinv : (1 - ‖z‖)⁻¹ ≤ 4 := by
     have hx : (0 : ℝ) < 1 - ‖z‖ := by linarith
     rw [← one_div, div_le_iff₀ hx]
@@ -405,8 +412,8 @@ lemma norm_tp_le (p : Nat.Primes) {s : ℂ} (hs : 1 / 2 ≤ s.re) :
     rw [← Real.rpow_natCast (((p : ℕ) : ℝ) ^ (-(1 / 2) : ℝ)) 3,
       ← Real.rpow_mul (Nat.cast_nonneg _)]
     norm_num
-  calc ‖tp p s‖ ≤ ∑' k : ℕ, ‖z‖ ^ (k + 3) / 3 := h1
-    _ = ‖z‖ ^ 3 * (1 - ‖z‖)⁻¹ / 3 := h2
+  calc ‖tp p s‖ = ‖∑' k : ℕ, z ^ (k + 3) / ((k + 3 : ℕ) : ℂ)‖ := by rw [htp]
+    _ ≤ ‖z‖ ^ 3 * (1 - ‖z‖)⁻¹ / 3 := norm_tsum_pow_add_three_div_le hz1
     _ ≤ (((p : ℕ) : ℝ) ^ (-(1 / 2) : ℝ)) ^ 3 * 4 / 3 := by
         have hbnn : (0 : ℝ) ≤ (1 - ‖z‖)⁻¹ := by
           have hx : (0 : ℝ) < 1 - ‖z‖ := by linarith

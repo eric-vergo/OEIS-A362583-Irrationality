@@ -70,7 +70,7 @@ private lemma infinite_oddPrime_index {S : Set ℕ} (hS : S.Infinite)
     rw [heq, e₂] at e₁
     exact e₁.symm
   · intro p hpS
-    show oddPrime (Nat.count Nat.Prime p - 1) ∈ S
+    change oddPrime (Nat.count Nat.Prime p - 1) ∈ S
     rw [key p hpS]
     exact hpS
 
@@ -229,11 +229,7 @@ private lemma bit_eq_of_t_eq {m n : ℕ} (h : t m = t n) : bit m = bit n := by
   have hm := bit_one_iff_half_lt m
   have hn := bit_one_iff_half_lt n
   rw [h] at hm
-  by_cases hlt : 1 / 2 < t n
-  · rw [hm.mpr hlt, hn.mpr hlt]
-  · have h1 : bit m ≠ 1 := fun hh => hlt (hm.mp hh)
-    have h2 : bit n ≠ 1 := fun hh => hlt (hn.mp hh)
-    rcases bit_zero_or_one m with e | e <;> rcases bit_zero_or_one n with f | f <;> omega
+  grind [bit_zero_or_one]
 
 /-- **(B5)** induction: a tail collision propagates to all later
 indices, via B2's determinism. -/
@@ -242,7 +238,7 @@ private lemma t_eq_add {m n : ℕ} (h : t m = t n) (i : ℕ) : t (m + i) = t (n 
   | zero => simpa using h
   | succ i ih =>
     have hb := bit_eq_of_t_eq ih
-    show t ((m + i) + 1) = t ((n + i) + 1)
+    change t ((m + i) + 1) = t ((n + i) + 1)
     rw [t_succ, t_succ, ih, hb]
 
 /-- **(B3)**: `t k = fract (2^k x)` — the binary prefix of `2^k x`

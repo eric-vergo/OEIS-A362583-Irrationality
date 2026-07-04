@@ -169,29 +169,18 @@ theorem hasSum_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f k‖ �
       (bpSeries f s) :=
   (summable_bpSeries hC hs).hasSum
 
-/-- **Bounded partial sums give a holomorphic by-parts series** (D1): if
-`‖∑ k ∈ Finset.range (n + 1), f k‖ ≤ C` for all `n`, then `bpSeries f` is holomorphic on the
-open right half-plane `{s | 0 < s.re}`.
-
-Consumers needing a smaller half-plane `{s | δ < s.re}` (e.g. `δ = 1/2`) can compose with
-`DifferentiableOn.mono`.  The proof applies the Weierstrass `M`-test
-(`Complex.differentiableOn_tsum_of_summable_norm`) on a small open box
-`{s | δ < s.re} ∩ ball 0 R` around each point, where the terms satisfy the single summable
-bound `C * R * n ^ (-δ - 1)`. -/
-theorem differentiableOn_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f k‖ ≤ C) :
-    DifferentiableOn ℂ (bpSeries f) {s : ℂ | 0 < s.re} := by
+/-- The Weierstrass `M`-test on a bounded box: on `{s | δ < s.re} ∩ ball 0 R` (with `δ > 0`,
+`R ≥ 1`) the terms of the by-parts series are dominated by the single summable bound
+`C · R · n ^ (-δ - 1)`, so `bpSeries f` is holomorphic there.  This is the local ingredient of
+`differentiableOn_bpSeries`; a box is used because no summable bound is uniform on the whole
+half-plane `{0 < s.re}`. -/
+private lemma differentiableOn_bpSeries_box
+    (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f k‖ ≤ C) {δ R : ℝ} (hδ : 0 < δ) (hR : 1 ≤ R) :
+    DifferentiableOn ℂ (bpSeries f) ({s : ℂ | δ < s.re} ∩ Metric.ball 0 R) := by
   have hC0 : 0 ≤ C := (norm_nonneg _).trans (hC 0)
-  intro s₀ hs₀
-  have hs₀re : 0 < s₀.re := hs₀
-  obtain ⟨δ, hδ, hδs₀⟩ : ∃ δ : ℝ, 0 < δ ∧ δ < s₀.re :=
-    ⟨s₀.re / 2, half_pos hs₀re, half_lt_self hs₀re⟩
-  obtain ⟨R, hR, hs₀R⟩ : ∃ R : ℝ, 1 ≤ R ∧ ‖s₀‖ < R :=
-    ⟨‖s₀‖ + 1, le_add_of_nonneg_left (norm_nonneg _), lt_add_one _⟩
   have hR0 : 0 ≤ R := zero_le_one.trans hR
   have hVopen : IsOpen ({s : ℂ | δ < s.re} ∩ Metric.ball 0 R) :=
     (isOpen_lt continuous_const Complex.continuous_re).inter Metric.isOpen_ball
-  have hs₀V : s₀ ∈ {s : ℂ | δ < s.re} ∩ Metric.ball 0 R :=
-    ⟨hδs₀, by rw [Metric.mem_ball, dist_zero_right]; exact hs₀R⟩
   -- summable uniform bound on the box
   have hu : Summable (fun n : ℕ => if n = 0 then C else C * R * (n : ℝ) ^ (-δ - 1)) := by
     refine Summable.of_norm_bounded_eventually_nat
@@ -252,8 +241,47 @@ theorem differentiableOn_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1)
               (Real.rpow_le_rpow_of_exponent_le h1n (by linarith))
               (Real.rpow_nonneg (Nat.cast_nonneg n) _) hR0
         _ = C * R * (n : ℝ) ^ (-δ - 1) := (mul_assoc _ _ _).symm
-  have hdiff := Complex.differentiableOn_tsum_of_summable_norm hu hFdiff hVopen hFle
-  exact ((hdiff s₀ hs₀V).differentiableAt (hVopen.mem_nhds hs₀V)).differentiableWithinAt
+  exact Complex.differentiableOn_tsum_of_summable_norm hu hFdiff hVopen hFle
+
+/-- **Bounded partial sums give a holomorphic by-parts series** (D1): if
+`‖∑ k ∈ Finset.range (n + 1), f k‖ ≤ C` for all `n`, then `bpSeries f` is holomorphic on the
+open right half-plane `{s | 0 < s.re}`.
+
+Consumers needing a smaller half-plane `{s | δ < s.re}` (e.g. `δ = 1/2`) can compose with
+`DifferentiableOn.mono`.  The proof applies the Weierstrass `M`-test
+(`differentiableOn_bpSeries_box`) on a small open box `{s | δ < s.re} ∩ ball 0 R` around each
+point of the half-plane. -/
+theorem differentiableOn_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f k‖ ≤ C) :
+    DifferentiableOn ℂ (bpSeries f) {s : ℂ | 0 < s.re} := by
+  intro s₀ hs₀
+  have hs₀re : 0 < s₀.re := hs₀
+  obtain ⟨δ, hδ, hδs₀⟩ : ∃ δ : ℝ, 0 < δ ∧ δ < s₀.re :=
+    ⟨s₀.re / 2, half_pos hs₀re, half_lt_self hs₀re⟩
+  obtain ⟨R, hR, hs₀R⟩ : ∃ R : ℝ, 1 ≤ R ∧ ‖s₀‖ < R :=
+    ⟨‖s₀‖ + 1, le_add_of_nonneg_left (norm_nonneg _), lt_add_one _⟩
+  have hVopen : IsOpen ({s : ℂ | δ < s.re} ∩ Metric.ball 0 R) :=
+    (isOpen_lt continuous_const Complex.continuous_re).inter Metric.isOpen_ball
+  have hs₀V : s₀ ∈ {s : ℂ | δ < s.re} ∩ Metric.ball 0 R :=
+    ⟨hδs₀, by rw [Metric.mem_ball, dist_zero_right]; exact hs₀R⟩
+  exact (((differentiableOn_bpSeries_box hC hδ hR) s₀ hs₀V).differentiableAt
+    (hVopen.mem_nhds hs₀V)).differentiableWithinAt
+
+/-- For real `σ ≥ 0` and `1 ≤ n`, the complex Dirichlet increment
+`(n : ℂ) ^ (-σ) - (n+1) ^ (-σ)` is the cast of the real increment `n ^ (-σ) - (n+1) ^ (-σ)`,
+which is nonnegative, so its norm equals that real increment (used for telescoping in
+`norm_bpSeries_le`). -/
+private lemma norm_cpow_neg_sub_add_one_eq {σ : ℝ} (hσ : 0 ≤ σ) {n : ℕ} (hn1 : 1 ≤ n) :
+    ‖(n : ℂ) ^ (-(σ : ℂ)) - ((n : ℂ) + 1) ^ (-(σ : ℂ))‖
+      = (n : ℝ) ^ (-σ) - ((n : ℝ) + 1) ^ (-σ) := by
+  have e1 : (n : ℂ) ^ (-(σ : ℂ)) = (((n : ℝ) ^ (-σ) : ℝ) : ℂ) := by
+    rw [← Complex.ofReal_natCast n, ← Complex.ofReal_neg σ]
+    exact (Complex.ofReal_cpow (Nat.cast_nonneg n) (-σ)).symm
+  have e2 : ((n : ℂ) + 1) ^ (-(σ : ℂ)) = ((((n : ℝ) + 1) ^ (-σ) : ℝ) : ℂ) := by
+    rw [show ((n : ℂ) + 1) = (((n : ℝ) + 1 : ℝ) : ℂ) by push_cast; ring,
+      ← Complex.ofReal_neg σ]
+    exact (Complex.ofReal_cpow (by positivity) (-σ)).symm
+  rw [e1, e2, ← Complex.ofReal_sub, Complex.norm_real, Real.norm_eq_abs]
+  exact abs_of_nonneg (Real.natCast_rpow_neg_sub_add_one_nonneg hσ hn1)
 
 /-- **Real-segment bound** (D1, real-axis telescoping): if the partial sums of `f`
 are bounded by `C` and vanish for `n < n₀` (with `1 ≤ n₀`), then for real `σ ≥ 0`
@@ -289,17 +317,7 @@ theorem norm_bpSeries_le (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f k‖ 
       have hGn1 : G (n + 1) = ((n : ℝ) + 1) ^ (-σ) := by
         rw [hG]
         simp only [max_eq_left (show n₀ ≤ n + 1 by omega), Nat.cast_add, Nat.cast_one]
-      have hinc : ‖(n : ℂ) ^ (-(σ : ℂ)) - ((n : ℂ) + 1) ^ (-(σ : ℂ))‖
-          = (n : ℝ) ^ (-σ) - ((n : ℝ) + 1) ^ (-σ) := by
-        have e1 : (n : ℂ) ^ (-(σ : ℂ)) = (((n : ℝ) ^ (-σ) : ℝ) : ℂ) := by
-          rw [← Complex.ofReal_natCast n, ← Complex.ofReal_neg σ]
-          exact (Complex.ofReal_cpow (Nat.cast_nonneg n) (-σ)).symm
-        have e2 : ((n : ℂ) + 1) ^ (-(σ : ℂ)) = ((((n : ℝ) + 1) ^ (-σ) : ℝ) : ℂ) := by
-          rw [show ((n : ℂ) + 1) = (((n : ℝ) + 1 : ℝ) : ℂ) by push_cast; ring,
-            ← Complex.ofReal_neg σ]
-          exact (Complex.ofReal_cpow (by positivity) (-σ)).symm
-        rw [e1, e2, ← Complex.ofReal_sub, Complex.norm_real, Real.norm_eq_abs]
-        exact abs_of_nonneg (Real.natCast_rpow_neg_sub_add_one_nonneg hσ hn1)
+      have hinc := norm_cpow_neg_sub_add_one_eq hσ hn1
       rw [norm_mul, hinc, hGn, hGn1]
       exact mul_le_mul_of_nonneg_right (hC n)
         (Real.natCast_rpow_neg_sub_add_one_nonneg hσ hn1)
@@ -345,6 +363,46 @@ theorem norm_bpSeries_le_const (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f
           hC0
     _ = C := mul_one C
 
+/-- Bounded partial sums bound the coefficients: if `‖∑ k ∈ Finset.range (n + 1), f k‖ ≤ C`
+for all `n`, then `‖f n‖ ≤ 2 * C` (consecutive partial sums differ by `f n`). -/
+private lemma norm_le_two_mul_of_partialSum_le
+    (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f k‖ ≤ C) (n : ℕ) : ‖f n‖ ≤ 2 * C := by
+  have hC0 : 0 ≤ C := (norm_nonneg _).trans (hC 0)
+  rcases Nat.eq_zero_or_pos n with rfl | hn
+  · have h := hC 0
+    simp only [zero_add, Finset.range_one, Finset.sum_singleton] at h
+    linarith
+  · obtain ⟨m, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn.ne'
+    have h3 : f (m + 1) =
+        (∑ k ∈ Finset.range (m + 1 + 1), f k) - ∑ k ∈ Finset.range (m + 1), f k := by
+      rw [Finset.sum_range_succ]; ring
+    rw [h3]
+    calc ‖(∑ k ∈ Finset.range (m + 1 + 1), f k) - ∑ k ∈ Finset.range (m + 1), f k‖
+        ≤ ‖∑ k ∈ Finset.range (m + 1 + 1), f k‖ + ‖∑ k ∈ Finset.range (m + 1), f k‖ :=
+          norm_sub_le _ _
+      _ ≤ 2 * C := by have := hC (m + 1); have := hC m; linarith
+
+/-- Finite Abel summation (summation by parts) for the weighted sum `∑_{i ≤ N} f i · i^(-s)`:
+its value is the boundary term `(∑_{i ≤ N} f i) · N^(-s)` plus the by-parts sum
+`∑_{i < N} (∑_{k ≤ i} f k) · (i^(-s) - (i+1)^(-s))`.  Thin wrapper around
+`Finset.sum_range_by_parts`. -/
+private lemma sum_range_mul_cpow_eq {s : ℂ} (N : ℕ) :
+    ∑ i ∈ Finset.range (N + 1), f i * (i : ℂ) ^ (-s)
+      = (∑ i ∈ Finset.range (N + 1), f i) * (N : ℂ) ^ (-s)
+        + ∑ i ∈ Finset.range N,
+            (∑ k ∈ Finset.range (i + 1), f k) *
+              ((i : ℂ) ^ (-s) - ((i : ℂ) + 1) ^ (-s)) := by
+  have h := Finset.sum_range_by_parts (fun i : ℕ => (i : ℂ) ^ (-s)) f (N + 1)
+  simp only [smul_eq_mul, Nat.add_sub_cancel] at h
+  have step1 : ∑ i ∈ Finset.range (N + 1), f i * (i : ℂ) ^ (-s)
+      = ∑ i ∈ Finset.range (N + 1), (i : ℂ) ^ (-s) * f i :=
+    Finset.sum_congr rfl fun i _ => mul_comm _ _
+  rw [step1, h, sub_eq_add_neg, ← Finset.sum_neg_distrib, mul_comm ((N : ℂ) ^ (-s))]
+  congr 1
+  refine Finset.sum_congr rfl fun i _ => ?_
+  push_cast
+  rw [← neg_mul, neg_sub, mul_comm]
+
 /-- **Identification with the Dirichlet series** (D1): if the partial sums of `f`
 are bounded by `C`, then for `1 < s.re`
 
@@ -360,21 +418,7 @@ theorem tsum_mul_cpow_neg_eq_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n 
   have hs0 : 0 < s.re := zero_lt_one.trans hs
   have hC0 : 0 ≤ C := (norm_nonneg _).trans (hC 0)
   -- coefficient bound from bounded partial sums
-  have hcoef : ∀ n, ‖f n‖ ≤ 2 * C := by
-    intro n
-    rcases Nat.eq_zero_or_pos n with rfl | hn
-    · have h := hC 0
-      simp only [zero_add, Finset.range_one, Finset.sum_singleton] at h
-      linarith
-    · obtain ⟨m, rfl⟩ := Nat.exists_eq_succ_of_ne_zero hn.ne'
-      have h3 : f (m + 1) =
-          (∑ k ∈ Finset.range (m + 1 + 1), f k) - ∑ k ∈ Finset.range (m + 1), f k := by
-        rw [Finset.sum_range_succ]; ring
-      rw [h3]
-      calc ‖(∑ k ∈ Finset.range (m + 1 + 1), f k) - ∑ k ∈ Finset.range (m + 1), f k‖
-          ≤ ‖∑ k ∈ Finset.range (m + 1 + 1), f k‖ + ‖∑ k ∈ Finset.range (m + 1), f k‖ :=
-            norm_sub_le _ _
-        _ ≤ 2 * C := by have := hC (m + 1); have := hC m; linarith
+  have hcoef := norm_le_two_mul_of_partialSum_le hC
   -- the Dirichlet series converges for `1 < s.re`
   have hD : Summable fun n : ℕ => f n * (n : ℂ) ^ (-s) := by
     refine Summable.of_norm_bounded_eventually_nat
@@ -383,24 +427,6 @@ theorem tsum_mul_cpow_neg_eq_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n 
     filter_upwards [eventually_ge_atTop 1] with n hn
     rw [norm_mul, Complex.norm_natCast_cpow_of_pos hn, Complex.neg_re]
     exact mul_le_mul_of_nonneg_right (hcoef n) (Real.rpow_nonneg (Nat.cast_nonneg n) _)
-  -- finite Abel summation, `Finset.sum_range_by_parts` with the weights as scalars
-  have key : ∀ N : ℕ,
-      ∑ i ∈ Finset.range (N + 1), f i * (i : ℂ) ^ (-s)
-        = (∑ i ∈ Finset.range (N + 1), f i) * (N : ℂ) ^ (-s)
-          + ∑ i ∈ Finset.range N,
-              (∑ k ∈ Finset.range (i + 1), f k) *
-                ((i : ℂ) ^ (-s) - ((i : ℂ) + 1) ^ (-s)) := by
-    intro N
-    have h := Finset.sum_range_by_parts (fun i : ℕ => (i : ℂ) ^ (-s)) f (N + 1)
-    simp only [smul_eq_mul, Nat.add_sub_cancel] at h
-    have step1 : ∑ i ∈ Finset.range (N + 1), f i * (i : ℂ) ^ (-s)
-        = ∑ i ∈ Finset.range (N + 1), (i : ℂ) ^ (-s) * f i :=
-      Finset.sum_congr rfl fun i _ => mul_comm _ _
-    rw [step1, h, sub_eq_add_neg, ← Finset.sum_neg_distrib, mul_comm ((N : ℂ) ^ (-s))]
-    congr 1
-    refine Finset.sum_congr rfl fun i _ => ?_
-    push_cast
-    rw [← neg_mul, neg_sub, mul_comm]
   -- limits of both sides of the finite identity
   have h1 : Tendsto (fun N : ℕ => ∑ i ∈ Finset.range (N + 1), f i * (i : ℂ) ^ (-s)) atTop
       (𝓝 (∑' n : ℕ, f n * (n : ℂ) ^ (-s))) :=
@@ -423,5 +449,5 @@ theorem tsum_mul_cpow_neg_eq_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n 
     (hasSum_bpSeries hC hs0).tendsto_sum_nat
   have h4 := h2.add h3
   rw [zero_add] at h4
-  exact tendsto_nhds_unique h1 (h4.congr fun N => (key N).symm)
+  exact tendsto_nhds_unique h1 (h4.congr fun N => (sum_range_mul_cpow_eq N).symm)
 

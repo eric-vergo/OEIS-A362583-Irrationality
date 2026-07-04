@@ -50,9 +50,9 @@ private lemma two_lt_oddPrime (k : ℕ) : 2 < oddPrime k := by
 
 /-- Odd primes are `1` or `3` mod `4` (C1). -/
 private lemma oddPrime_mod_four (k : ℕ) : oddPrime k % 4 = 1 ∨ oddPrime k % 4 = 3 := by
-  rcases (oddPrime_prime k).eq_two_or_odd with h2 | hodd
-  · exact absurd h2 (by have := two_lt_oddPrime k; omega)
-  · omega
+  have h2 := two_lt_oddPrime k
+  have hodd := (oddPrime_prime k).eq_two_or_odd
+  omega
 
 /-- The χ₄ value at the `k`-th odd prime is `1 - 2·bit k` (C1). -/
 private lemma chi_oddPrime (k : ℕ) : chi (oddPrime k) = term k := by
@@ -77,12 +77,12 @@ private lemma raceSum_succ_of_not_prime {n : ℕ} (hp : ¬ Nat.Prime (n + 1)) :
 
 private lemma primeCounting_succ_of_prime {n : ℕ} (hp : Nat.Prime (n + 1)) :
     Nat.primeCounting (n + 1) = Nat.primeCounting n + 1 := by
-  show Nat.count Nat.Prime ((n + 1) + 1) = Nat.count Nat.Prime (n + 1) + 1
+  change Nat.count Nat.Prime ((n + 1) + 1) = Nat.count Nat.Prime (n + 1) + 1
   rw [Nat.count_succ, if_pos hp]
 
 private lemma primeCounting_succ_of_not_prime {n : ℕ} (hp : ¬ Nat.Prime (n + 1)) :
     Nat.primeCounting (n + 1) = Nat.primeCounting n := by
-  show Nat.count Nat.Prime ((n + 1) + 1) = Nat.count Nat.Prime (n + 1)
+  change Nat.count Nat.Prime ((n + 1) + 1) = Nat.count Nat.Prime (n + 1)
   rw [Nat.count_succ, if_neg hp, add_zero]
 
 /-- **C1, the bridge**: the race sum over primes `≤ N` equals the sum of
@@ -160,10 +160,90 @@ private lemma sum_term_blocks {N₀ P : ℕ} (hper : ∀ k ≥ N₀, bit (k + P)
       push_cast
       ring
 
-/-- **C2**: with `c = W/P` (window sum over period), the `term`-partial
-sums track `c·m` within the generous constant `2·N₀ + 2·P`.  Only a
-weakest-sufficient bound is needed, so prefix and partial window are bounded
-crudely. -/
+/-- With `|c| ≤ 1`, scaling a nonnegative real by `c` cannot increase its size:
+`|c·t| ≤ t` for `t ≥ 0` (C2 helper, used to bound the `c·(·)` companion of each block). -/
+private lemma abs_mul_le_of_abs_le_one {c t : ℝ} (hc1 : |c| ≤ 1) (ht : 0 ≤ t) :
+    |c * t| ≤ t := by
+  rw [abs_mul, abs_of_nonneg ht]
+  exact mul_le_of_le_one_left ht hc1
+
+/-- **C2, short regime** (`m ≤ N₀`): with `|c| ≤ 1`, both the partial sum
+`∑_{k<m} term k` and the comparison value `c·m` are at most `m ≤ N₀` in size, so their
+difference is at most `2·N₀`. -/
+private lemma abs_termSum_sub_short {c : ℝ} (hc1 : |c| ≤ 1) {N₀ m : ℕ} (hm : m ≤ N₀) :
+    |((∑ k ∈ Finset.range m, term k : ℤ) : ℝ) - c * (m : ℝ)| ≤ 2 * (N₀ : ℝ) := by
+  have hT : |((∑ k ∈ Finset.range m, term k : ℤ) : ℝ)| ≤ (m : ℝ) := by
+    have h := abs_sum_term_le 0 m
+    simp only [zero_add] at h
+    exact_mod_cast h
+  have hcm := abs_mul_le_of_abs_le_one hc1 (Nat.cast_nonneg m)
+  have hmN : (m : ℝ) ≤ (N₀ : ℝ) := by exact_mod_cast hm
+  have htri := abs_sub ((∑ k ∈ Finset.range m, term k : ℤ) : ℝ) (c * (m : ℝ))
+  linarith
+
+/-- **C2, long regime** (`N₀ ≤ m`): write `m = N₀ + q·P + r` with `r < P` and split
+`[0, m)` into the preperiodic prefix `[0, N₀)`, `q` whole periods, and a partial final
+window `[N₀ + q·P, m)`.  Because the slope satisfies `c·P = W` (the window sum), the `q`
+complete periods contribute `c·(q·P)` exactly and cancel; only the prefix (size `≤ N₀`)
+and the partial window (size `< P`), together with their `c·(·)` companions, remain — total
+`≤ 2·N₀ + 2·P`. -/
+private lemma abs_termSum_sub_long {N₀ P : ℕ} (hP : 0 < P)
+    (hper : ∀ k ≥ N₀, bit (k + P) = bit k) {c : ℝ} (hc1 : |c| ≤ 1)
+    (hcP : c * (P : ℝ) = ((∑ k ∈ Finset.range P, term (N₀ + k) : ℤ) : ℝ)) {m : ℕ}
+    (hm : N₀ ≤ m) :
+    |((∑ k ∈ Finset.range m, term k : ℤ) : ℝ) - c * (m : ℝ)|
+      ≤ 2 * (N₀ : ℝ) + 2 * (P : ℝ) := by
+  obtain ⟨q, r, hrP, hm_eq⟩ : ∃ q r, r < P ∧ m = N₀ + q * P + r := by
+    refine ⟨(m - N₀) / P, (m - N₀) % P, Nat.mod_lt _ hP, ?_⟩
+    have h1 : N₀ + (P * ((m - N₀) / P) + (m - N₀) % P) = m := by
+      rw [Nat.div_add_mod]
+      exact Nat.add_sub_cancel' hm
+    calc m = N₀ + (P * ((m - N₀) / P) + (m - N₀) % P) := h1.symm
+      _ = N₀ + (m - N₀) / P * P + (m - N₀) % P := by ring
+  have hsplitZ : (∑ k ∈ Finset.range m, term k)
+      = (∑ k ∈ Finset.range N₀, term k)
+        + (q : ℤ) * (∑ k ∈ Finset.range P, term (N₀ + k))
+        + ∑ k ∈ Finset.range r, term (N₀ + q * P + k) := by
+    rw [hm_eq, Finset.sum_range_add, sum_term_blocks hper q]
+  have hsplit : ((∑ k ∈ Finset.range m, term k : ℤ) : ℝ)
+      = ((∑ k ∈ Finset.range N₀, term k : ℤ) : ℝ)
+        + (q : ℝ) * ((∑ k ∈ Finset.range P, term (N₀ + k) : ℤ) : ℝ)
+        + ((∑ k ∈ Finset.range r, term (N₀ + q * P + k) : ℤ) : ℝ) := by
+    exact_mod_cast hsplitZ
+  have hA : |((∑ k ∈ Finset.range N₀, term k : ℤ) : ℝ)| ≤ (N₀ : ℝ) := by
+    have h := abs_sum_term_le 0 N₀
+    simp only [zero_add] at h
+    exact_mod_cast h
+  have hB : |((∑ k ∈ Finset.range r, term (N₀ + q * P + k) : ℤ) : ℝ)| ≤ (r : ℝ) := by
+    exact_mod_cast abs_sum_term_le (N₀ + q * P) r
+  have hm_cast : (m : ℝ) = (N₀ : ℝ) + (q : ℝ) * (P : ℝ) + (r : ℝ) := by
+    rw [hm_eq]
+    push_cast
+    ring
+  have hkey : ((∑ k ∈ Finset.range m, term k : ℤ) : ℝ) - c * (m : ℝ)
+      = (((∑ k ∈ Finset.range N₀, term k : ℤ) : ℝ) - c * (N₀ : ℝ))
+        + (((∑ k ∈ Finset.range r, term (N₀ + q * P + k) : ℤ) : ℝ) - c * (r : ℝ)) := by
+    rw [hsplit, hm_cast, ← hcP]
+    ring
+  have hcN := abs_mul_le_of_abs_le_one hc1 (Nat.cast_nonneg N₀)
+  have hcr := abs_mul_le_of_abs_le_one hc1 (Nat.cast_nonneg r)
+  have hrP' : (r : ℝ) ≤ (P : ℝ) := by exact_mod_cast hrP.le
+  calc |((∑ k ∈ Finset.range m, term k : ℤ) : ℝ) - c * (m : ℝ)|
+      = |(((∑ k ∈ Finset.range N₀, term k : ℤ) : ℝ) - c * (N₀ : ℝ))
+          + (((∑ k ∈ Finset.range r, term (N₀ + q * P + k) : ℤ) : ℝ) - c * (r : ℝ))| := by
+        rw [hkey]
+    _ ≤ |((∑ k ∈ Finset.range N₀, term k : ℤ) : ℝ) - c * (N₀ : ℝ)|
+          + |((∑ k ∈ Finset.range r, term (N₀ + q * P + k) : ℤ) : ℝ) - c * (r : ℝ)| :=
+        abs_add_le _ _
+    _ ≤ (|((∑ k ∈ Finset.range N₀, term k : ℤ) : ℝ)| + |c * (N₀ : ℝ)|)
+          + (|((∑ k ∈ Finset.range r, term (N₀ + q * P + k) : ℤ) : ℝ)| + |c * (r : ℝ)|) :=
+        add_le_add (abs_sub _ _) (abs_sub _ _)
+    _ ≤ 2 * (N₀ : ℝ) + 2 * (P : ℝ) := by linarith
+
+/-- **C2**: with `c = W/P` (window sum over period), the `term`-partial sums track `c·m`
+within the generous constant `2·N₀ + 2·P`.  Only a weakest-sufficient bound is needed, so
+the two regimes `m ≤ N₀` and `N₀ ≤ m` are dispatched to the crude block bounds
+`abs_termSum_sub_short` / `abs_termSum_sub_long`. -/
 private lemma exists_c_bound {N₀ P : ℕ} (hP : 0 < P)
     (hper : ∀ k ≥ N₀, bit (k + P) = bit k) :
     ∃ c : ℝ, |c| ≤ 1 ∧ ∀ m : ℕ,
@@ -182,68 +262,9 @@ private lemma exists_c_bound {N₀ P : ℕ} (hP : 0 < P)
     rw [hc_def]
     exact div_mul_cancel₀ _ hP0
   refine ⟨c, hc1, fun m => ?_⟩
-  have hct : ∀ t : ℝ, 0 ≤ t → |c * t| ≤ t := by
-    intro t ht
-    rw [abs_mul, abs_of_nonneg ht]
-    exact mul_le_of_le_one_left ht hc1
-  by_cases hm : m < N₀
-  · -- short regime: bound both terms crudely by m ≤ N₀
-    have hT : |((∑ k ∈ Finset.range m, term k : ℤ) : ℝ)| ≤ (m : ℝ) := by
-      have h := abs_sum_term_le 0 m
-      simp only [zero_add] at h
-      exact_mod_cast h
-    have hcm := hct (m : ℝ) (Nat.cast_nonneg m)
-    have hmN : (m : ℝ) ≤ (N₀ : ℝ) := by exact_mod_cast hm.le
-    have htri := abs_sub ((∑ k ∈ Finset.range m, term k : ℤ) : ℝ) (c * (m : ℝ))
-    linarith
-  · -- long regime: prefix + q complete periods + partial window
-    replace hm : N₀ ≤ m := by omega
-    obtain ⟨q, r, hrP, hm_eq⟩ : ∃ q r, r < P ∧ m = N₀ + q * P + r := by
-      refine ⟨(m - N₀) / P, (m - N₀) % P, Nat.mod_lt _ hP, ?_⟩
-      have h1 : N₀ + (P * ((m - N₀) / P) + (m - N₀) % P) = m := by
-        rw [Nat.div_add_mod]
-        exact Nat.add_sub_cancel' hm
-      calc m = N₀ + (P * ((m - N₀) / P) + (m - N₀) % P) := h1.symm
-        _ = N₀ + (m - N₀) / P * P + (m - N₀) % P := by ring
-    have hsplitZ : (∑ k ∈ Finset.range m, term k)
-        = (∑ k ∈ Finset.range N₀, term k)
-          + (q : ℤ) * (∑ k ∈ Finset.range P, term (N₀ + k))
-          + ∑ k ∈ Finset.range r, term (N₀ + q * P + k) := by
-      rw [hm_eq, Finset.sum_range_add, sum_term_blocks hper q]
-    have hsplit : ((∑ k ∈ Finset.range m, term k : ℤ) : ℝ)
-        = ((∑ k ∈ Finset.range N₀, term k : ℤ) : ℝ)
-          + (q : ℝ) * ((∑ k ∈ Finset.range P, term (N₀ + k) : ℤ) : ℝ)
-          + ((∑ k ∈ Finset.range r, term (N₀ + q * P + k) : ℤ) : ℝ) := by
-      exact_mod_cast hsplitZ
-    have hA : |((∑ k ∈ Finset.range N₀, term k : ℤ) : ℝ)| ≤ (N₀ : ℝ) := by
-      have h := abs_sum_term_le 0 N₀
-      simp only [zero_add] at h
-      exact_mod_cast h
-    have hB : |((∑ k ∈ Finset.range r, term (N₀ + q * P + k) : ℤ) : ℝ)| ≤ (r : ℝ) := by
-      exact_mod_cast abs_sum_term_le (N₀ + q * P) r
-    have hm_cast : (m : ℝ) = (N₀ : ℝ) + (q : ℝ) * (P : ℝ) + (r : ℝ) := by
-      rw [hm_eq]
-      push_cast
-      ring
-    have hkey : ((∑ k ∈ Finset.range m, term k : ℤ) : ℝ) - c * (m : ℝ)
-        = (((∑ k ∈ Finset.range N₀, term k : ℤ) : ℝ) - c * (N₀ : ℝ))
-          + (((∑ k ∈ Finset.range r, term (N₀ + q * P + k) : ℤ) : ℝ) - c * (r : ℝ)) := by
-      rw [hsplit, hm_cast, ← hcP]
-      ring
-    have hcN := hct (N₀ : ℝ) (Nat.cast_nonneg N₀)
-    have hcr := hct (r : ℝ) (Nat.cast_nonneg r)
-    have hrP' : (r : ℝ) ≤ (P : ℝ) := by exact_mod_cast hrP.le
-    calc |((∑ k ∈ Finset.range m, term k : ℤ) : ℝ) - c * (m : ℝ)|
-        = |(((∑ k ∈ Finset.range N₀, term k : ℤ) : ℝ) - c * (N₀ : ℝ))
-            + (((∑ k ∈ Finset.range r, term (N₀ + q * P + k) : ℤ) : ℝ) - c * (r : ℝ))| := by
-          rw [hkey]
-      _ ≤ |((∑ k ∈ Finset.range N₀, term k : ℤ) : ℝ) - c * (N₀ : ℝ)|
-            + |((∑ k ∈ Finset.range r, term (N₀ + q * P + k) : ℤ) : ℝ) - c * (r : ℝ)| :=
-          abs_add_le _ _
-      _ ≤ (|((∑ k ∈ Finset.range N₀, term k : ℤ) : ℝ)| + |c * (N₀ : ℝ)|)
-            + (|((∑ k ∈ Finset.range r, term (N₀ + q * P + k) : ℤ) : ℝ)| + |c * (r : ℝ)|) :=
-          add_le_add (abs_sub _ _) (abs_sub _ _)
-      _ ≤ 2 * (N₀ : ℝ) + 2 * (P : ℝ) := by linarith
+  rcases lt_or_ge m N₀ with hm | hm
+  · exact (abs_termSum_sub_short hc1 hm.le).trans (le_add_of_nonneg_right (by positivity))
+  · exact abs_termSum_sub_long hP hper hc1 hcP hm
 
 /-! ### C3: assembly -/
 
