@@ -1,9 +1,16 @@
 {
-  "status": "configured",
+  "status": "verified",
   "config": "comparator.json",
   "solution_module": "A362583",
-  "theorem_names": ["A362583.irrational_x", "A362583.raceSum_not_linear"],
-  "permitted_axioms": ["propext", "Quot.sound", "Classical.choice"],
-  "verified_at": null,
-  "note": "Comparator requires Linux (landrun/systemd-run); run on CI to flip status to verified."
+  "theorem_names": [
+    "A362583.irrational_x",
+    "A362583.raceSum_not_linear"
+  ],
+  "permitted_axioms": [
+    "propext",
+    "Quot.sound",
+    "Classical.choice"
+  ],
+  "verified_at": "2026-07-04T20:48:31Z",
+  "note": "Verified in CI by leanprover/comparator (.github/workflows/comparator.yml): the A362583 library's proofs kernel-check the exact Challenge statements A362583.irrational_x and A362583.raceSum_not_linear, using only the permitted axioms propext, Quot.sound, and Classical.choice. Statement equality, axiom whitelist, and Lean-kernel replay all confirmed."
 }
