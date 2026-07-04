@@ -91,8 +91,9 @@ jobs:
           fi
           ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           note="Verified in CI by leanprover/comparator (.github/workflows/comparator.yml): the A362583 library's proofs kernel-check the exact Challenge statements A362583.irrational_x and A362583.raceSum_not_linear, using only the permitted axioms propext, Quot.sound, and Classical.choice. Statement equality, axiom whitelist, and Lean-kernel replay all confirmed."
-          jq --arg ts "$ts" --arg note "$note" \
-            '.status = "verified" | .verified_at = $ts | .note = $note' \
+          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          jq --arg ts "$ts" --arg note "$note" --arg run_url "$run_url" \
+            '.status = "verified" | .verified_at = $ts | .note = $note | .run_url = $run_url' \
             comparator-status.json > comparator-status.json.tmp
           mv comparator-status.json.tmp comparator-status.json
           if git diff --quiet -- comparator-status.json; then
