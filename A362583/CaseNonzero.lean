@@ -31,8 +31,8 @@ reduces the full non-linearity theorem to the bounded-race case `|S(N)| ≤ C`.
   (`LFunction_one_re_pos`) — so its `log` is bounded there; with the `B`/`T` bounds this
   gives `|layerAReal σ| ≤ K` on `(1, 2]` (`exists_bound_abs_layerAReal`).
 * **Step 3 (conclusion).**  If `c ≠ 0` then steps 1–2 force `P(σ) ≤ (C + K)/|c|` on
-  `(1, 2]`, contradicting the single point `σ* ∈ (1, 2)` with `P(σ*)` large supplied by R1
-  (`exists_one_lt_tsum_primes_rpow_gt`, the only prime input).
+  `(1, 2]`, contradicting the single point `σ* ∈ (1, 2)` with `P(σ*)` large supplied by
+  divergence transfer (`exists_one_lt_tsum_primes_rpow_gt`, the only prime input).
 
 ## Main result
 
@@ -300,7 +300,7 @@ lemma exists_bound_abs_layerAReal :
 `c = 0`.  This is what reduces `raceSum_not_linear` to the bounded-race case
 `|raceSum N| ≤ C`.
 
-If `c ≠ 0`, steps 1–2 give `|c|·P(σ) ≤ C + K` for all `σ ∈ (1, 2]`, but R1
+If `c ≠ 0`, steps 1–2 give `|c|·P(σ) ≤ C + K` for all `σ ∈ (1, 2]`, but divergence transfer
 (`exists_one_lt_tsum_primes_rpow_gt`, the sole prime input `Σ 1/p = ∞`) produces a single
 `σ ∈ (1, 2)` where `P(σ) > (C + K)/|c|`.  Contradiction. -/
 theorem c_eq_zero_of_raceSum_linear {c C : ℝ}

@@ -11,7 +11,7 @@ import Mathlib.Tactic.IntervalCases
 import A362583.CaseNonzero
 
 /-!
-# Case `c = 0` endgame: the race sum is never linear (Step D, D1–D4)
+# Case `c = 0` endgame: the race sum is never linear (Step D)
 
 The main analytic theorem `raceSum_not_linear`: there are no constants `c`, `C` with
 `|S(N) - c·π(N)| ≤ C` for all `N`, where `S = raceSum` and `π = Nat.primeCounting`.
@@ -19,52 +19,53 @@ The main analytic theorem `raceSum_not_linear`: there are no constants `c`, `C` 
 `c_eq_zero_of_raceSum_linear` (`A362583/CaseNonzero.lean`) forces `c = 0`, reducing to the
 bounded-race hypothesis `|S(N)| ≤ C`.  Then:
 
-* **(D1)** The partial sums of `fChi` are exactly the race sums (`sum_range_fChi`), hence
-  bounded by `C` in norm (`norm_sum_range_fChi_le`), and they vanish below `n = 2`
-  (`sum_range_fChi_vanish`).  Consequently the by-parts series `bpSeries fChi`
-  (`A362583/BoundedHolo.lean`) is holomorphic on `{Re s > 0}`, satisfies
+* **Bounded partial sums.** The partial sums of `fChi` are exactly the race sums
+  (`sum_range_fChi`), hence bounded by `C` in norm (`norm_sum_range_fChi_le`), and they
+  vanish below `n = 2` (`sum_range_fChi_vanish`).  Consequently the by-parts series
+  `bpSeries fChi` (`A362583/BoundedHolo.lean`) is holomorphic on `{Re s > 0}`, satisfies
   `‖bpSeries fChi σ‖ ≤ C` for real `σ ≥ 0`, and agrees with `layerA` on `{Re s > 1}`.
-* **(D2)** `contLog := bpSeries fChi + layerB + layerT` is holomorphic on
-  `Ω = {Re s > 1/2}` (`differentiableOn_contLog`) and `exp (contLog s) = L(χ, s)` on
+* **The continued logarithm.** `contLog := bpSeries fChi + layerB + layerT` is holomorphic
+  on `Ω = {Re s > 1/2}` (`differentiableOn_contLog`) and `exp (contLog s) = L(χ, s)` on
   `{Re s > 1}` (`exp_contLog_eq`, via the Euler wiring `exp_layers_eq_LFunction`).
-* **(D3)** By the identity theorem on the open preconnected `Ω`,
+* **Identity theorem.** By the identity theorem on the open preconnected `Ω`,
   `exp ∘ contLog = L(χ, ·)` on all of `Ω` (`exp_contLog_eqOn`).
-* **(D4, single-point form)** `L(χ, ·)` is entire, hence continuous at `1/2` with some
-  bound `M₀` on a `δ₀`-ball.  The R1 divergence transfer `exists_layerBReal_gt` supplies a
-  real `σ ∈ (1/2, 1/2 + δ₀)` with `layerBReal σ > log M₀ + C + C_T`; at `s* = σ` the
-  identity gives `‖L(χ, σ)‖ = exp (Re (contLog σ)) > M₀`, contradicting the ball bound.
-  The contradiction is evaluated at a single point, with no filters toward `1/2⁺`.
+* **Endgame at `1/2` (single-point form).** `L(χ, ·)` is entire, hence continuous at `1/2`
+  with some bound `M₀` on a `δ₀`-ball.  The divergence transfer `exists_layerBReal_gt`
+  supplies a real `σ ∈ (1/2, 1/2 + δ₀)` with `layerBReal σ > log M₀ + C + C_T`; at
+  `s* = σ` the identity gives `‖L(χ, σ)‖ = exp (Re (contLog σ)) > M₀`, contradicting the
+  ball bound.  The contradiction is evaluated at a single point, with no filters toward
+  `1/2⁺`.
 -/
 
 namespace A362583
 
 open Complex Filter Topology
 
-/-! ## D1: bounded partial sums of `fChi` and their consequences -/
+/-! ## Bounded partial sums of `fChi` and their consequences -/
 
-/-- D1 side condition: the partial sums of `fChi` vanish below `n₀ = 2`
+/-- Side condition: the partial sums of `fChi` vanish below `n₀ = 2`
 (`fChi 0 = fChi 1 = 0`; feeds `norm_bpSeries_le_const`). -/
 lemma sum_range_fChi_vanish : ∀ n < 2, ∑ k ∈ Finset.range (n + 1), fChi k = 0 := by
   intro n hn
   interval_cases n <;> simp [Finset.sum_range_succ, fChi_zero, fChi_one]
 
-/-- D1: under the bounded-race hypothesis `|S(N)| ≤ C`, the partial sums of `fChi` are
+/-- Under the bounded-race hypothesis `|S(N)| ≤ C`, the partial sums of `fChi` are
 bounded by `C` in norm — they are exactly the race sums (`sum_range_fChi`). -/
 lemma norm_sum_range_fChi_le {C : ℝ} (hS : ∀ N : ℕ, |(raceSum N : ℝ)| ≤ C) (n : ℕ) :
     ‖∑ k ∈ Finset.range (n + 1), fChi k‖ ≤ C := by
   rw [sum_range_fChi, ← Complex.ofReal_intCast, Complex.norm_real, Real.norm_eq_abs]
   exact hS n
 
-/-! ## D2: the continued logarithm `G = Ã + B + T` on `Ω = {Re s > 1/2}` -/
+/-! ## The continued logarithm `G = Ã + B + T` on `Ω = {Re s > 1/2}` -/
 
-/-- D2: the continued logarithm `G := Ã + B + T`, where `Ã = bpSeries fChi`
+/-- The continued logarithm `G := Ã + B + T`, where `Ã = bpSeries fChi`
 is the by-parts continuation of the `k = 1` layer and `B`, `T` are the `k = 2` and `k ≥ 3`
 layers.  Under the bounded-race hypothesis it is holomorphic on `Ω = {Re s > 1/2}`
 (`differentiableOn_contLog`) and `exp ∘ contLog = L(χ, ·)` there (`exp_contLog_eqOn`). -/
 noncomputable def contLog (s : ℂ) : ℂ := bpSeries fChi s + layerB s + layerT s
 
-/-- D2 (holomorphy): under the bounded-race hypothesis, `contLog` is holomorphic on
-`Ω = {Re s > 1/2}` (D1 for `bpSeries fChi`, D0a for `layerB`, D0b for `layerT`). -/
+/-- Holomorphy: under the bounded-race hypothesis, `contLog` is holomorphic on
+`Ω = {Re s > 1/2}` (holomorphy of `bpSeries fChi`, `layerB`, and `layerT`). -/
 lemma differentiableOn_contLog {C : ℝ}
     (hB : ∀ n, ‖∑ k ∈ Finset.range (n + 1), fChi k‖ ≤ C) :
     DifferentiableOn ℂ contLog {s : ℂ | 1 / 2 < s.re} := by
@@ -75,9 +76,9 @@ lemma differentiableOn_contLog {C : ℝ}
     linarith
   exact (h1.add differentiableOn_layerB).add differentiableOn_layerT
 
-/-- D2 (identification on `{Re s > 1}`): `exp (contLog s) = L(χ, s)` for `Re s > 1` —
+/-- Identification on `{Re s > 1}`: `exp (contLog s) = L(χ, s)` for `Re s > 1` —
 the by-parts series agrees with `layerA` there (`tsum_mul_cpow_neg_eq_bpSeries` +
-`layerA_eq_tsum_fChi`), and the Euler wiring `exp_layers_eq_LFunction` (D0c/D0d)
+`layerA_eq_tsum_fChi`), and the Euler wiring `exp_layers_eq_LFunction`
 applies. -/
 lemma exp_contLog_eq {C : ℝ} (hB : ∀ n, ‖∑ k ∈ Finset.range (n + 1), fChi k‖ ≤ C)
     {s : ℂ} (hs : 1 < s.re) :
@@ -88,9 +89,9 @@ lemma exp_contLog_eq {C : ℝ} (hB : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f
   rw [hA]
   exact exp_layers_eq_LFunction hs
 
-/-! ## D3: the identity theorem on `Ω` -/
+/-! ## The identity theorem on `Ω` -/
 
-/-- **D3 (identity theorem)**: under the bounded-race hypothesis,
+/-- **Identity theorem**: under the bounded-race hypothesis,
 `exp ∘ contLog = L(χ, ·)` on all of `Ω = {Re s > 1/2}` — `Ω` is open and preconnected,
 both sides are holomorphic on `Ω` and agree on the open `{Re s > 1} ∋ 2`. -/
 lemma exp_contLog_eqOn {C : ℝ} (hB : ∀ n, ‖∑ k ∈ Finset.range (n + 1), fChi k‖ ≤ C) :
@@ -118,17 +119,17 @@ lemma exp_contLog_eqOn {C : ℝ} (hB : ∀ n, ‖∑ k ∈ Finset.range (n + 1),
   exact (hf.analyticOnNhd hΩ).eqOn_of_preconnected_of_eventuallyEq
     (hg.analyticOnNhd hΩ) hpre h₂Ω hev
 
-/-! ## D4: the endgame at `1/2` (single-point form) -/
+/-! ## The endgame at `1/2` (single-point form) -/
 
 /-- **Main analytic theorem**: the mod-4 prime race is never linear — there are no
 constants `c`, `C` with `|S(N) - c·π(N)| ≤ C` for all `N`, where `S = raceSum` and
 `π = Nat.primeCounting` (# primes `≤ N`).
 
-Case `c ≠ 0` is `c_eq_zero_of_raceSum_linear`; case `c = 0` is D1–D4: the continued
-logarithm `contLog` satisfies `exp ∘ contLog = L(χ, ·)` on `Ω = {Re s > 1/2}` (D3), but
-`Re (contLog σ) ≥ layerBReal σ - C - C_T → ∞` as `σ ↓ 1/2` (R1/D0a), contradicting the
-continuity of the entire `L(χ, ·)` at `1/2` — evaluated at a single point `σ*`, with no
-filters (D4). -/
+Case `c ≠ 0` is `c_eq_zero_of_raceSum_linear`; case `c = 0` runs the Step D endgame: the
+continued logarithm `contLog` satisfies `exp ∘ contLog = L(χ, ·)` on `Ω = {Re s > 1/2}`
+by the identity theorem, but `Re (contLog σ) ≥ layerBReal σ - C - C_T → ∞` as `σ ↓ 1/2`
+by divergence transfer, contradicting the continuity of the entire `L(χ, ·)` at `1/2` —
+evaluated at a single point `σ*`, with no filters. -/
 theorem raceSum_not_linear :
     ¬ ∃ (c C : ℝ), ∀ N : ℕ, |(raceSum N : ℝ) - c * (Nat.primeCounting N : ℝ)| ≤ C := by
   rintro ⟨c, C, hC⟩
@@ -136,10 +137,10 @@ theorem raceSum_not_linear :
   have hc : c = 0 := c_eq_zero_of_raceSum_linear hC
   subst hc
   have hS : ∀ N : ℕ, |(raceSum N : ℝ)| ≤ C := fun N ↦ by simpa using hC N
-  -- (D1) bounded partial sums, and the half-plane identity (D2, D3).
+  -- Bounded partial sums, and the half-plane identity.
   have hB : ∀ n, ‖∑ k ∈ Finset.range (n + 1), fChi k‖ ≤ C := norm_sum_range_fChi_le hS
   have hEq := exp_contLog_eqOn hB
-  -- (D4) `L(χ, ·)` is entire, hence continuous at `1/2`: a bound `M₀` on a `δ₀`-ball.
+  -- `L(χ, ·)` is entire, hence continuous at `1/2`: a bound `M₀` on a `δ₀`-ball.
   obtain ⟨M₀, hM₀pos, δ₀, hδ₀pos, hball⟩ :
       ∃ M₀ : ℝ, 0 < M₀ ∧ ∃ δ₀ : ℝ, 0 < δ₀ ∧ ∀ s : ℂ, ‖s - ((1 / 2 : ℝ) : ℂ)‖ < δ₀ →
         ‖DirichletCharacter.LFunction χ s‖ < M₀ := by
@@ -155,7 +156,7 @@ theorem raceSum_not_linear :
     have hn := norm_sub_norm_le (DirichletCharacter.LFunction χ s)
       (DirichletCharacter.LFunction χ ((1 / 2 : ℝ) : ℂ))
     linarith
-  -- R1 instance (ii): a single point `σ ∈ (1/2, 1/2 + δ₀)` where `layerBReal` is huge.
+  -- Divergence transfer: a single point `σ ∈ (1/2, 1/2 + δ₀)` where `layerBReal` is huge.
   obtain ⟨σ, hσlo, hσhi, hσB⟩ :=
     exists_layerBReal_gt (Real.log M₀ + C + C_T) hδ₀pos
   -- `s* := σ` lies in `Ω`; evaluate the identity there.
@@ -171,7 +172,7 @@ theorem raceSum_not_linear :
   have hre : (contLog ((σ : ℝ) : ℂ)).re =
       (bpSeries fChi ((σ : ℝ) : ℂ)).re + layerBReal σ + layerTReal σ := by
     simp only [contLog, Complex.add_re, layerB_re, layerT_re]
-  -- Lower bounds: `Re (bpSeries fChi σ) ≥ -C` (D1 bound) and `layerTReal σ ≥ -C_T`.
+  -- Lower bounds: `Re (bpSeries fChi σ) ≥ -C` and `layerTReal σ ≥ -C_T`.
   have hσ0 : (0 : ℝ) ≤ σ := by linarith
   have hbp : ‖bpSeries fChi ((σ : ℝ) : ℂ)‖ ≤ C :=
     norm_bpSeries_le_const (n₀ := 2) hB one_le_two sum_range_fChi_vanish hσ0

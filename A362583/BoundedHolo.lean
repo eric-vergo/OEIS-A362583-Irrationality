@@ -27,7 +27,7 @@ the Dirichlet series.  On the real axis the increments `n^(-σ) - (n+1)^(-σ)` a
 and telescope, giving the uniform bound `‖bpSeries f σ‖ ≤ C * n₀ ^ (-σ)` when the first `n₀`
 partial sums vanish (`norm_bpSeries_le`).
 
-This is the analytic-continuation object (D1) of the proof, stated for an arbitrary
+This is the analytic-continuation object of the proof, stated for an arbitrary
 `f : ℕ → ℂ`; only the increment bound (absent from Mathlib) requires analysis, via the
 fundamental theorem of calculus.
 
@@ -135,7 +135,7 @@ If the partial sums `∑ k ∈ Finset.range (n + 1), f k = ∑_{k ≤ n} f k` ar
 series converges and is holomorphic on `{s | 0 < s.re}` (`differentiableOn_bpSeries`) and it
 agrees with the Dirichlet series `∑' n, f n * (n : ℂ) ^ (-s)` for `1 < s.re`
 (`tsum_mul_cpow_neg_eq_bpSeries`): it is the analytic continuation of that Dirichlet series
-to the right half-plane.  This is the analytic-continuation object `Ã` (D1). -/
+to the right half-plane.  This is the analytic-continuation object `Ã` of the proof. -/
 noncomputable def bpSeries (f : ℕ → ℂ) (s : ℂ) : ℂ :=
   ∑' n : ℕ, (∑ k ∈ Finset.range (n + 1), f k) * ((n : ℂ) ^ (-s) - ((n : ℂ) + 1) ^ (-s))
 
@@ -243,7 +243,7 @@ private lemma differentiableOn_bpSeries_box
         _ = C * R * (n : ℝ) ^ (-δ - 1) := (mul_assoc _ _ _).symm
   exact Complex.differentiableOn_tsum_of_summable_norm hu hFdiff hVopen hFle
 
-/-- **Bounded partial sums give a holomorphic by-parts series** (D1): if
+/-- **Bounded partial sums give a holomorphic by-parts series**: if
 `‖∑ k ∈ Finset.range (n + 1), f k‖ ≤ C` for all `n`, then `bpSeries f` is holomorphic on the
 open right half-plane `{s | 0 < s.re}`.
 
@@ -283,7 +283,7 @@ private lemma norm_cpow_neg_sub_add_one_eq {σ : ℝ} (hσ : 0 ≤ σ) {n : ℕ}
   rw [e1, e2, ← Complex.ofReal_sub, Complex.norm_real, Real.norm_eq_abs]
   exact abs_of_nonneg (Real.natCast_rpow_neg_sub_add_one_nonneg hσ hn1)
 
-/-- **Real-segment bound** (D1, real-axis telescoping): if the partial sums of `f`
+/-- **Real-segment bound** (real-axis telescoping): if the partial sums of `f`
 are bounded by `C` and vanish for `n < n₀` (with `1 ≤ n₀`), then for real `σ ≥ 0`
 
 `‖bpSeries f σ‖ ≤ C * (n₀ : ℝ) ^ (-σ)`.
@@ -403,7 +403,7 @@ private lemma sum_range_mul_cpow_eq {s : ℂ} (N : ℕ) :
   push_cast
   rw [← neg_mul, neg_sub, mul_comm]
 
-/-- **Identification with the Dirichlet series** (D1): if the partial sums of `f`
+/-- **Identification with the Dirichlet series**: if the partial sums of `f`
 are bounded by `C`, then for `1 < s.re`
 
 `∑' n, f n * (n : ℂ) ^ (-s) = bpSeries f s`.
