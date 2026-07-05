@@ -3,12 +3,12 @@ Copyright (c) 2026 Eric Vergo. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Eric Vergo, Claude Fable 5 (Claude Code)
 -/
+import A362583.CaseNonzero
 import Mathlib.Analysis.Analytic.Uniqueness
 import Mathlib.Analysis.Complex.CauchyIntegral
 import Mathlib.Analysis.Complex.Convex
 import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.Tactic.IntervalCases
-import A362583.CaseNonzero
 
 /-!
 # Case `c = 0` endgame: the race sum is never linear (Step D)

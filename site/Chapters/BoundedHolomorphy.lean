@@ -56,7 +56,8 @@ The estimate is the only genuinely analytic ingredient of the chapter, and it is
 application of the fundamental theorem of calculus. Since $`t \mapsto t^{r}` has derivative
 $`r\, t^{r-1}`,
 $$`b^{r} - a^{r} \;=\; \int_a^b r\, t^{r-1}\, \mathrm{d}t.`
-On $`[a, b]` the integrand has norm $`\|r\|\, t^{\mathrm{Re}\,r - 1} \le \|r\|\, a^{\mathrm{Re}\,r - 1}`,
+On $`[a, b]` the integrand has norm
+$`\|r\|\, t^{\mathrm{Re}\,r - 1} \le \|r\|\, a^{\mathrm{Re}\,r - 1}`,
 because $`t \mapsto t^{\mathrm{Re}\,r - 1}` is antitone when $`\mathrm{Re}\,r - 1 \le 0`;
 bounding the integral of this constant majorant over an interval of length $`b - a` gives the
 estimate. Everything downstream is then index bookkeeping, telescoping, and a Weierstrass
@@ -145,7 +146,8 @@ $`\mathrm{Re}\, s > 1` (domination by $`2C\, n^{-\mathrm{Re}\,s}`). Finite Abel 
 $$`\sum_{i \le N} f(i)\, i^{-s} \;=\; \Bigl(\sum_{i \le N} f(i)\Bigr) N^{-s}
    \;+\; \sum_{i < N} \Bigl(\sum_{k \le i} f(k)\Bigr)\bigl(i^{-s} - (i+1)^{-s}\bigr).`
 Let $`N \to \infty`. The left side tends to $`\sum_n f(n)\, n^{-s}`; the boundary term tends to
-$`0`, since $`\bigl\|\bigl(\sum_{k \le N} f(k)\bigr) N^{-s}\bigr\| \le C\, N^{-\mathrm{Re}\,s} \to 0`;
+$`0`, since
+$`\bigl\|\bigl(\sum_{k \le N} f(k)\bigr) N^{-s}\bigr\| \le C\, N^{-\mathrm{Re}\,s} \to 0`;
 and the by-parts partial sum tends to $`\tilde A_f(s)`. Uniqueness of limits yields the
 identity. No hypothesis on $`f(0)` is needed: the $`n = 0` Dirichlet term vanishes because
 $`0^{-s} = 0` for $`s \ne 0`. $`\blacksquare`

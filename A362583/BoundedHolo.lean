@@ -75,12 +75,12 @@ theorem norm_ofReal_cpow_sub_ofReal_cpow_le {r : ℂ} (hr : r.re ≤ 1) {a b : �
   rcases eq_or_ne r 0 with rfl | hr0
   · simp
   have hb : 0 < b := ha.trans_le hab
-  have hderiv : ∀ x ∈ Set.uIcc a b, HasDerivAt (fun y : ℝ => (y : ℂ) ^ r)
+  have hderiv : ∀ x ∈ Set.uIcc a b, HasDerivAt (fun y : ℝ ↦ (y : ℂ) ^ r)
       (r * (x : ℂ) ^ (r - 1)) x := by
     intro x hx
     rw [Set.uIcc_of_le hab] at hx
     exact hasDerivAt_ofReal_cpow_const (ha.trans_le hx.1).ne' hr0
-  have hint : IntervalIntegrable (fun x : ℝ => r * (x : ℂ) ^ (r - 1))
+  have hint : IntervalIntegrable (fun x : ℝ ↦ r * (x : ℂ) ^ (r - 1))
       MeasureTheory.volume a b :=
     (intervalIntegral.intervalIntegrable_cpow
       (Or.inr (Set.notMem_uIcc_of_lt ha hb))).const_mul r
@@ -146,11 +146,11 @@ converges absolutely for `0 < s.re`: its terms are `O (n ^ (-s.re - 1))` by the 
 bound `Complex.norm_natCast_cpow_sub_add_one_cpow_le`. -/
 theorem summable_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f k‖ ≤ C) {s : ℂ}
     (hs : 0 < s.re) :
-    Summable fun n : ℕ =>
+    Summable fun n : ℕ ↦
       (∑ k ∈ Finset.range (n + 1), f k) * ((n : ℂ) ^ (-s) - ((n : ℂ) + 1) ^ (-s)) := by
   have hC0 : 0 ≤ C := (norm_nonneg _).trans (hC 0)
   refine Summable.of_norm_bounded_eventually_nat
-    (g := fun n : ℕ => C * ‖s‖ * (n : ℝ) ^ (-s.re - 1))
+    (g := fun n : ℕ ↦ C * ‖s‖ * (n : ℝ) ^ (-s.re - 1))
     ((Real.summable_nat_rpow.2 (by linarith)).mul_left _) ?_
   filter_upwards [eventually_ge_atTop 1] with n hn
   rw [norm_mul]
@@ -164,7 +164,7 @@ theorem summable_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f k‖
 theorem hasSum_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f k‖ ≤ C) {s : ℂ}
     (hs : 0 < s.re) :
     HasSum
-      (fun n : ℕ =>
+      (fun n : ℕ ↦
         (∑ k ∈ Finset.range (n + 1), f k) * ((n : ℂ) ^ (-s) - ((n : ℂ) + 1) ^ (-s)))
       (bpSeries f s) :=
   (summable_bpSeries hC hs).hasSum
@@ -182,16 +182,16 @@ private lemma differentiableOn_bpSeries_box
   have hVopen : IsOpen ({s : ℂ | δ < s.re} ∩ Metric.ball 0 R) :=
     (isOpen_lt continuous_const Complex.continuous_re).inter Metric.isOpen_ball
   -- summable uniform bound on the box
-  have hu : Summable (fun n : ℕ => if n = 0 then C else C * R * (n : ℝ) ^ (-δ - 1)) := by
+  have hu : Summable (fun n : ℕ ↦ if n = 0 then C else C * R * (n : ℝ) ^ (-δ - 1)) := by
     refine Summable.of_norm_bounded_eventually_nat
-      (g := fun n : ℕ => C * R * (n : ℝ) ^ (-δ - 1))
+      (g := fun n : ℕ ↦ C * R * (n : ℝ) ^ (-δ - 1))
       ((Real.summable_nat_rpow.2 (by linarith)).mul_left _) ?_
     filter_upwards [eventually_ge_atTop 1] with n hn
     rw [if_neg (Nat.one_le_iff_ne_zero.mp hn), Real.norm_eq_abs, abs_of_nonneg
       (mul_nonneg (mul_nonneg hC0 hR0) (Real.rpow_nonneg (Nat.cast_nonneg n) _))]
   -- each term is holomorphic on the box
   have hFdiff : ∀ n : ℕ, DifferentiableOn ℂ
-      (fun s : ℂ =>
+      (fun s : ℂ ↦
         (∑ k ∈ Finset.range (n + 1), f k) * ((n : ℂ) ^ (-s) - ((n : ℂ) + 1) ^ (-s)))
       ({s : ℂ | δ < s.re} ∩ Metric.ball 0 R) := by
     intro n
@@ -297,7 +297,7 @@ theorem norm_bpSeries_le (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f k‖ 
     (hσ : 0 ≤ σ) : ‖bpSeries f σ‖ ≤ C * (n₀ : ℝ) ^ (-σ) := by
   have hC0 : 0 ≤ C := (norm_nonneg _).trans (hC 0)
   -- telescoping majorant
-  set G : ℕ → ℝ := fun n => ((max n n₀ : ℕ) : ℝ) ^ (-σ) with hG
+  set G : ℕ → ℝ := fun n ↦ ((max n n₀ : ℕ) : ℝ) ^ (-σ) with hG
   have hterm : ∀ n : ℕ,
       ‖(∑ k ∈ Finset.range (n + 1), f k) *
         ((n : ℂ) ^ (-(σ : ℂ)) - ((n : ℂ) + 1) ^ (-(σ : ℂ)))‖ ≤ C * (G n - G (n + 1)) := by
@@ -334,21 +334,21 @@ theorem norm_bpSeries_le (hC : ∀ n, ‖∑ k ∈ Finset.range (n + 1), f k‖ 
           ‖(∑ k ∈ Finset.range (n + 1), f k) *
             ((n : ℂ) ^ (-(σ : ℂ)) - ((n : ℂ) + 1) ^ (-(σ : ℂ)))‖
         ≤ ∑ n ∈ Finset.range N, C * (G n - G (n + 1)) :=
-          Finset.sum_le_sum fun n _ => hterm n
+          Finset.sum_le_sum fun n _ ↦ hterm n
       _ = C * (G 0 - G N) := by rw [← Finset.mul_sum, Finset.sum_range_sub' G N]
       _ ≤ C * (n₀ : ℝ) ^ (-σ) := by
           rw [← hG0]
           exact mul_le_mul_of_nonneg_left (sub_le_self _ hGN) hC0
-  have hnormsum : Summable fun n : ℕ =>
+  have hnormsum : Summable fun n : ℕ ↦
       ‖(∑ k ∈ Finset.range (n + 1), f k) *
         ((n : ℂ) ^ (-(σ : ℂ)) - ((n : ℂ) + 1) ^ (-(σ : ℂ)))‖ :=
-    summable_of_sum_range_le (fun n => norm_nonneg _) hpartial
+    summable_of_sum_range_le (fun n ↦ norm_nonneg _) hpartial
   calc ‖bpSeries f σ‖
       ≤ ∑' n : ℕ, ‖(∑ k ∈ Finset.range (n + 1), f k) *
           ((n : ℂ) ^ (-(σ : ℂ)) - ((n : ℂ) + 1) ^ (-(σ : ℂ)))‖ :=
         norm_tsum_le_tsum_norm hnormsum
     _ ≤ C * (n₀ : ℝ) ^ (-σ) :=
-        Real.tsum_le_of_sum_range_le (fun n => norm_nonneg _) hpartial
+        Real.tsum_le_of_sum_range_le (fun n ↦ norm_nonneg _) hpartial
 
 /-- Convenience form of `norm_bpSeries_le`: under the same hypotheses,
 `‖bpSeries f σ‖ ≤ C` (since `(n₀ : ℝ) ^ (-σ) ≤ 1`). -/
@@ -392,14 +392,14 @@ private lemma sum_range_mul_cpow_eq {s : ℂ} (N : ℕ) :
         + ∑ i ∈ Finset.range N,
             (∑ k ∈ Finset.range (i + 1), f k) *
               ((i : ℂ) ^ (-s) - ((i : ℂ) + 1) ^ (-s)) := by
-  have h := Finset.sum_range_by_parts (fun i : ℕ => (i : ℂ) ^ (-s)) f (N + 1)
+  have h := Finset.sum_range_by_parts (fun i : ℕ ↦ (i : ℂ) ^ (-s)) f (N + 1)
   simp only [smul_eq_mul, Nat.add_sub_cancel] at h
   have step1 : ∑ i ∈ Finset.range (N + 1), f i * (i : ℂ) ^ (-s)
       = ∑ i ∈ Finset.range (N + 1), (i : ℂ) ^ (-s) * f i :=
-    Finset.sum_congr rfl fun i _ => mul_comm _ _
+    Finset.sum_congr rfl fun i _ ↦ mul_comm _ _
   rw [step1, h, sub_eq_add_neg, ← Finset.sum_neg_distrib, mul_comm ((N : ℂ) ^ (-s))]
   congr 1
-  refine Finset.sum_congr rfl fun i _ => ?_
+  refine Finset.sum_congr rfl fun i _ ↦ ?_
   push_cast
   rw [← neg_mul, neg_sub, mul_comm]
 
@@ -420,20 +420,20 @@ theorem tsum_mul_cpow_neg_eq_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n 
   -- coefficient bound from bounded partial sums
   have hcoef := norm_le_two_mul_of_partialSum_le hC
   -- the Dirichlet series converges for `1 < s.re`
-  have hD : Summable fun n : ℕ => f n * (n : ℂ) ^ (-s) := by
+  have hD : Summable fun n : ℕ ↦ f n * (n : ℂ) ^ (-s) := by
     refine Summable.of_norm_bounded_eventually_nat
-      (g := fun n : ℕ => 2 * C * (n : ℝ) ^ (-s.re))
+      (g := fun n : ℕ ↦ 2 * C * (n : ℝ) ^ (-s.re))
       ((Real.summable_nat_rpow.2 (by linarith)).mul_left _) ?_
     filter_upwards [eventually_ge_atTop 1] with n hn
     rw [norm_mul, Complex.norm_natCast_cpow_of_pos hn, Complex.neg_re]
     exact mul_le_mul_of_nonneg_right (hcoef n) (Real.rpow_nonneg (Nat.cast_nonneg n) _)
   -- limits of both sides of the finite identity
-  have h1 : Tendsto (fun N : ℕ => ∑ i ∈ Finset.range (N + 1), f i * (i : ℂ) ^ (-s)) atTop
+  have h1 : Tendsto (fun N : ℕ ↦ ∑ i ∈ Finset.range (N + 1), f i * (i : ℂ) ^ (-s)) atTop
       (𝓝 (∑' n : ℕ, f n * (n : ℂ) ^ (-s))) :=
     hD.hasSum.tendsto_sum_nat.comp (tendsto_add_atTop_nat 1)
-  have h2 : Tendsto (fun N : ℕ => (∑ i ∈ Finset.range (N + 1), f i) * (N : ℂ) ^ (-s)) atTop
+  have h2 : Tendsto (fun N : ℕ ↦ (∑ i ∈ Finset.range (N + 1), f i) * (N : ℂ) ^ (-s)) atTop
       (𝓝 0) := by
-    refine squeeze_zero_norm (a := fun N : ℕ => C * (N : ℝ) ^ (-s.re)) (fun N => ?_) ?_
+    refine squeeze_zero_norm (a := fun N : ℕ ↦ C * (N : ℝ) ^ (-s.re)) (fun N ↦ ?_) ?_
     · rw [norm_mul,
         Complex.norm_natCast_cpow_of_re_ne_zero N
           (by rw [Complex.neg_re]; exact neg_ne_zero.2 hs0.ne'),
@@ -443,11 +443,11 @@ theorem tsum_mul_cpow_neg_eq_bpSeries (hC : ∀ n, ‖∑ k ∈ Finset.range (n 
         (tendsto_natCast_atTop_atTop (R := ℝ))).const_mul C
       rw [mul_zero] at h
       exact h
-  have h3 : Tendsto (fun N : ℕ => ∑ i ∈ Finset.range N,
+  have h3 : Tendsto (fun N : ℕ ↦ ∑ i ∈ Finset.range N,
       (∑ k ∈ Finset.range (i + 1), f k) * ((i : ℂ) ^ (-s) - ((i : ℂ) + 1) ^ (-s))) atTop
       (𝓝 (bpSeries f s)) :=
     (hasSum_bpSeries hC hs0).tendsto_sum_nat
   have h4 := h2.add h3
   rw [zero_add] at h4
-  exact tendsto_nhds_unique h1 (h4.congr fun N => (sum_range_mul_cpow_eq N).symm)
+  exact tendsto_nhds_unique h1 (h4.congr fun N ↦ (sum_range_mul_cpow_eq N).symm)
 

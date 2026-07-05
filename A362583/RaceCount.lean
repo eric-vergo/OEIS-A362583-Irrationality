@@ -3,9 +3,9 @@ Copyright (c) 2026 Eric Vergo. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Eric Vergo, Claude Fable 5 (Claude Code)
 -/
-import Mathlib.NumberTheory.PrimeCounting
-import Mathlib.Data.Nat.Prime.Nth
 import A362583.Defs
+import Mathlib.Data.Nat.Prime.Nth
+import Mathlib.NumberTheory.PrimeCounting
 
 /-!
 # A362583: Step C — eventually periodic bits ⇒ linear race
@@ -140,7 +140,7 @@ private lemma raceSum_bridge (N : ℕ) :
 private lemma abs_sum_term_le (a n : ℕ) : |∑ k ∈ Finset.range n, term (a + k)| ≤ (n : ℤ) :=
   calc |∑ k ∈ Finset.range n, term (a + k)|
       ≤ ∑ k ∈ Finset.range n, |term (a + k)| := Finset.abs_sum_le_sum_abs _ _
-    _ ≤ ∑ _k ∈ Finset.range n, 1 := Finset.sum_le_sum fun k _ => abs_term_le_one _
+    _ ≤ ∑ _k ∈ Finset.range n, 1 := Finset.sum_le_sum fun k _ ↦ abs_term_le_one _
     _ = (n : ℤ) := by simp
 
 /-- Shifting a full window by whole periods does not change its sum (C2). -/
@@ -150,7 +150,7 @@ private lemma sum_term_window {N₀ P : ℕ} (hper : ∀ k ≥ N₀, bit (k + P)
   | zero => simp
   | succ q ih =>
       rw [← ih]
-      refine Finset.sum_congr rfl fun k _ => ?_
+      refine Finset.sum_congr rfl fun k _ ↦ ?_
       have harg : N₀ + (q + 1) * P + k = (N₀ + q * P + k) + P := by ring
       rw [harg]
       unfold term
@@ -270,7 +270,7 @@ private lemma exists_c_bound {N₀ P : ℕ} (hP : 0 < P)
   have hcP : c * (P : ℝ) = ((∑ k ∈ Finset.range P, term (N₀ + k) : ℤ) : ℝ) := by
     rw [hc_def]
     exact div_mul_cancel₀ _ hP0
-  refine ⟨c, hc1, fun m => ?_⟩
+  refine ⟨c, hc1, fun m ↦ ?_⟩
   rcases lt_or_ge m N₀ with hm | hm
   · exact (abs_termSum_sub_short hc1 hm.le).trans (le_add_of_nonneg_right (by positivity))
   · exact abs_termSum_sub_long hP hper hc1 hcP hm
@@ -287,7 +287,7 @@ lemma raceSum_linear_of_eventuallyPeriodic :
     ∃ c C : ℝ, ∀ N : ℕ, |(raceSum N : ℝ) - c * (Nat.primeCounting N : ℝ)| ≤ C := by
   rintro ⟨N₀, P, hP, hper⟩
   obtain ⟨c, hc1, hc⟩ := exists_c_bound hP hper
-  refine ⟨c, 2 * (N₀ : ℝ) + 2 * (P : ℝ) + 1, fun N => ?_⟩
+  refine ⟨c, 2 * (N₀ : ℝ) + 2 * (P : ℝ) + 1, fun N ↦ ?_⟩
   rw [raceSum_bridge N]
   rcases Nat.eq_zero_or_pos (Nat.primeCounting N) with h0 | hpos
   · -- π(N) = 0 (N ∈ {0, 1}): both sides vanish

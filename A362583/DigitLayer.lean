@@ -4,11 +4,11 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Eric Vergo, Claude Fable 5 (Claude Code)
 -/
 import A362583.Defs
+import Mathlib.Algebra.Order.Floor.Ring
+import Mathlib.Data.Fintype.Pigeonhole
+import Mathlib.Data.Nat.Prime.Nth
 import Mathlib.NumberTheory.LSeries.PrimesInAP
 import Mathlib.NumberTheory.Real.Irrational
-import Mathlib.Data.Nat.Prime.Nth
-import Mathlib.Data.Fintype.Pigeonhole
-import Mathlib.Algebra.Order.Floor.Ring
 
 /-!
 # A362583: the digit layer (Step A and Step B)
@@ -62,7 +62,7 @@ private lemma infinite_oddPrime_index {S : Set ℕ} (hS : S.Infinite)
     refine oddPrime_count (hSp p hpS) ?_
     rintro rfl
     exact hS2 hpS
-  refine Set.infinite_of_injOn_mapsTo (f := fun p => Nat.count Nat.Prime p - 1) ?_ ?_ hS
+  refine Set.infinite_of_injOn_mapsTo (f := fun p ↦ Nat.count Nat.Prime p - 1) ?_ ?_ hS
   · intro p₁ h₁ p₂ h₂ heq
     have e₁ := key p₁ h₁
     have e₂ := key p₂ h₂
@@ -101,16 +101,16 @@ private lemma infinite_primes_one_mod_four : {p : ℕ | p.Prime ∧ p % 4 = 1}.I
 sequence contains infinitely many ones. -/
 lemma bits_infinite_ones : {k | bit k = 1}.Infinite := by
   have hidx := infinite_oddPrime_index infinite_primes_three_mod_four
-    (fun p hp => hp.1) (fun h => absurd h.2 (by decide))
-  refine hidx.mono fun k hk => ?_
+    (fun p hp ↦ hp.1) (fun h ↦ absurd h.2 (by decide))
+  refine hidx.mono fun k hk ↦ ?_
   exact bit_eq_one_iff.mpr hk.2
 
 /-- **Step A**: infinitely many primes are `≡ 1 (mod 4)`, so the bit
 sequence contains infinitely many zeros. -/
 lemma bits_infinite_zeros : {k | bit k = 0}.Infinite := by
   have hidx := infinite_oddPrime_index infinite_primes_one_mod_four
-    (fun p hp => hp.1) (fun h => absurd h.2 (by decide))
-  refine hidx.mono fun k hk => ?_
+    (fun p hp ↦ hp.1) (fun h ↦ absurd h.2 (by decide))
+  refine hidx.mono fun k hk ↦ ?_
   have h1 : oddPrime k % 4 = 1 := hk.2
   exact bit_eq_zero_iff.mpr (by omega)
 
@@ -138,7 +138,7 @@ private lemma bit_zero_or_one (k : ℕ) : bit k = 0 ∨ bit k = 1 := by
 
 /-- Tail terms are nonnegative. -/
 private lemma term_nonneg (k : ℕ) : ∀ j : ℕ, 0 ≤ (bit (k + j) : ℝ) / 2 ^ (j + 1) :=
-  fun j => by positivity
+  fun j ↦ by positivity
 
 /-- Tail terms are dominated by the geometric series (as in `Pins.lean`). -/
 private lemma term_le_geom (k : ℕ) :
@@ -149,7 +149,7 @@ private lemma term_le_geom (k : ℕ) :
   exact_mod_cast bit_le_one (k + j)
 
 /-- The comparison geometric series is summable. -/
-private lemma summable_geom : Summable (fun j : ℕ => ((1 : ℝ) / 2) ^ (j + 1)) :=
+private lemma summable_geom : Summable (fun j : ℕ ↦ ((1 : ℝ) / 2) ^ (j + 1)) :=
   (summable_nat_add_iff 1).mpr (summable_geometric_of_lt_one (by norm_num) (by norm_num))
 
 /-- The comparison geometric series sums to `1`. -/
@@ -159,7 +159,7 @@ private lemma tsum_geom : ∑' j : ℕ, ((1 : ℝ) / 2) ^ (j + 1) = 1 := by
   norm_num
 
 /-- Each tail is summable (comparison with the geometric series). -/
-private lemma summable_t (k : ℕ) : Summable (fun j : ℕ => (bit (k + j) : ℝ) / 2 ^ (j + 1)) :=
+private lemma summable_t (k : ℕ) : Summable (fun j : ℕ ↦ (bit (k + j) : ℝ) / 2 ^ (j + 1)) :=
   Summable.of_nonneg_of_le (term_nonneg k) (term_le_geom k) summable_geom
 
 /-- **(B1)**: `0 < t k`, from infinitely many later ones (Step A). -/
@@ -193,7 +193,7 @@ private lemma t_rec (k : ℕ) : t k = ((bit k : ℝ) + t (k + 1)) / 2 := by
     (summable_t k).tsum_eq_zero_add
   have h1 : ∑' j : ℕ, (bit (k + (j + 1)) : ℝ) / 2 ^ (j + 1 + 1)
       = ∑' j : ℕ, (bit (k + 1 + j) : ℝ) / 2 ^ (j + 1) / 2 :=
-    tsum_congr fun j => by
+    tsum_congr fun j ↦ by
       rw [show k + (j + 1) = k + 1 + j from by omega]
       ring
   have h2 : ∑' j : ℕ, (bit (k + 1 + j) : ℝ) / 2 ^ (j + 1) / 2 = t (k + 1) / 2 :=
@@ -247,7 +247,7 @@ is an integer and the tail lies in `[0,1)` (via `Int.fract_intCast_add`). -/
 private lemma t_eq_fract (k : ℕ) : t k = Int.fract ((2 : ℝ) ^ k * ϱ) := by
   induction k with
   | zero =>
-    have h0 : t 0 = ϱ := tsum_congr fun j => by rw [Nat.zero_add]
+    have h0 : t 0 = ϱ := tsum_congr fun j ↦ by rw [Nat.zero_add]
     rw [pow_zero, one_mul, ← h0, Int.fract_eq_self.mpr ⟨(t_pos 0).le, t_lt_one 0⟩]
   | succ k ih =>
     have hfl : (2 : ℝ) ^ k * ϱ = (⌊(2 : ℝ) ^ k * ϱ⌋ : ℝ) + t k := by
@@ -273,7 +273,7 @@ private lemma exists_t_collision (h : ¬ Irrational ϱ) : ∃ m n : ℕ, m < n �
     exact Int.fract_div_intCast_eq_div_intCast_mod
   haveI : NeZero q.den := ⟨q.den_pos.ne'⟩
   obtain ⟨k₁, k₂, hne, heq⟩ := Finite.exists_ne_map_eq_of_infinite
-    (fun k : ℕ => ((2 ^ k * q.num : ℤ) : ZMod q.den))
+    (fun k : ℕ ↦ ((2 ^ k * q.num : ℤ) : ZMod q.den))
   have hmod : 2 ^ k₁ * q.num % (q.den : ℤ) = 2 ^ k₂ * q.num % (q.den : ℤ) :=
     (ZMod.intCast_eq_intCast_iff' _ _ _).mp heq
   have hteq : t k₁ = t k₂ := by rw [key k₁, key k₂, hmod]
@@ -288,7 +288,7 @@ lemma eventuallyPeriodic_of_not_irrational :
     ¬ Irrational ϱ → ∃ N P, 0 < P ∧ ∀ k ≥ N, bit (k + P) = bit k := by
   intro h
   obtain ⟨m, n, hmn, ht⟩ := exists_t_collision h
-  refine ⟨m, n - m, by omega, fun k hk => ?_⟩
+  refine ⟨m, n - m, by omega, fun k hk ↦ ?_⟩
   obtain ⟨i, rfl⟩ : ∃ i, k = m + i := ⟨k - m, by omega⟩
   have hbi : bit (m + i) = bit (n + i) := bit_eq_of_t_eq (t_eq_add ht i)
   rw [show m + i + (n - m) = n + i from by omega, ← hbi]

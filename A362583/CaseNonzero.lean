@@ -3,10 +3,10 @@ Copyright (c) 2026 Eric Vergo. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Eric Vergo, Claude Fable 5 (Claude Code)
 -/
-import Mathlib.NumberTheory.LSeries.Nonvanishing
-import Mathlib.NumberTheory.PrimeCounting
 import A362583.BoundedHolo
 import A362583.EulerLog
+import Mathlib.NumberTheory.LSeries.Nonvanishing
+import Mathlib.NumberTheory.PrimeCounting
 
 /-!
 # Case `c ≠ 0` of Step D

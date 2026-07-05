@@ -90,9 +90,9 @@ example : (1:ℝ)/2 < ϱ ∧ ϱ < 1 := by
     rw [div_pow, one_pow]
     gcongr
     exact_mod_cast hb k
-  have hg : Summable (fun k : ℕ => ((1:ℝ)/2) ^ (k + 1)) :=
+  have hg : Summable (fun k : ℕ ↦ ((1:ℝ)/2) ^ (k + 1)) :=
     (summable_nat_add_iff 1).mpr (summable_geometric_of_lt_one (by norm_num) (by norm_num))
-  have hf : Summable (fun k : ℕ => (bit k : ℝ) / 2 ^ (k + 1)) :=
+  have hf : Summable (fun k : ℕ ↦ (bit k : ℝ) / 2 ^ (k + 1)) :=
     Summable.of_nonneg_of_le hnonneg hle hg
   have hgsum : ∑' k : ℕ, ((1:ℝ)/2) ^ (k + 1) = 1 := by
     simp only [pow_succ]
@@ -107,7 +107,7 @@ example : (1:ℝ)/2 < ϱ ∧ ϱ < 1 := by
     calc (1:ℝ)/2 < 5/8 := by norm_num
       _ = ∑ k ∈ Finset.range 3, (bit k : ℝ) / 2 ^ (k + 1) := hpart.symm
       _ ≤ ∑' k : ℕ, (bit k : ℝ) / 2 ^ (k + 1) :=
-          hf.sum_le_tsum (Finset.range 3) fun i _ => hnonneg i
+          hf.sum_le_tsum (Finset.range 3) fun i _ ↦ hnonneg i
       _ = ϱ := hx.symm
   · -- strict at k = 1: b₁ = 0, so the k = 1 term is < the geometric term
     have h1 : (bit 1 : ℝ) / 2 ^ (1 + 1) < ((1:ℝ)/2) ^ (1 + 1) := by

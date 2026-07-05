@@ -70,8 +70,8 @@ identity theorem for holomorphic functions. No prime number theorem, no PNT in a
 progressions, no zero-free regions, no functional equation.
 
 A statement-hygiene principle governs the Lean development: the four definitions, the
-irrationality theorem, and the analytic core it rests on mention only elementary objects — the $`k`-th prime, remainder arithmetic,
-finite sums, and one geometric-type series — so a reader can audit *what was proved* without
-trusting any of the analytic machinery, which is confined to proofs. The chapters that follow
-narrate the full argument — Steps A through D and their supporting lemmas — in the same order
-the Lean sources prove it.
+irrationality theorem, and the analytic core it rests on mention only elementary objects —
+the $`k`-th prime, remainder arithmetic, finite sums, and one geometric-type series — so a
+reader can audit *what was proved* without trusting any of the analytic machinery, which is
+confined to proofs. The chapters that follow narrate the full argument — Steps A through D
+and their supporting lemmas — in the same order the Lean sources prove it.
