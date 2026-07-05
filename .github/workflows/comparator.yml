@@ -27,6 +27,8 @@ on:
     paths-ignore:
       # Never re-trigger on the tool's own status-flip commit.
       - 'comparator-status.json'
+      # Site-only edits don't affect the formalization/comparator.
+      - 'site/**'
 
 # Elevate the default (read-only) GITHUB_TOKEN so the verified status can be
 # committed back to main. Allowed for a same-repo (non-fork) workflow.
