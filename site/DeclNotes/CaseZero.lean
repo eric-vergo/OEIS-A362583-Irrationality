@@ -35,6 +35,10 @@ set_option pp.rawOnError true
 
 #doc (Manual) "Declaration notes: CaseZero" =>
 
+%%%
+number := false
+%%%
+
 :::declNotes "A362583.sum_range_fChi_vanish"
 *Vanishing below the threshold.* For every natural number $`n < 2` — the two cases
 $`n = 0` and $`n = 1` — the partial sum $`\sum_{k=0}^{n} f_\chi(k)` equals $`0`; both

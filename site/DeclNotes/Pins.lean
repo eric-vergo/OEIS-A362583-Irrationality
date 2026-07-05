@@ -3,8 +3,8 @@ Copyright (c) 2026 Eric Vergo. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Eric Vergo, Claude Fable 5 (Claude Code)
 -/
-/-!
-# Declaration notes: Pins
+/-
+Declaration notes: Pins
 
 Authored sidecar prose (`:::declNotes`) for the sanity-pin helpers of
 `A362583/Pins.lean`: the `private` lemmas fixing the small values of `oddPrime`
@@ -29,6 +29,10 @@ open Informal
 set_option doc.verso true
 
 #doc (Manual) "Declaration notes: Pins" =>
+
+%%%
+number := false
+%%%
 
 :::declNotes "A362583.oddPrime_eq_of_count"
 The reusable pin helper behind every `oddPrime` value below: to certify $`p_k = m`

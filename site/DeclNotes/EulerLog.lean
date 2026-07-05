@@ -30,6 +30,10 @@ set_option pp.rawOnError true
 
 #doc (Manual) "Declaration notes: EulerLog" =>
 
+%%%
+number := false
+%%%
+
 :::declNotes "A362583.summable_layerA_term"
 *Summability of the layer-$`A` integrand.* For $`s` with $`\mathrm{Re}\, s > 1`, the
 prime-indexed family $`p \mapsto \chi(p)\, p^{-s}` (indexed over the subtype of primes) is

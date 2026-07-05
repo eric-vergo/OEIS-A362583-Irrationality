@@ -31,6 +31,10 @@ set_option pp.rawOnError true
 
 #doc (Manual) "Declaration notes: CaseNonzero" =>
 
+%%%
+number := false
+%%%
+
 :::declNotes "A362583.fSub"
 The *shifted coefficient* is the complex number $`f_c(n) = f_\chi(n) - c\,\mathbf{1}_{\mathrm{prime}}(n)`: the race-kernel coefficient $`f_\chi(n)` minus $`c` times the prime indicator $`\mathbf{1}_{\mathrm{prime}}(n)` (which is $`1` when $`n` is prime and $`0` otherwise). Its partial sums recover the race deviation $`S(n) - c\,\pi(n)`, and viewed as Dirichlet coefficients they generate $`A(s) - c\,P(s)`. All of Step 1 is organized around this single family.
 :::

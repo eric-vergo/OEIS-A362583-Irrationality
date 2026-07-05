@@ -30,6 +30,10 @@ set_option pp.rawOnError true
 
 #doc (Manual) "Declaration notes: RaceCount" =>
 
+%%%
+number := false
+%%%
+
 :::declNotes "A362583.chi"
 `chi p` is the integer that is $`+1` when $`p \equiv 1 \pmod 4`, $`-1` when
 $`p \equiv 3 \pmod 4`, and $`0` in every other case — in particular at $`p = 2` and at

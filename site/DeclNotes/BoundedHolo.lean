@@ -32,6 +32,10 @@ set_option pp.rawOnError true
 
 #doc (Manual) "Declaration notes: BoundedHolo" =>
 
+%%%
+number := false
+%%%
+
 :::declNotes "Complex.norm_ofReal_cpow_sub_ofReal_cpow_le"
 For a complex exponent $`r` with $`\mathrm{Re}\, r \le 1` and reals $`0 < a \le b`, the complex
 powers of the real casts satisfy $`\| b^{r} - a^{r} \| \le \| r \|\,(b - a)\, a^{\mathrm{Re}\, r - 1}`,

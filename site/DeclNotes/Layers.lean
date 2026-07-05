@@ -30,6 +30,10 @@ set_option pp.rawOnError true
 
 #doc (Manual) "Declaration notes: Layers" =>
 
+%%%
+number := false
+%%%
+
 :::declNotes "A362583.raceSum_eq_sum_raceKernel"
 Rewrites the Chebyshev race sum as a sum of the named integer kernel over primes:
 $`S(N) = \sum_{p \le N} \kappa(p)`, an equality that holds definitionally. It is the

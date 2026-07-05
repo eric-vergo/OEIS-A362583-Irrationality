@@ -30,6 +30,10 @@ set_option pp.rawOnError true
 
 #doc (Manual) "Declaration notes: DigitLayer" =>
 
+%%%
+number := false
+%%%
+
 :::declNotes "A362583.bit_eq_one_iff"
 $`b_k = 1` if and only if the $`k`-th odd prime satisfies $`p_k \equiv 3 \pmod 4`; this is
 just the definitional unfolding of $`b_k`. It is the bookkeeping bridge that lets Step A turn
