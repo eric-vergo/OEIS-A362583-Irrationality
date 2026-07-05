@@ -16,13 +16,13 @@ rev = "v4.31.0"
 
 [[lean_lib]]
 name = "A362583"
-# The project is CC0 (public domain); headers use CC0 wording, which the
-# Mathlib header linter (expecting its Apache-2.0 phrasing) would reject.
+# Apache-2.0 headers with a project-specific author line; the strict Mathlib
+# header linter would still reject the exact format, so skip it.
 leanOptions = { weak.linter.style.header = false }
 
 [[lean_lib]]
 name = "Challenge"
 # Comparator challenge (see comparator.json): a self-contained restatement of
 # the locked claims with `sorry` proofs — sorry *warnings* here are expected
-# and by design.  CC0 headers, so skip the Mathlib header linter.
+# and by design.  Skip the strict Mathlib header linter.
 leanOptions = { weak.linter.style.header = false }

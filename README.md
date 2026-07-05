@@ -47,7 +47,7 @@ oscillation results.
 | `comparator.json`, `comparator-status.json` | Comparator configuration and status. |
 | `formalization.yaml` | Project metadata in the [formalization.yaml](https://github.com/mathlib-initiative/formalization.yaml) standard. |
 | `lakefile.toml`, `lean-toolchain`, `lake-manifest.json` | Build configuration. |
-| `LICENSE` | CC0 1.0 Universal (public domain). |
+| `LICENSE` | Apache License 2.0. |
 
 ## How to verify
 
@@ -94,5 +94,5 @@ generated from this repository — is published at
 
 ## License
 
-CC0 1.0 Universal (public domain dedication) — see `LICENSE`. The OEIS entry it builds on
+Apache License 2.0 — see `LICENSE`. The OEIS entry it builds on
 is © the OEIS Foundation (CC BY-NC 4.0).

@@ -1,4 +1,9 @@
 /-
+Copyright (c) 2026 Eric Vergo. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Eric Vergo, Claude Fable 5 (Claude Code)
+-/
+/-
 A362583 irrationality blueprint — Endgame chapter.
 
 The continued logarithm, the identity theorem on {Re s > 1/2}, and the single-point blow-up

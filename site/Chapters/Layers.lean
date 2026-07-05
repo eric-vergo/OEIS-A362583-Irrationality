@@ -1,4 +1,9 @@
 /-
+Copyright (c) 2026 Eric Vergo. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Eric Vergo, Claude Fable 5 (Claude Code)
+-/
+/-
 A362583 irrationality blueprint — Layers chapter.
 
 The mod-4 character and the layer decomposition of −log(1 − χ(p)p^(−s)): the k = 2 layer B

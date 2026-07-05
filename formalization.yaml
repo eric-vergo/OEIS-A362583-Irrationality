@@ -6,14 +6,14 @@ project:
   authors:
     - "Eric Vergo"
     - "Claude Fable 5 (Anthropic, via Claude Code)"
-  license: "CC0-1.0"
+  license: "Apache-2.0"
 
 sources:
   - title: "A362583 Irrationality — informal proof blueprint"
     authors: ["Eric Vergo"]
     id: "self-authored informal proof blueprint for this project; realized as the browsable blueprint site generated from this repository"
     type: "specification / informal blueprint"
-    license: "CC0-1.0"
+    license: "Apache-2.0"
     author_contacted: "n/a"          # self-authored
     prior_work: ""                   # none known; novelty of the race-oscillation statement not yet independently verified
   - title: "OEIS A362583 — Concatenation of ((p mod 4) - 1)/2 for primes 3..prime(n), read as binary"

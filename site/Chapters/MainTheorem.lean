@@ -1,4 +1,9 @@
 /-
+Copyright (c) 2026 Eric Vergo. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Eric Vergo, Claude Fable 5 (Claude Code)
+-/
+/-
 A362583 irrationality blueprint — Main Theorem chapter.
 
 The pure-logic assembly A → B → C → D, the axiom audit, and licensing.
@@ -53,5 +58,4 @@ the identity theorem. Three design choices shaped the Lean proof: the by-parts s
 *defined* as the continuation, the per-prime split instead of a double-sum rearrangement, and
 single-point contradictions in both endgames.
 
-The Lean sources and this blueprint are dedicated to the public domain under CC0 1.0
-Universal.
+The Lean sources and this blueprint are released under the Apache License 2.0.
