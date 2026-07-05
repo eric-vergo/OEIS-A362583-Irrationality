@@ -123,6 +123,7 @@ The tail `t k = ∑_{j≥0} b_{k+j} 2^{-(j+1)}` is the 0-based reindexing of the
 /-- The binary tail `t k = ∑_{j≥0} b_{k+j} 2^{-(j+1)}`. -/
 private noncomputable def t (k : ℕ) : ℝ := ∑' j : ℕ, (bit (k + j) : ℝ) / 2 ^ (j + 1)
 
+/-- Definitional unfolding of the binary tail `t k` as its `tsum`, for rewriting under the sum. -/
 private lemma t_def (k : ℕ) : t k = ∑' j : ℕ, (bit (k + j) : ℝ) / 2 ^ (j + 1) := rfl
 
 /-- Bookkeeping: bits are `≤ 1`. -/

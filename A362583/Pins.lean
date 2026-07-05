@@ -29,22 +29,38 @@ private lemma oddPrime_eq_of_count {k m : ℕ} (hm : Nat.Prime m)
   unfold oddPrime
   exact h ▸ Nat.nth_count hm
 
+/-- Pin: the first odd prime is `3`. -/
 private lemma oddPrime_zero : oddPrime 0 = 3 := oddPrime_eq_of_count (by decide) (by decide)
+/-- Pin: the second odd prime is `5`. -/
 private lemma oddPrime_one : oddPrime 1 = 5 := oddPrime_eq_of_count (by decide) (by decide)
+/-- Pin: the third odd prime is `7`. -/
 private lemma oddPrime_two : oddPrime 2 = 7 := oddPrime_eq_of_count (by decide) (by decide)
+/-- Pin: the fourth odd prime is `11`. -/
 private lemma oddPrime_three : oddPrime 3 = 11 := oddPrime_eq_of_count (by decide) (by decide)
+/-- Pin: the fifth odd prime is `13`. -/
 private lemma oddPrime_four : oddPrime 4 = 13 := oddPrime_eq_of_count (by decide) (by decide)
+/-- Pin: the sixth odd prime is `17`. -/
 private lemma oddPrime_five : oddPrime 5 = 17 := oddPrime_eq_of_count (by decide) (by decide)
+/-- Pin: the seventh odd prime is `19`. -/
 private lemma oddPrime_six : oddPrime 6 = 19 := oddPrime_eq_of_count (by decide) (by decide)
+/-- Pin: the eighth odd prime is `23`. -/
 private lemma oddPrime_seven : oddPrime 7 = 23 := oddPrime_eq_of_count (by decide) (by decide)
 
+/-- Pin: `b₀ = 1` — the first odd prime `3` is `≡ 3 (mod 4)`. -/
 private lemma bit_zero : bit 0 = 1 := by simp [bit, oddPrime_zero]
+/-- Pin: `b₁ = 0` — the second odd prime `5` is `≡ 1 (mod 4)`. -/
 private lemma bit_one : bit 1 = 0 := by simp [bit, oddPrime_one]
+/-- Pin: `b₂ = 1` — `7 ≡ 3 (mod 4)`. -/
 private lemma bit_two : bit 2 = 1 := by simp [bit, oddPrime_two]
+/-- Pin: `b₃ = 1` — `11 ≡ 3 (mod 4)`. -/
 private lemma bit_three : bit 3 = 1 := by simp [bit, oddPrime_three]
+/-- Pin: `b₄ = 0` — `13 ≡ 1 (mod 4)`. -/
 private lemma bit_four : bit 4 = 0 := by simp [bit, oddPrime_four]
+/-- Pin: `b₅ = 0` — `17 ≡ 1 (mod 4)`. -/
 private lemma bit_five : bit 5 = 0 := by simp [bit, oddPrime_five]
+/-- Pin: `b₆ = 1` — `19 ≡ 3 (mod 4)`. -/
 private lemma bit_six : bit 6 = 1 := by simp [bit, oddPrime_six]
+/-- Pin: `b₇ = 1` — `23 ≡ 3 (mod 4)`. -/
 private lemma bit_seven : bit 7 = 1 := by simp [bit, oddPrime_seven]
 
 /-! ## The pins -/

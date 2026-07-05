@@ -36,13 +36,16 @@ private def chi (p : ℕ) : ℤ := if p % 4 = 1 then 1 else if p % 4 = 3 then -1
 /-- χ₄ at the `k`-th odd prime through the bit sequence: `1 - 2·bit k ∈ {±1}` (C1). -/
 private noncomputable def term (k : ℕ) : ℤ := 1 - 2 * (bit k : ℤ)
 
+/-- The summand `term k = 1 - 2·bit k` is a `±1` value, so `|term k| ≤ 1` (C1). -/
 private lemma abs_term_le_one (k : ℕ) : |term k| ≤ 1 := by
   unfold term bit
   split <;> norm_num
 
+/-- Each `oddPrime k` is prime — it is a value of `Nat.nth Nat.Prime` (C1). -/
 private lemma oddPrime_prime (k : ℕ) : Nat.Prime (oddPrime k) :=
   Nat.prime_nth_prime (k + 1)
 
+/-- Odd primes exceed `2`: `2 < oddPrime k`, since the index-`0` prime `2` is skipped (C1). -/
 private lemma two_lt_oddPrime (k : ℕ) : 2 < oddPrime k := by
   unfold oddPrime
   have h := (Nat.nth_lt_nth Nat.infinite_setOf_prime).mpr k.succ_pos
@@ -61,25 +64,31 @@ private lemma chi_oddPrime (k : ℕ) : chi (oddPrime k) = term k := by
 
 /-! ### C1: stepping `raceSum` and `Nat.primeCounting` -/
 
+/-- `raceSum` as an unfiltered range sum, `∑_{p ≤ N} (if p prime then χ₄(p) else 0)` — the
+form that steps under `Finset.sum_range_succ` (C1). -/
 private lemma raceSum_eq_range_sum (N : ℕ) :
     raceSum N = ∑ p ∈ Finset.range (N + 1), if Nat.Prime p then chi p else 0 := by
   rw [show raceSum N = ∑ p ∈ (Finset.range (N + 1)).filter Nat.Prime, chi p from rfl,
     Finset.sum_filter]
 
+/-- Stepping the race sum past a prime: `raceSum (n+1) = raceSum n + χ₄(n+1)` (C1). -/
 private lemma raceSum_succ_of_prime {n : ℕ} (hp : Nat.Prime (n + 1)) :
     raceSum (n + 1) = raceSum n + chi (n + 1) := by
   rw [raceSum_eq_range_sum (n + 1), raceSum_eq_range_sum n, Finset.sum_range_succ, if_pos hp]
 
+/-- Stepping the race sum past a non-prime leaves it fixed: `raceSum (n+1) = raceSum n` (C1). -/
 private lemma raceSum_succ_of_not_prime {n : ℕ} (hp : ¬ Nat.Prime (n + 1)) :
     raceSum (n + 1) = raceSum n := by
   rw [raceSum_eq_range_sum (n + 1), raceSum_eq_range_sum n, Finset.sum_range_succ, if_neg hp,
     add_zero]
 
+/-- The prime count increments at a prime: `π(n+1) = π(n) + 1` (C1). -/
 private lemma primeCounting_succ_of_prime {n : ℕ} (hp : Nat.Prime (n + 1)) :
     Nat.primeCounting (n + 1) = Nat.primeCounting n + 1 := by
   change Nat.count Nat.Prime ((n + 1) + 1) = Nat.count Nat.Prime (n + 1) + 1
   rw [Nat.count_succ, if_pos hp]
 
+/-- The prime count is fixed at a non-prime: `π(n+1) = π(n)` (C1). -/
 private lemma primeCounting_succ_of_not_prime {n : ℕ} (hp : ¬ Nat.Prime (n + 1)) :
     Nat.primeCounting (n + 1) = Nat.primeCounting n := by
   change Nat.count Nat.Prime ((n + 1) + 1) = Nat.count Nat.Prime (n + 1)
