@@ -32,8 +32,8 @@ Chebyshev race sum.
 Everything in this chapter is deliberately elementary: only the $`n`-th-prime function,
 remainder arithmetic, if-expressions, finite sums, and a single infinite series appear.
 Dirichlet characters, $`L`-functions, and all other analytic objects are confined to proofs
-in later chapters, so the statements below — and the two headline theorems that reuse them —
-can be audited without trusting any analytic machinery.
+in later chapters, so the statements below — and the irrationality theorem and its analytic core that reuse
+them — can be audited without trusting any analytic machinery.
 
 :::definition "def:oddPrime" (lean := "A362583.oddPrime") (parent := "defs")
 For $`k \ge 0`, let $`p_k` denote the $`k`-th *odd* prime, so $`p_0 = 3`, $`p_1 = 5`,

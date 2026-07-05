@@ -37,14 +37,14 @@ trajectory $`|S(N) - c\,\pi(N)| \le C`; and Step D says no such trajectory exist
 $`\blacksquare`
 :::
 
-What has been proved, precisely: two theorems whose statements mention only the
-$`n`-th-prime function, remainder arithmetic, finite sums, and one convergent series — the
-irrationality of $`x` above, and the non-linearity of the mod-4 prime race (the main
-analytic theorem of the Endgame chapter). The formalization is complete and sorry-free; the
-axiom audit of both headline theorems reports exactly the three standard Lean axioms —
-propext, Classical.choice, Quot.sound — and nothing else: no custom axioms, no
-unproved hypotheses, every statement kernel-checked against Mathlib (pinned at toolchain
-v4.31.0).
+What has been proved, precisely: the irrationality of $`x` above — a statement mentioning
+only the $`n`-th-prime function, remainder arithmetic, finite sums, and one convergent
+series. Its analytic core, the non-linearity of the mod-4 prime race (the main analytic
+theorem of the Endgame chapter), is proved in full as an internal milestone and quantifies
+over the same elementary objects. The formalization is complete and sorry-free; the axiom
+audit of both reports exactly the three standard Lean axioms — propext, Classical.choice,
+Quot.sound — and nothing else: no custom axioms, no unproved hypotheses, every statement
+kernel-checked against Mathlib (pinned at toolchain v4.31.0).
 
 The analytic footprint stayed as small as promised in the Introduction: the continued
 $`L(s, \chi_4)` and its entirety, $`L(1, \chi_4) \ne 0`, the exponential Euler product, the
