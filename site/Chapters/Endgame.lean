@@ -66,7 +66,7 @@ converts into information *below* $`\mathrm{Re}\, s = 1`. $`\blacksquare`
 *Main analytic theorem* (Step D). There are no constants $`c, C` with
 $$`\bigl| S(N) - c\,\pi(N) \bigr| \;\le\; C \qquad \text{for all } N.`
 The mod-4 prime race is never linear in the prime count. This statement is meaningful
-independently of the constant $`x`, and like the irrationality theorem it quantifies only
+independently of the prime race constant $`\varrho`, and like the irrationality theorem it quantifies only
 over elementary objects — it is the analytic core that the headline result rests on, an
 internal milestone rather than a separately advertised deliverable.
 :::

@@ -11,7 +11,7 @@ import Mathlib.Data.Nat.Prime.Nth
 
 Proved checks that the `Defs.lean` objects mean what they are intended to mean:
 the indexing of `oddPrime`, the first eight bits (primes `3,5,7,11,13,17,19,23`
-give `1 0 1 1 0 0 1 1`), the bracketing `1/2 < x < 1`, and `raceSum 10 = -1`
+give `1 0 1 1 0 0 1 1`), the bracketing `1/2 < ϱ < 1`, and `raceSum 10 = -1`
 (`χ₄(2) = 0, χ₄(3) = -1, χ₄(5) = 1, χ₄(7) = -1`).
 
 The helper lemmas are `private`: they exist only to state these pins.  The API
@@ -73,10 +73,10 @@ example : bit 0 = 1 ∧ bit 1 = 0 ∧ bit 2 = 1 ∧ bit 3 = 1 ∧
     bit 4 = 0 ∧ bit 5 = 0 ∧ bit 6 = 1 ∧ bit 7 = 1 :=
   ⟨bit_zero, bit_one, bit_two, bit_three, bit_four, bit_five, bit_six, bit_seven⟩
 
-/-- `b₀ = 1` gives `x > 1/2` (indeed `x ≥ 5/8` using `b₂ = 1`); `b₁ = 0` gives
-`x < 1` strictly. Comparison series: the geometric `∑' k, (1/2)^(k+1) = 1`. -/
-example : (1:ℝ)/2 < x ∧ x < 1 := by
-  have hx : x = ∑' k : ℕ, (bit k : ℝ) / 2 ^ (k + 1) := rfl
+/-- `b₀ = 1` gives `ϱ > 1/2` (indeed `ϱ ≥ 5/8` using `b₂ = 1`); `b₁ = 0` gives
+`ϱ < 1` strictly. Comparison series: the geometric `∑' k, (1/2)^(k+1) = 1`. -/
+example : (1:ℝ)/2 < ϱ ∧ ϱ < 1 := by
+  have hx : ϱ = ∑' k : ℕ, (bit k : ℝ) / 2 ^ (k + 1) := rfl
   -- bits are 0/1, so terms are nonnegative and dominated by the geometric series
   have hb : ∀ k, bit k ≤ 1 := by
     intro k
@@ -99,7 +99,7 @@ example : (1:ℝ)/2 < x ∧ x < 1 := by
     rw [tsum_mul_right, tsum_geometric_of_lt_one (by norm_num) (by norm_num)]
     norm_num
   constructor
-  · -- 1/2 < 5/8 = b₀/2 + b₁/4 + b₂/8 ≤ x
+  · -- 1/2 < 5/8 = b₀/2 + b₁/4 + b₂/8 ≤ ϱ
     have hpart : ∑ k ∈ Finset.range 3, (bit k : ℝ) / 2 ^ (k + 1) = 5/8 := by
       simp only [Finset.sum_range_succ, Finset.sum_range_zero]
       rw [bit_zero, bit_one, bit_two]
@@ -108,12 +108,12 @@ example : (1:ℝ)/2 < x ∧ x < 1 := by
       _ = ∑ k ∈ Finset.range 3, (bit k : ℝ) / 2 ^ (k + 1) := hpart.symm
       _ ≤ ∑' k : ℕ, (bit k : ℝ) / 2 ^ (k + 1) :=
           hf.sum_le_tsum (Finset.range 3) fun i _ => hnonneg i
-      _ = x := hx.symm
+      _ = ϱ := hx.symm
   · -- strict at k = 1: b₁ = 0, so the k = 1 term is < the geometric term
     have h1 : (bit 1 : ℝ) / 2 ^ (1 + 1) < ((1:ℝ)/2) ^ (1 + 1) := by
       rw [bit_one]
       norm_num
-    calc x < ∑' k : ℕ, ((1:ℝ)/2) ^ (k + 1) := by
+    calc ϱ < ∑' k : ℕ, ((1:ℝ)/2) ^ (k + 1) := by
           rw [hx]
           exact Summable.tsum_lt_tsum_of_nonneg hnonneg hle h1 hg
       _ = 1 := hgsum

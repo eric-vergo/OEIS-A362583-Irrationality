@@ -19,7 +19,8 @@ is confined to proofs, never to statements.
 * `A362583.oddPrime k` — the `k`-th odd prime (`oddPrime 0 = 3`); the `p_{k+1}`
   of the 1-based enumeration of odd primes.
 * `A362583.bit k` — the `k`-th binary digit of the constant.
-* `A362583.x` — the A362583 constant `x = 0.b₀b₁b₂…₂ ≈ 0.7004001…`.
+* `A362583.ϱ` — the prime race constant `ϱ = 0.b₀b₁b₂…₂ ≈ 0.7004001…`, the OEIS
+  A362583 constant.
 * `A362583.raceSum N` — the Chebyshev race sum `S(N) = Σ_{p ≤ N} χ₄(p)`.
 -/
 
@@ -35,9 +36,10 @@ The `b_{k+1}` of the 1-based bit sequence; first values `1 0 1 1 0 0 1 1`
 (primes `3, 5, 7, 11, 13, 17, 19, 23`). -/
 noncomputable def bit (k : ℕ) : ℕ := if oddPrime k % 4 = 3 then 1 else 0
 
-/-- The A362583 constant, `x = 0.b₀b₁b₂…₂ ≈ 0.7004001…`, the real number whose
-`k`-th binary digit is `bit k`: `x = Σ_{k ≥ 0} bit k · 2^{-(k+1)}`. -/
-noncomputable def x : ℝ := ∑' k : ℕ, (bit k : ℝ) / 2 ^ (k + 1)
+/-- The prime race constant `ϱ = 0.b₀b₁b₂…₂ ≈ 0.7004001…` (the OEIS A362583
+constant), the real number whose `k`-th binary digit is `bit k`:
+`ϱ = Σ_{k ≥ 0} bit k · 2^{-(k+1)}`. -/
+noncomputable def ϱ : ℝ := ∑' k : ℕ, (bit k : ℝ) / 2 ^ (k + 1)
 
 /-- Chebyshev race sum `S(N) = Σ_{p ≤ N} χ₄(p)`, stated elementarily:
 `+1` for primes `≡ 1 (mod 4)`, `-1` for primes `≡ 3 (mod 4)`, `0` for `p = 2`.

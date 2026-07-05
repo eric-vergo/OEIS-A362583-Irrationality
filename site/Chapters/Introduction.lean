@@ -30,17 +30,17 @@ set_option pp.rawOnError true
 The subject of this blueprint is a single real number. List the odd primes in order —
 $`3, 5, 7, 11, 13, 17, 19, 23, \ldots` — and record one binary digit for each: $`b_k = 1`
 if the $`k`-th odd prime is congruent to $`3` modulo $`4`, and $`b_k = 0` if it is congruent
-to $`1`. Reading the digits as a binary expansion produces the constant of
-{citet oeis.a362583}[],
-$$`x \;=\; 0.10110011\ldots_2 \;=\; \sum_{k \ge 0} b_k\, 2^{-(k+1)} \;\approx\; 0.7004,`
-and this site documents a complete, sorry-free Lean 4 proof of the theorem that $`x` is
+to $`1`. Reading the digits as a binary expansion produces the *prime race constant* $`\varrho`, the
+constant of {citet oeis.a362583}[],
+$$`\varrho \;=\; 0.10110011\ldots_2 \;=\; \sum_{k \ge 0} b_k\, 2^{-(k+1)} \;\approx\; 0.7004,`
+and this site documents a complete, sorry-free Lean 4 proof of the theorem that $`\varrho` is
 irrational.
 
-The digits of $`x` transcribe the *mod-4 prime race*. Chebyshev observed in 1853 that primes
+The digits of $`\varrho` transcribe the *mod-4 prime race*. Chebyshev observed in 1853 that primes
 $`\equiv 3 \pmod 4` appear to lead primes $`\equiv 1 \pmod 4` most of the time, and the race
 sum $`S(N) = \sum_{p \le N} \chi_4(p)` — where $`\chi_4` is the nonprincipal character mod
 $`4`, so each prime $`\equiv 1` scores $`+1` and each prime $`\equiv 3` scores $`-1` — is the
-classical measure of that bias. Irrationality of $`x` says the race never settles into an
+classical measure of that bias. Irrationality of $`\varrho` says the race never settles into an
 eventually periodic pattern of leads and deficits: the sequence of residues is, in this
 precise sense, aperiodic forever.
 
@@ -49,7 +49,7 @@ The proof has four layers, assembled by pure logic at the end:
 - *Step A.* Both residue classes contain infinitely many primes (Dirichlet's theorem at
   modulus $`4`), so the digit sequence contains infinitely many zeros and infinitely many
   ones.
-- *Step B.* If $`x` were rational, its digit sequence would be eventually periodic — a
+- *Step B.* If $`\varrho` were rational, its digit sequence would be eventually periodic — a
   self-contained tail-and-pigeonhole argument that avoids any general theory of digit
   expansions.
 - *Step C.* Eventually periodic digits force the very rigid conclusion

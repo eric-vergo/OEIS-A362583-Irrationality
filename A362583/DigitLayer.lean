@@ -19,9 +19,9 @@ import Mathlib.Algebra.Order.Floor.Ring
   from primes to bit indices is the injection `p ↦ Nat.count Nat.Prime p - 1`,
   inverted by `oddPrime` via `Nat.nth_count`.
 
-* **Step B** (`eventuallyPeriodic_of_not_irrational`): if `x` is rational its
+* **Step B** (`eventuallyPeriodic_of_not_irrational`): if `ϱ` is rational its
   bit sequence is eventually periodic — a pigeonhole on the binary tails
-  `t k = ∑_{j≥0} b_{k+j} 2^{-(j+1)}` (with `t 0 = x`), following the standard
+  `t k = ∑_{j≥0} b_{k+j} 2^{-(j+1)}` (with `t 0 = ϱ`), following the standard
   chain of lemmas B1–B5 below.  No general digit-expansion theory is used.
 -/
 
@@ -117,8 +117,8 @@ lemma bits_infinite_zeros : {k | bit k = 0}.Infinite := by
 /-! ## Step B: rational ⇒ eventually periodic bits
 
 The tail `t k = ∑_{j≥0} b_{k+j} 2^{-(j+1)}` is the 0-based reindexing of the
-1-based bit sequence (`b_{k+1} = bit k`), so `t 0 = x`, the recurrence B2 reads
-`t k = (bit k + t (k+1))/2`, and B3 reads `t k = Int.fract (2^k * x)`. -/
+1-based bit sequence (`b_{k+1} = bit k`), so `t 0 = ϱ`, the recurrence B2 reads
+`t k = (bit k + t (k+1))/2`, and B3 reads `t k = Int.fract (2^k * ϱ)`. -/
 
 /-- The binary tail `t k = ∑_{j≥0} b_{k+j} 2^{-(j+1)}`. -/
 private noncomputable def t (k : ℕ) : ℝ := ∑' j : ℕ, (bit (k + j) : ℝ) / 2 ^ (j + 1)
@@ -242,28 +242,28 @@ private lemma t_eq_add {m n : ℕ} (h : t m = t n) (i : ℕ) : t (m + i) = t (n 
     change t ((m + i) + 1) = t ((n + i) + 1)
     rw [t_succ, t_succ, ih, hb]
 
-/-- **(B3)**: `t k = fract (2^k x)` — the binary prefix of `2^k x`
+/-- **(B3)**: `t k = fract (2^k ϱ)` — the binary prefix of `2^k ϱ`
 is an integer and the tail lies in `[0,1)` (via `Int.fract_intCast_add`). -/
-private lemma t_eq_fract (k : ℕ) : t k = Int.fract ((2 : ℝ) ^ k * x) := by
+private lemma t_eq_fract (k : ℕ) : t k = Int.fract ((2 : ℝ) ^ k * ϱ) := by
   induction k with
   | zero =>
-    have h0 : t 0 = x := tsum_congr fun j => by rw [Nat.zero_add]
+    have h0 : t 0 = ϱ := tsum_congr fun j => by rw [Nat.zero_add]
     rw [pow_zero, one_mul, ← h0, Int.fract_eq_self.mpr ⟨(t_pos 0).le, t_lt_one 0⟩]
   | succ k ih =>
-    have hfl : (2 : ℝ) ^ k * x = (⌊(2 : ℝ) ^ k * x⌋ : ℝ) + t k := by
+    have hfl : (2 : ℝ) ^ k * ϱ = (⌊(2 : ℝ) ^ k * ϱ⌋ : ℝ) + t k := by
       rw [ih]
       exact (Int.floor_add_fract _).symm
     have hsucc := t_succ k
-    have hkey : (2 : ℝ) ^ (k + 1) * x
-        = ((2 * ⌊(2 : ℝ) ^ k * x⌋ + (bit k : ℤ) : ℤ) : ℝ) + t (k + 1) := by
+    have hkey : (2 : ℝ) ^ (k + 1) * ϱ
+        = ((2 * ⌊(2 : ℝ) ^ k * ϱ⌋ + (bit k : ℤ) : ℤ) : ℝ) + t (k + 1) := by
       push_cast
       linear_combination 2 * hfl - hsucc
     rw [hkey, Int.fract_intCast_add, Int.fract_eq_self.mpr ⟨(t_pos _).le, t_lt_one _⟩]
 
-/-- **(B4)**: if `x` is rational then the tails
+/-- **(B4)**: if `ϱ` is rational then the tails
 `t k = fract (2^k · a/b) ∈ {0, 1/b, …, (b-1)/b}` take finitely many values, so
 two collide (pigeonhole through `ZMod q.den`). -/
-private lemma exists_t_collision (h : ¬ Irrational x) : ∃ m n : ℕ, m < n ∧ t m = t n := by
+private lemma exists_t_collision (h : ¬ Irrational ϱ) : ∃ m n : ℕ, m < n ∧ t m = t n := by
   obtain ⟨q, hq⟩ := exists_rat_of_not_irrational h
   have key : ∀ k : ℕ, t k = ((2 ^ k * q.num % (q.den : ℤ) : ℤ) : ℝ) / ((q.den : ℕ) : ℝ) := by
     intro k
@@ -281,11 +281,11 @@ private lemma exists_t_collision (h : ¬ Irrational x) : ∃ m n : ℕ, m < n �
   · exact ⟨k₁, k₂, hlt, hteq⟩
   · exact ⟨k₂, k₁, hlt, hteq.symm⟩
 
-/-- **Step B** (B1–B5): if `x` is rational, its bit sequence is
+/-- **Step B** (B1–B5): if `ϱ` is rational, its bit sequence is
 eventually periodic — pigeonhole two equal tails `t m = t n` (B4), propagate the
 collision by B2's determinism (B5), giving period `P = n - m` from index `m`. -/
 lemma eventuallyPeriodic_of_not_irrational :
-    ¬ Irrational x → ∃ N P, 0 < P ∧ ∀ k ≥ N, bit (k + P) = bit k := by
+    ¬ Irrational ϱ → ∃ N P, 0 < P ∧ ∀ k ≥ N, bit (k + P) = bit k := by
   intro h
   obtain ⟨m, n, hmn, ht⟩ := exists_t_collision h
   refine ⟨m, n - m, by omega, fun k hk => ?_⟩

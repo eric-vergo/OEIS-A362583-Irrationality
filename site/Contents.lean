@@ -49,7 +49,7 @@ shortTitle := "A362583"
 authors := ["Eric Vergo", "Claude Fable 5"]
 %%%
 
-{blueprint_dashboard}
+{blueprint_dashboard (featured := "def:rho, def:raceSum, thm:race-not-linear, thm:irrational")}
 
 {include 0 Chapters.Introduction}
 

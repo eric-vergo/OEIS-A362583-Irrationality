@@ -25,7 +25,7 @@ sources:
 
 status:
   scope: >-
-    Complete. The constant x = 0.b0b1b2... (binary; b_k = 1 iff the k-th odd prime
+    Complete. The prime race constant ϱ = 0.b0b1b2... (binary; b_k = 1 iff the k-th odd prime
     is ≡ 3 mod 4) is irrational, via a non-degeneracy theorem for the mod-4
     Chebyshev prime race: the race sum is never c·π(N) + O(1). The analytic
     engine needs only the continued L(s, χ₄), L(1, χ₄) ≠ 0, the Euler product,
@@ -36,7 +36,7 @@ status:
   sorry_in_definitions: 0
   axioms: ["propext", "Classical.choice", "Quot.sound"]
   main_results:
-    - declaration: "A362583.irrational_x"
+    - declaration: "A362583.irrational_ϱ"
       file: "A362583/Main.lean"
       sorry_count: 0
       axioms: ["propext", "Classical.choice", "Quot.sound"]
@@ -100,8 +100,8 @@ fidelity:
 alignment:
   namespace: "A362583"
   statements:
-    - source: "definitions (odd primes, bits, the constant x, race sum S)"
-      lean: "A362583.oddPrime, A362583.bit, A362583.x, A362583.raceSum"
+    - source: "definitions (odd primes, bits, the prime race constant ϱ, race sum S)"
+      lean: "A362583.oddPrime, A362583.bit, A362583.ϱ, A362583.raceSum"
       module: "A362583/Defs.lean"
       status: "proved"
       note: "statement-hygiene: elementary %-arithmetic and tsums only; sanity pins proved in A362583/Pins.lean"
@@ -139,7 +139,7 @@ alignment:
       module: "A362583/CaseZero.lean"
       status: "proved"
     - source: "assembly — main theorem"
-      lean: "A362583.irrational_x"
+      lean: "A362583.irrational_ϱ"
       module: "A362583/Main.lean"
       status: "proved"
 

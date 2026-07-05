@@ -6,7 +6,7 @@ Authors: Eric Vergo, Claude Fable 5 (Claude Code)
 /-
 A362583 irrationality blueprint — Digit Layer chapter.
 
-Steps A and B: both residue classes are infinite, and a rational x would have eventually
+Steps A and B: both residue classes are infinite, and a rational ϱ would have eventually
 periodic bits.
 -/
 
@@ -63,13 +63,13 @@ enumeration injects them into the index set, and for such an index $`k`, $`p_k \
 is in particular $`\not\equiv 3 \pmod 4`, so $`b_k = 0`. $`\blacksquare`
 :::
 
-:::theorem "thm:eventually-periodic" (lean := "A362583.eventuallyPeriodic_of_not_irrational") (parent := "digit") (uses := "def:x, thm:bits-ones, thm:bits-zeros")
-*Step B.* If $`x` is not irrational, then the bit sequence is eventually periodic: there
+:::theorem "thm:eventually-periodic" (lean := "A362583.eventuallyPeriodic_of_not_irrational") (parent := "digit") (uses := "def:rho, thm:bits-ones, thm:bits-zeros")
+*Step B.* If $`\varrho` is not irrational, then the bit sequence is eventually periodic: there
 exist $`N` and $`P > 0` with $`b_{k+P} = b_k` for all $`k \ge N`.
 :::
 
 :::proof "thm:eventually-periodic"
-Define the binary tails $`t_k := \sum_{j \ge 0} b_{k+j}\, 2^{-(j+1)}`, so that $`t_0 = x`.
+Define the binary tails $`t_k := \sum_{j \ge 0} b_{k+j}\, 2^{-(j+1)}`, so that $`t_0 = \varrho`.
 The five steps B1–B5 below follow the Lean file's zero-based indexing.
 
 *(B1)* $`t_k \in (0,1)` *strictly*, for every $`k`: infinitely many later ones
@@ -80,11 +80,11 @@ the tail. Combined with B1: if $`b_k = 1` then $`t_k \in (1/2, 1)`; if $`b_k = 0
 $`t_k \in (0, 1/2)`. In particular $`t_k \ne 1/2` always, so $`t_k` *determines* $`b_k`
 ($`b_k = 1 \iff t_k > 1/2`) and hence also $`t_{k+1} = 2 t_k - b_k`.
 
-*(B3)* $`2^k x` is an integer plus $`t_k`, and $`t_k \in (0,1)`, so
-$`t_k = \operatorname{fract}(2^k x)`.
+*(B3)* $`2^k \varrho` is an integer plus $`t_k`, and $`t_k \in (0,1)`, so
+$`t_k = \operatorname{fract}(2^k \varrho)`.
 
-*(B4)* If $`x` is rational with denominator $`b`, then each
-$`t_k = \operatorname{fract}(2^k x)` lies in the finite set
+*(B4)* If $`\varrho` is rational with denominator $`b`, then each
+$`t_k = \operatorname{fract}(2^k \varrho)` lies in the finite set
 $`\{0, 1/b, \ldots, (b-1)/b\}` — in Lean, the denominator of the rational witness produced
 by unfolding "not irrational". By the pigeonhole principle there are $`m < n` with
 $`t_m = t_n`.

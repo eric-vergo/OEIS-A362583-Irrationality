@@ -27,22 +27,22 @@ set_option pp.rawOnError true
 #doc (Manual) "Main Theorem" =>
 
 :::group "main"
-The main theorem: the A362583 constant is irrational.
+The main theorem: the prime race constant is irrational.
 :::
 
-:::theorem "thm:irrational" (lean := "A362583.irrational_x") (parent := "main") (uses := "def:x, thm:eventually-periodic, thm:race-linear, thm:race-not-linear")
-*Theorem.* The constant $`x = 0.b_0 b_1 b_2 \ldots` in binary — where $`b_k = 1` exactly
-when the $`k`-th odd prime is $`\equiv 3 \pmod 4` — is irrational.
+:::theorem "thm:irrational" (lean := "A362583.irrational_ϱ") (parent := "main") (uses := "def:rho, thm:eventually-periodic, thm:race-linear, thm:race-not-linear")
+*Theorem.* The prime race constant $`\varrho = 0.b_0 b_1 b_2 \ldots` in binary — where
+$`b_k = 1` exactly when the $`k`-th odd prime is $`\equiv 3 \pmod 4` — is irrational.
 :::
 
 :::proof "thm:irrational"
-Pure logic; no new mathematics. If $`x` were rational, Step B (which consumes Step A) would
+Pure logic; no new mathematics. If $`\varrho` were rational, Step B (which consumes Step A) would
 make its bit sequence eventually periodic; Step C would then put the race sum on a linear
 trajectory $`|S(N) - c\,\pi(N)| \le C`; and Step D says no such trajectory exists.
 $`\blacksquare`
 :::
 
-What has been proved, precisely: the irrationality of $`x` above — a statement mentioning
+What has been proved, precisely: the irrationality of $`\varrho` above — a statement mentioning
 only the $`n`-th-prime function, remainder arithmetic, finite sums, and one convergent
 series. Its analytic core, the non-linearity of the mod-4 prime race (the main analytic
 theorem of the Endgame chapter), is proved in full as an internal milestone and quantifies

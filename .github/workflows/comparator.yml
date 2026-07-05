@@ -5,7 +5,7 @@ name: Comparator
 # exports both with lean4export, and certifies (Lean-kernel replay + axiom
 # whitelist + statement-declaration equality) that A362583 proves the exact
 # Challenge statement
-#   - A362583.irrational_x
+#   - A362583.irrational_ϱ
 # using only {propext, Quot.sound, Classical.choice}. On success it flips
 # comparator-status.json from "configured" to "verified" and commits it back.
 #
@@ -89,7 +89,7 @@ jobs:
           # describe the latest successful certifying run, so the timestamp
           # matches the linked run.
           ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          note="Verified in CI by leanprover/comparator (.github/workflows/comparator.yml): the A362583 library's proof kernel-checks the exact Challenge statement A362583.irrational_x, using only the permitted axioms propext, Quot.sound, and Classical.choice. Statement equality, axiom whitelist, and Lean-kernel replay all confirmed."
+          note="Verified in CI by leanprover/comparator (.github/workflows/comparator.yml): the A362583 library's proof kernel-checks the exact Challenge statement A362583.irrational_ϱ, using only the permitted axioms propext, Quot.sound, and Classical.choice. Statement equality, axiom whitelist, and Lean-kernel replay all confirmed."
           run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
           jq --arg ts "$ts" --arg note "$note" --arg run_url "$run_url" \
             '.status = "verified" | .verified_at = $ts | .note = $note | .run_url = $run_url' \
