@@ -13,6 +13,8 @@ on:
   push:
     paths-ignore:
       - 'comparator-status.json'
+      # Site-only edits don't affect the formalization build.
+      - 'site/**'
   pull_request:
   workflow_dispatch:
 
