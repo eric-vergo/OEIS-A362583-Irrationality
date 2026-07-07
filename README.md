@@ -4,13 +4,17 @@ A complete, `sorry`-free Lean 4 formalization that the
 [OEIS A362583](https://oeis.org/A362583) constant is irrational. Pinned to Lean
 and Mathlib `v4.31.0`.
 
-The *prime race constant* `ϱ` is
+The *prime race constant* `ϱ` is the sum of the series
 
 ```
-ϱ = 0.b₀b₁b₂…  (binary),   bₖ = 1  ⟺  the k-th odd prime is ≡ 3 (mod 4),
+ϱ = Σ_{k ≥ 0} bₖ · 2^{-(k+1)},   bₖ = 1  ⟺  the k-th odd prime is ≡ 3 (mod 4).
 ```
 
-so `ϱ ≈ 0.7004001…`.
+Since each `bₖ ∈ {0, 1}`, this is exactly the place-value reading of the binary numeral
+`0.b₀b₁b₂…₂`, and these are genuinely *the* binary digits of `ϱ` (infinitely many are `0`,
+by Dirichlet at modulus 4, so the digit string is not eventually all `1`s). In decimal,
+`ϱ ≈ 0.7004001…`. Reading successive digit prefixes as binary integers recovers the OEIS
+integer sequence A362583, which is why we call `ϱ` the A362583 constant.
 
 ## What is proved
 

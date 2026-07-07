@@ -31,8 +31,9 @@ The main theorem: the prime race constant is irrational.
 :::
 
 :::theorem "thm:irrational" (lean := "A362583.irrational_ϱ") (parent := "main") (uses := "def:rho, thm:eventually-periodic, thm:race-linear, thm:race-not-linear")
-*Theorem.* The prime race constant $`\varrho = 0.b_0 b_1 b_2 \ldots` in binary — where
-$`b_k = 1` exactly when the $`k`-th odd prime is $`\equiv 3 \pmod 4` — is irrational.
+*Theorem.* The prime race constant $`\varrho = \sum_{k \ge 0} b_k\,2^{-(k+1)}` — the number
+whose binary expansion is $`0.b_0 b_1 b_2 \ldots_2`, where $`b_k = 1` exactly when the
+$`k`-th odd prime is $`\equiv 3 \pmod 4` — is irrational.
 :::
 
 :::proof "thm:irrational"

@@ -25,9 +25,9 @@ rules out.
 
 namespace A362583
 
-/-- **Primary deliverable**: the prime race constant `ϱ = 0.b₀b₁b₂…` in binary
-(the OEIS A362583 constant) — where `bₖ = 1` iff the `k`-th odd prime is
-`≡ 3 (mod 4)` — is irrational. -/
+/-- **Primary deliverable**: the prime race constant `ϱ = Σ_{k ≥ 0} bₖ · 2^{-(k+1)}` (the
+A362583 constant) — the number whose binary expansion is `0.b₀b₁b₂…₂`, where `bₖ = 1` iff
+the `k`-th odd prime is `≡ 3 (mod 4)` — is irrational. -/
 theorem irrational_ϱ : Irrational ϱ := by
   by_contra h
   exact raceSum_not_linear

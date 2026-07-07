@@ -18,7 +18,7 @@ import A362583.RaceCount
 # A362583 irrationality: library root
 
 Root module for the `A362583` library, importing every module of the
-`sorry`-free proof that the prime race constant `ϱ` (the OEIS A362583 constant)
+`sorry`-free proof that the prime race constant `ϱ` (the A362583 constant)
 is irrational.
 
 The primary deliverable is `A362583.irrational_ϱ` (`A362583/Main.lean`); the

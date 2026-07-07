@@ -56,11 +56,15 @@ first eight bits are $`1,0,1,1,0,0,1,1` (from the primes $`3, 5, 7, 11, 13, 17, 
 :::
 
 :::definition "def:rho" (lean := "A362583.ϱ") (parent := "defs") (uses := "def:bit")
-The *prime race constant* $`\varrho` (the OEIS A362583 constant) is the real number with
-binary expansion $`0.b_0 b_1 b_2 \ldots`,
-$$`\varrho \;=\; \sum_{k \ge 0} \frac{b_k}{2^{\,k+1}} \;\approx\; 0.7004\ldots`
-The series converges absolutely by comparison with the geometric series. The theorem of this
-blueprint is that $`\varrho` is irrational.
+The *prime race constant* $`\varrho` is the sum of the series
+$$`\varrho \;=\; \sum_{k \ge 0} \frac{b_k}{2^{\,k+1}} \;=\; 0.7004001\ldots,`
+which converges absolutely by comparison with the geometric series. Since each $`b_k` is
+$`0` or $`1`, the series is exactly the place-value reading of the binary numeral
+$`0.b_0 b_1 b_2 \ldots_2` — and these are genuinely *the* binary digits of $`\varrho`:
+infinitely many $`b_k` are $`0` (Dirichlet's theorem, Step A), so the digit string is not
+eventually all $`1`s and no carry ambiguity arises. Reading successive digit prefixes as
+binary integers recovers the OEIS sequence A362583, which is why we call $`\varrho` the
+A362583 constant. The theorem of this blueprint is that $`\varrho` is irrational.
 :::
 
 :::definition "def:raceSum" (lean := "A362583.raceSum") (parent := "defs")
