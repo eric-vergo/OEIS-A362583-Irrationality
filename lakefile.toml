@@ -1,7 +1,7 @@
 name = "A362583"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["A362583", "Challenge"]
+defaultTargets = ["A362583", "Challenge", "Solution"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -25,4 +25,12 @@ name = "Challenge"
 # Comparator challenge (see comparator.json): a self-contained restatement of
 # the locked claims with `sorry` proofs — sorry *warnings* here are expected
 # and by design.  Skip the strict Mathlib header linter.
+leanOptions = { weak.linter.style.header = false }
+
+[[lean_lib]]
+name = "Solution"
+# Comparator solution (see comparator.json): the official proof of the challenge
+# theorem Challenge.irrational_ϱ, derived from the A362583 library — no `sorry`,
+# no axioms beyond the whitelist.  Only the strict Mathlib header linter is
+# skipped, for the same project-specific Apache header format as the other libs.
 leanOptions = { weak.linter.style.header = false }

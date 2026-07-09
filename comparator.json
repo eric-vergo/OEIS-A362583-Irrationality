@@ -1,7 +1,7 @@
 {
   "challenge_module": "Challenge",
-  "solution_module": "A362583",
-  "theorem_names": ["A362583.irrational_ϱ"],
+  "solution_module": "Solution",
+  "theorem_names": ["Challenge.irrational_ϱ"],
   "permitted_axioms": ["propext", "Quot.sound", "Classical.choice"],
   "enable_nanoda": false
 }

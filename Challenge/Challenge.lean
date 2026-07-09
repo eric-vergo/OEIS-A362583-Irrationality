@@ -12,18 +12,21 @@ import Mathlib.NumberTheory.Real.Irrational
 This module is the **comparator challenge**: an independent, auditable
 statement of exactly what this project claims to prove.  It intentionally
 imports nothing from the `A362583` library — the three definitions are copied
-verbatim from `A362583/Defs.lean` and the main theorem statement verbatim from
-`A362583/Main.lean`, with proof `sorry`.
+verbatim from `A362583/Defs.lean` and the main theorem statement from
+`A362583/Main.lean`, here left with proof `sorry`.
 
-The `sorry` here is **by design**: this file is the comparator's input, not
-part of the proof.  The comparator (`leanprover/comparator`; Linux-only, run in
-CI — see `comparator.json` and `comparator-status.json`) elaborates this module
-and the `A362583` library in separate environments and certifies,
-kernel-checked, that the library proves this exact statement using only the
-permitted axioms `propext`, `Classical.choice`, `Quot.sound`.
+The `sorry` is **by design**: this file is the comparator's *input*, not part of
+any proof.  Its companion, the `Solution` module (`Solution/Solution.lean`),
+re-states the same definitions and *proves* this theorem, deriving it from the
+library's `A362583.irrational_ϱ`.  The comparator (`leanprover/comparator`;
+Linux-only, run in CI — see `comparator.json` and `comparator-status.json`)
+elaborates this challenge module and the `Solution` module in separate
+environments and certifies, kernel-checked, that the solution proves this exact
+statement — `Challenge.irrational_ϱ` — using only the permitted axioms
+`propext`, `Classical.choice`, `Quot.sound`.
 -/
 
-namespace A362583
+namespace Challenge
 
 /-- The `k`-th odd prime: `oddPrime 0 = 3`, `oddPrime 1 = 5`, `oddPrime 2 = 7`, ….
 Writing the odd primes as `p_1, p_2, …`, this is `p_{k+1}`; since
@@ -46,4 +49,4 @@ A362583 constant) — the number whose binary expansion is `0.b₀b₁b₂…₂
 the `k`-th odd prime is `≡ 3 (mod 4)` — is irrational. -/
 theorem irrational_ϱ : Irrational ϱ := sorry
 
-end A362583
+end Challenge
