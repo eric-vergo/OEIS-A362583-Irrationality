@@ -170,6 +170,24 @@ jobs:
           # isn't the last statement silently false-passes. Explicit `if` is safe.
           if grep -RIl 'jsdelivr' _out/site/html-multi; then echo "off-origin: jsdelivr reference(s) found"; exit 1; fi
           if grep -RIEl '<(script[^>]*[[:space:]]src|link[^>]*[[:space:]]href)="https?://' _out/site/html-multi; then echo "off-origin: external script/link asset(s) found"; exit 1; fi
+      - name: Trust gate
+        working-directory: site
+        run: |
+          set -euo pipefail
+          audit="_out/site/html-multi/-verso-data/trust-audit.json"
+          if [ ! -f "$audit" ]; then
+            echo "trust gate: $audit is missing"; exit 1
+          fi
+          # Must be valid JSON.
+          jq empty "$audit"
+          # Fail the job if any check has verdict == "fail".
+          fails="$(jq -r '[.checks[] | select(.verdict == "fail")] | length' "$audit")"
+          if [ "$fails" -ne 0 ]; then
+            echo "trust gate: $fails check(s) with verdict==fail:"
+            jq -r '.checks[] | select(.verdict == "fail") | "  - \(.id): \(.title)"' "$audit"
+            exit 1
+          fi
+          echo "trust gate: all checks pass or unknown ($(jq -r '.checks | length' "$audit") checks)"
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
