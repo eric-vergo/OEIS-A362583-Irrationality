@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Eric Vergo, Claude Fable 5 (Claude Code)
 -/
 /-
-A362583 irrationality blueprint — Endgame chapter.
+A362583 irrationality blueprint — the c = 0 case (nonlinearity of the prime race).
 
 The continued logarithm, the identity theorem on {Re s > 1/2}, and the single-point blow-up
 just above 1/2 — the main analytic theorem raceSum_not_linear.
@@ -25,10 +25,10 @@ set_option doc.verso true
 set_option verso.blueprint.trimTeXLabelPrefix true
 set_option pp.rawOnError true
 
-#doc (Manual) "Endgame" =>
+#doc (Manual) "Nonlinearity of the Prime Race" =>
 
 :::group "czero"
-Case c = 0 of Step D: a bounded race would continue log L(s, χ₄) past Re s = 1/2 minus
+The case c = 0: a bounded race would continue log L(s, χ₄) past Re s = 1/2 minus
 an explicitly divergent term — which the finite value L(1/2, χ₄) forbids.
 :::
 
@@ -47,7 +47,7 @@ unconditionally — so $`G` is holomorphic on $`\Omega`, the largest half-plane 
 needs.
 :::
 
-:::theorem "thm:eqOn" (lean := "A362583.exp_contLog_eqOn") (parent := "czero") (uses := "def:contLog, thm:exp-L, thm:bpSeries-dirichlet")
+:::theorem "thm:eqOn" (lean := "A362583.exp_contLog_eqOn") (parent := "czero") (uses := "def:contLog, thm:exp-L, thm:bpSeries-dirichlet, thm:bpSeries-holo")
 *Identity theorem.* Under the bounded-race hypothesis,
 $$`\exp\bigl(G(s)\bigr) \;=\; L(s, \chi) \qquad \text{for all } s \in \Omega = \{\mathrm{Re}\, s > 1/2\}.`
 :::
@@ -62,13 +62,51 @@ propagates the identity to all of $`\Omega`. This is the only place the bounded-
 converts into information *below* $`\mathrm{Re}\, s = 1`. $`\blacksquare`
 :::
 
-:::theorem "thm:race-not-linear" (lean := "A362583.raceSum_not_linear") (parent := "czero") (uses := "def:raceSum, thm:c-zero, thm:eqOn, thm:bpSeries-holo, lem:divergence-transfer")
-*Main analytic theorem* (Step D). There are no constants $`c, C` with
+:::lemma_ "lem:L-cont-half" (lean := "A362583.exists_norm_LFunction_lt_near_half") (parent := "czero") (uses := "def:chi")
+*Continuity at $`1/2`.* There are constants $`M_0 > 0` and $`\delta_0 > 0` with
+$`\|L(s, \chi)\| < M_0` for every $`s` with $`\|s - 1/2\| < \delta_0`. No hypothesis on the
+race is used: the bound comes from the entirety of $`L(\cdot, \chi)` alone.
+:::
+
+:::proof "lem:L-cont-half"
+Since $`\chi` is nonprincipal, $`L(\cdot, \chi)` is entire, hence continuous at $`1/2`. Taking
+$`M_0 := \|L(1/2, \chi)\| + 1`, continuity supplies a radius $`\delta_0 > 0` on which
+$`\|L(s, \chi)\| < M_0`. $`\blacksquare`
+:::
+
+:::lemma_ "lem:norm-L-eq-exp" (lean := "A362583.norm_LFunction_eq_exp_re_contLog") (parent := "czero") (uses := "def:contLog, thm:eqOn")
+*Modulus on the real segment.* Under the bounded-race hypothesis, for real $`\sigma > 1/2`
+$$`\bigl\| L(\sigma, \chi) \bigr\| \;=\; \exp\bigl(\mathrm{Re}\, G(\sigma)\bigr).`
+:::
+
+:::proof "lem:norm-L-eq-exp"
+The identity theorem gives $`L(\sigma, \chi) = \exp(G(\sigma))` on $`\Omega`, and
+$`\sigma > 1/2` lies in $`\Omega`. Taking norms,
+$`\|\exp(G(\sigma))\| = \exp(\mathrm{Re}\, G(\sigma))`. $`\blacksquare`
+:::
+
+:::lemma_ "lem:layerB-le-re-contLog" (lean := "A362583.layerBReal_sub_le_re_contLog") (parent := "czero") (uses := "def:contLog, def:layerBReal, def:layerT, lem:bpSeries-bound-const")
+*Lower bound by the $`k = 2` layer.* Under the bounded-race hypothesis, for real
+$`\sigma > 1/2`
+$$`B(\sigma) - C - c_T \;\le\; \mathrm{Re}\, G(\sigma).`
+:::
+
+:::proof "lem:layerB-le-re-contLog"
+On the real axis the three pieces of $`G = \tilde A_{f_\chi} + B + T` are real, so
+$`\mathrm{Re}\, G(\sigma) = \mathrm{Re}\, \tilde A_{f_\chi}(\sigma) + B(\sigma) + T(\sigma)`.
+The by-parts term is bounded below by the real-segment estimate,
+$`\mathrm{Re}\, \tilde A_{f_\chi}(\sigma) \ge -\|\tilde A_{f_\chi}(\sigma)\| \ge -C` (partial
+sums of $`f_\chi` bounded by $`C`, support above $`n = 2`), and the $`k \ge 3` layer by its
+uniform bound $`T(\sigma) \ge -|T(\sigma)| \ge -c_T`. Adding these gives
+$`\mathrm{Re}\, G(\sigma) \ge B(\sigma) - C - c_T`. $`\blacksquare`
+:::
+
+:::theorem "thm:race-not-linear" (lean := "A362583.raceSum_not_linear") (parent := "czero") (uses := "def:raceSum, thm:c-zero, lem:divergence-transfer, lem:L-cont-half, lem:norm-L-eq-exp, lem:layerB-le-re-contLog")
+*Main analytic theorem.* There are no constants $`c, C` with
 $$`\bigl| S(N) - c\,\pi(N) \bigr| \;\le\; C \qquad \text{for all } N.`
-The mod-4 prime race is never linear in the prime count. This statement is meaningful
-independently of the prime race constant $`\varrho`, and like the irrationality theorem it
-quantifies only over elementary objects — it is the analytic core that the headline result
-rests on, an internal milestone rather than a separately advertised deliverable.
+The mod-4 prime race is never linear in the prime count. The statement is meaningful
+independently of the prime race constant $`\varrho`, quantifies only over elementary objects,
+and is the analytic core underlying the irrationality theorem.
 :::
 
 :::proof "thm:race-not-linear"
@@ -79,11 +117,11 @@ partial sums of $`f_\chi` are then bounded by $`C`, and the identity theorem app
 are $`M_0 := \|L(1/2, \chi)\| + 1` and $`\delta_0 > 0` with $`\|L(s, \chi)\| < M_0`
 whenever $`\|s - 1/2\| < \delta_0`. The divergence transfer supplies a
 *single* real point $`\sigma^* \in (1/2,\, 1/2 + \delta_0)` with
-$$`B(\sigma^*) \;>\; \ln M_0 + C + C_T.`
+$$`B(\sigma^*) \;>\; \ln M_0 + C + c_T.`
 At $`s = \sigma^*` all three pieces of $`G` are real, with
 $`\mathrm{Re}\, \tilde A_{f_\chi}(\sigma^*) \ge -C` (real-segment bound, $`n_0 = 2`) and
-$`T(\sigma^*) \ge -C_T` (uniform bound), so
-$$`\|L(\sigma^*, \chi)\| \;=\; e^{\mathrm{Re}\, G(\sigma^*)} \;\ge\; e^{\,B(\sigma^*) - C - C_T} \;>\; M_0,`
+$`T(\sigma^*) \ge -c_T` (uniform bound), so
+$$`\|L(\sigma^*, \chi)\| \;=\; e^{\mathrm{Re}\, G(\sigma^*)} \;\ge\; e^{\,B(\sigma^*) - C - c_T} \;>\; M_0,`
 contradicting the continuity bound at the very same point. No limit toward $`1/2^{+}` is
 taken — the contradiction is evaluated at the one point $`\sigma^*`.
 $`\blacksquare`

@@ -44,34 +44,33 @@ classical measure of that bias. Irrationality of $`\varrho` says the race never 
 eventually periodic pattern of leads and deficits: the sequence of residues is, in this
 precise sense, aperiodic forever.
 
-The proof has four layers, assembled by pure logic at the end:
+The argument combines four results:
 
-- *Step A.* Both residue classes contain infinitely many primes (Dirichlet's theorem at
-  modulus $`4`), so the digit sequence contains infinitely many zeros and infinitely many
-  ones.
-- *Step B.* If $`\varrho` were rational, its digit sequence would be eventually periodic — a
+- Both residue classes $`1, 3 \bmod 4` contain infinitely many primes (Dirichlet's theorem at
+  modulus $`4`), so the digit sequence has infinitely many zeros and infinitely many ones.
+- If $`\varrho` were rational, its digit sequence would be eventually periodic — a
   self-contained tail-and-pigeonhole argument that avoids any general theory of digit
   expansions.
-- *Step C.* Eventually periodic digits force the very rigid conclusion
-  $`S(N) = c\,\pi(N) + O(1)` for a rational slope $`c`, where $`\pi(N)` counts primes
-  $`\le N`.
-- *Step D.* No such linear race exists — the main analytic theorem, and the heart of the
-  formalization.
+- Eventually periodic digits force the rigid conclusion $`S(N) = c\,\pi(N) + O(1)` for a
+  rational slope $`c`, where $`\pi(N)` counts the primes $`\le N`.
+- No such linear race exists: the main analytic theorem, that the mod-4 race sum is never
+  $`c\,\pi(N) + O(1)`.
 
-The design choice behind Step D is what makes the project feasible. The classical
-irrationality routes for constants of this kind run through Littlewood's 1914
+Only the last result is analytically deep, and its difficulty is bounded sharply. The
+classical irrationality routes for constants of this kind run through Littlewood's 1914
 $`\Omega_\pm`-oscillation for the race, or through long runs of consecutive primes in a fixed
 class — both far beyond current formalization technology. Neither is needed: refuting the
-rigid conclusion of Step C requires only *non-degeneracy* of the race, not quantitative
-oscillation. The analytic inputs consumed by Step D are exactly five, all present in Mathlib:
-the analytically continued Dirichlet $`L`-function $`L(s, \chi_4)`, its nonvanishing at
-$`s = 1`, the exponential form of the Euler product, the divergence of $`\sum_p 1/p`, and the
-identity theorem for holomorphic functions. No prime number theorem, no PNT in arithmetic
-progressions, no zero-free regions, no functional equation.
+linear trajectory requires only *non-degeneracy* of the race, not quantitative oscillation.
+The analytic inputs are exactly five, all present in Mathlib: the analytically continued
+Dirichlet $`L`-function $`L(s, \chi_4)`, its nonvanishing at $`s = 1`, the exponential form of
+the Euler product, the divergence of $`\sum_p 1/p`, and the identity theorem for holomorphic
+functions. No prime number theorem, no PNT in arithmetic progressions, no zero-free regions,
+no functional equation.
 
 A statement-hygiene principle governs the Lean development: the four definitions, the
 irrationality theorem, and the analytic core it rests on mention only elementary objects —
 the $`k`-th prime, remainder arithmetic, finite sums, and one geometric-type series — so a
 reader can audit *what was proved* without trusting any of the analytic machinery, which is
-confined to proofs. The chapters that follow narrate the full argument — Steps A through D
-and their supporting lemmas — in the same order the Lean sources prove it.
+confined to proofs. The chapters that follow develop the full argument in the order the Lean
+sources prove it: the digit combinatorics, the layer decomposition of the Euler-product
+logarithm, and the two-case refutation of a linear race.

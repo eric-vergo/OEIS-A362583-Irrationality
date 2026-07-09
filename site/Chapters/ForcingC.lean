@@ -28,14 +28,14 @@ set_option pp.rawOnError true
 #doc (Manual) "Forcing the Slope to Zero" =>
 
 :::group "cnonzero"
-Case c ≠ 0 of Step D: a linear race with nonzero slope is impossible, so any linear
-race is a bounded race.
+The case c ≠ 0: a linear race with nonzero slope is impossible, so any linear race is a
+bounded race.
 :::
 
-Step D refutes $`|S(N) - c\,\pi(N)| \le C` in two cases. This chapter handles
+The analytic core refutes $`|S(N) - c\,\pi(N)| \le C` in two cases. This chapter handles
 $`c \ne 0`, working entirely on the real segment $`(1, 2]` where every series converges
 absolutely and no analytic continuation is needed; the conclusion is that the slope must be
-zero, reducing the endgame to the bounded-race hypothesis $`|S(N)| \le C`.
+zero, reducing the $`c = 0` case to the bounded-race hypothesis $`|S(N)| \le C`.
 
 :::theorem "thm:c-zero" (lean := "A362583.c_eq_zero_of_raceSum_linear") (parent := "cnonzero") (uses := "def:raceSum, def:fChi, lem:fChi-partial-sums, lem:layerA-dirichlet, thm:bpSeries-dirichlet, lem:bpSeries-bound-const, thm:exp-L, lem:prime-sum-divergence")
 *Forcing $`c = 0`.* If
@@ -60,8 +60,8 @@ $`L(\sigma)` as $`\sigma \downarrow 1` (the one plain one-sided limit surviving 
 development), and it is nonzero by Mathlib's nonvanishing at $`1`. Hence
 $`\mathrm{Re}\, L(\cdot, \chi)` is continuous and positive on the compact $`[1, 2]`, its
 logarithm is bounded there by some $`K_0`, and with the layer bounds
-$`0 \le B \le C_B`, $`|T| \le C_T` this yields
-$`|A(\sigma)| \le K := K_0 + C_B + C_T` on $`(1, 2]`.
+$`0 \le B \le c_B`, $`|T| \le c_T` this yields
+$`|A(\sigma)| \le K := K_0 + c_B + c_T` on $`(1, 2]`.
 
 *Step 3 (single-point contradiction).* If $`c \ne 0`, steps 1–2 force
 $`P(\sigma) \le (C + K)/|c|` throughout $`(1, 2]`. But the prime-sum divergence supplies a

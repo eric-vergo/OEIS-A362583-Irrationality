@@ -32,8 +32,7 @@ The k = 1 layer, the split of the Euler-product logarithm into layers, the ident
 exp(A + B + T) = L(s, χ), and the coefficient bridge to the race sum.
 :::
 
-This chapter is where the project meets Mathlib's analytic number theory. Exactly two named
-Mathlib facts are consumed: the identification of the analytically continued
+Two named Mathlib facts are consumed here: the identification of the analytically continued
 $`L`-function with its Dirichlet series on $`\{\mathrm{Re}\, s > 1\}`, and the exponential
 form of the Euler product. Everything else is series bookkeeping.
 
@@ -82,8 +81,8 @@ $`\blacksquare`
 :::definition "def:fChi" (lean := "A362583.fChi") (parent := "euler") (uses := "def:raceKernel")
 *The coefficient bridge.* Define $`f_\chi : \mathbb{N} \to \C` by $`f_\chi(n) = \kappa(n)` if
 $`n` is prime and $`0` otherwise — the race kernel restricted to the primes, packaged as an
-$`\mathbb{N}`-indexed coefficient sequence. This is the hinge of Step D: it feeds the
-by-parts machinery the two exact identities developed in the lemmas below.
+$`\mathbb{N}`-indexed coefficient sequence. The two exact identities developed in the lemmas
+below feed $`f_\chi` to the by-parts machinery.
 :::
 
 :::lemma_ "lem:fChi-partial-sums" (lean := "A362583.sum_range_fChi") (parent := "euler") (uses := "def:fChi, def:raceSum")

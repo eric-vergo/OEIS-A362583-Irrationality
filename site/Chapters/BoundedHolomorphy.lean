@@ -36,9 +36,9 @@ to the right half-plane.
 This chapter is deliberately project-independent. It is stated for an arbitrary coefficient
 sequence $`f : \mathbb{N} \to \C` and developed in Mathlib style in the root namespace (not
 the project namespace), and it is a candidate for upstreaming — including the increment bound
-below, which Mathlib currently lacks. Its design choice: rather than continuing the Dirichlet
-series after the fact, the continuation *is defined* as a series, and the only analysis is one
-application of the fundamental theorem of calculus.
+below, which Mathlib currently lacks. Rather than continuing the Dirichlet series after the
+fact, the continuation *is defined* as a series, so the only analysis is one application of
+the fundamental theorem of calculus.
 
 :::lemma_ "lem:increment" (lean := "Complex.norm_natCast_cpow_sub_add_one_cpow_le") (parent := "n1")
 *Increment bound.* For $`s \in \C` with $`-1 \le \mathrm{Re}\, s` and a
@@ -74,46 +74,106 @@ $`s \ne 0`) makes the $`n = 0` term harmless, and the identification below is ex
 stated.
 :::
 
-:::theorem "thm:bpSeries-holo" (lean := "differentiableOn_bpSeries") (parent := "n1") (uses := "def:bpSeries, lem:increment")
+:::lemma_ "lem:box-summable" (lean := "summable_bpSeries_boxBound") (parent := "n1") (uses := "def:bpSeries")
+*Summable majorant.* For $`C, R \ge 0` and $`\delta > 0` the sequence
+$$`n \longmapsto \begin{cases} C & n = 0, \\ C\,R\, n^{-\delta - 1} & n \ge 1 \end{cases}`
+is summable — the Weierstrass majorant for the by-parts terms on a box
+$`\{\mathrm{Re}\, s > \delta\} \cap B(0, R)`.
+:::
+
+:::proof "lem:box-summable"
+Adjusting the single $`n = 0` term does not affect summability, and
+$`\sum_{n \ge 1} n^{-\delta - 1}` converges because $`\delta + 1 > 1`. $`\blacksquare`
+:::
+
+:::lemma_ "lem:term-holo" (lean := "differentiableOn_bpSeries_term") (parent := "n1") (uses := "def:bpSeries")
+*Term holomorphy.* For $`\delta > 0` and every $`n`, the by-parts term
+$`s \mapsto \bigl(\sum_{k \le n} f(k)\bigr)\bigl(n^{-s} - (n+1)^{-s}\bigr)` is holomorphic on the
+box $`\{\mathrm{Re}\, s > \delta\} \cap B(0, R)`.
+:::
+
+:::proof "lem:term-holo"
+A finite constant multiple of a difference of the entire maps $`s \mapsto n^{-s}` and
+$`s \mapsto (n+1)^{-s}`. $`\blacksquare`
+:::
+
+:::lemma_ "lem:term-box-bound" (lean := "norm_bpSeries_term_le_boxBound") (parent := "n1") (uses := "def:bpSeries, lem:increment")
+*Uniform term bound.* If the partial sums of $`f` are bounded by $`C`, then on the box
+$`\{\mathrm{Re}\, s > \delta\} \cap B(0, R)` (with $`R \ge 0`, $`\delta > 0`) the $`n`-th
+by-parts term has norm at most the majorant of the previous lemma: $`C` for $`n = 0` and
+$`C\,R\, n^{-\delta - 1}` for $`n \ge 1`.
+:::
+
+:::proof "lem:term-box-bound"
+Bound the coefficient by $`C` and the increment $`\|n^{-s} - (n+1)^{-s}\|` by the increment
+bound $`\|s\|\, n^{-\mathrm{Re}\,s - 1}`, then use $`\|s\| < R` and
+$`n^{-\mathrm{Re}\,s - 1} \le n^{-\delta - 1}` on the box. $`\blacksquare`
+:::
+
+:::theorem "thm:bpSeries-holo-box" (lean := "differentiableOn_bpSeries_box") (parent := "n1") (uses := "lem:box-summable, lem:term-holo, lem:term-box-bound")
+*Holomorphy on a box.* If the partial sums of $`f` are bounded by $`C`, then for $`\delta > 0`
+and $`R \ge 1` the by-parts series $`\tilde A_f` is holomorphic on the box
+$`\{\mathrm{Re}\, s > \delta\} \cap B(0, R)`.
+:::
+
+:::proof "thm:bpSeries-holo-box"
+Each term is holomorphic on the box, and their norms are dominated there by a single summable
+majorant, so the Weierstrass $`M`-test for series of holomorphic functions (the
+locally-uniform-limits theorem) applies. $`\blacksquare`
+:::
+
+:::theorem "thm:bpSeries-holo" (lean := "differentiableOn_bpSeries") (parent := "n1") (uses := "def:bpSeries, thm:bpSeries-holo-box")
 *Holomorphy.* If the partial sums satisfy
 $`\bigl\| \sum_{k \le n} f(k) \bigr\| \le C` for all $`n`, then $`\tilde A_f` is holomorphic
 on the open right half-plane $`\{\mathrm{Re}\, s > 0\}`.
 :::
 
 :::proof "thm:bpSeries-holo"
-Holomorphy is local, so fix a point $`s_0` with $`\mathrm{Re}\, s_0 > 0` and work on a box
-$`V = \{\mathrm{Re}\, s > \delta\} \cap B(0, R)` around it, with $`0 < \delta < \mathrm{Re}\, s_0`,
-$`R \ge 1`, and $`\|s_0\| < R`. By the increment bound the $`n`-th term is dominated in norm by
-$`C\, \|s\|\, n^{-\mathrm{Re}\,s - 1}`, and on $`V` this is at most the single, $`s`-independent
-bound $`C R\, n^{-\delta - 1}`, using $`\|s\| < R` and
-$`n^{-\mathrm{Re}\,s - 1} \le n^{-\delta - 1}` for $`n \ge 1`. That majorant is summable
-($`-\delta - 1 < -1`), and each term — a finite combination of the entire maps
-$`s \mapsto n^{-s}` — is holomorphic on $`V`, so the Weierstrass $`M`-test for series of
-holomorphic functions (the locally-uniform-limits theorem) makes $`\tilde A_f` holomorphic on
-$`V`, hence at $`s_0`. As $`s_0` was arbitrary, $`\tilde A_f` is holomorphic on all of
+Holomorphy is local. Around any $`s_0` with $`\mathrm{Re}\, s_0 > 0`, choose
+$`0 < \delta < \mathrm{Re}\, s_0` and $`R \ge 1` with $`\|s_0\| < R`; the previous theorem makes
+$`\tilde A_f` holomorphic on the box $`\{\mathrm{Re}\, s > \delta\} \cap B(0, R)`, hence at
+$`s_0`. As $`s_0` was arbitrary, $`\tilde A_f` is holomorphic on all of
 $`\{\mathrm{Re}\, s > 0\}`. Consumers needing a smaller half-plane, such as
-$`\Omega = \{\mathrm{Re}\, s > 1/2\}` in the endgame, simply restrict. $`\blacksquare`
+$`\Omega = \{\mathrm{Re}\, s > 1/2\}` downstream, simply restrict. $`\blacksquare`
 :::
 
-:::lemma_ "lem:bpSeries-bound" (lean := "norm_bpSeries_le") (parent := "n1") (uses := "def:bpSeries")
+:::lemma_ "lem:term-real-bound" (lean := "norm_bpSeries_term_le") (parent := "n1") (uses := "def:bpSeries")
+*Real-axis term bound.* If the partial sums of $`f` are bounded by $`C`, then for real
+$`\sigma \ge 0` and $`n \ge 1` the $`n`-th by-parts term satisfies
+$$`\Bigl\| \Bigl(\sum_{k \le n} f(k)\Bigr)\bigl(n^{-\sigma} - (n+1)^{-\sigma}\bigr) \Bigr\|
+   \;\le\; C\,\bigl(n^{-\sigma} - (n+1)^{-\sigma}\bigr).`
+:::
+
+:::proof "lem:term-real-bound"
+On the real axis $`n \mapsto n^{-\sigma}` is antitone, so the increment
+$`n^{-\sigma} - (n+1)^{-\sigma}` is a nonnegative real of exactly that norm; multiply by the
+coefficient bound $`C`. $`\blacksquare`
+:::
+
+:::lemma_ "lem:partial-majorant" (lean := "sum_range_norm_bpSeries_le") (parent := "n1") (uses := "lem:term-real-bound")
+*Telescoping partial sums.* Under the bounded-partial-sum hypothesis, if the partial sums of
+$`f` vanish for $`n < n_0` (with $`n_0 \ge 1`), then for real $`\sigma \ge 0` and every $`N`
+$$`\sum_{n < N} \Bigl\| \Bigl(\sum_{k \le n} f(k)\Bigr)\bigl(n^{-\sigma} - (n+1)^{-\sigma}\bigr) \Bigr\|
+   \;\le\; C\, n_0^{-\sigma}.`
+:::
+
+:::proof "lem:partial-majorant"
+The terms below $`n_0` vanish; for $`n \ge n_0` apply the real-axis term bound and telescope,
+$`\sum_{n < N} C\,(n^{-\sigma} - (n+1)^{-\sigma}) = C\,(n_0^{-\sigma} - N^{-\sigma}) \le C\, n_0^{-\sigma}`.
+$`\blacksquare`
+:::
+
+:::lemma_ "lem:bpSeries-bound" (lean := "norm_bpSeries_le") (parent := "n1") (uses := "def:bpSeries, lem:partial-majorant")
 *Real-segment bound.* Suppose the partial sums of $`f` are bounded by $`C` and vanish
 for $`n < n_0` (with $`n_0 \ge 1`). Then for real $`\sigma \ge 0`,
 $$`\bigl\| \tilde A_f(\sigma) \bigr\| \;\le\; C\, n_0^{-\sigma}.`
 :::
 
 :::proof "lem:bpSeries-bound"
-Evaluate the by-parts series at a real argument $`\sigma \ge 0`. Because $`n \mapsto n^{-\sigma}`
-is antitone, every increment $`n^{-\sigma} - (n+1)^{-\sigma}` is a nonnegative real, and the
-increment appearing in $`\tilde A_f` coincides with it, so its norm is exactly
-$`n^{-\sigma} - (n+1)^{-\sigma}`. The terms with $`n < n_0` vanish, their coefficient
-$`\sum_{k \le n} f(k)` being zero; for $`n \ge n_0` the coefficient bound gives
-$$`\Bigl\| \Bigl(\sum_{k \le n} f(k)\Bigr)\bigl(n^{-\sigma} - (n+1)^{-\sigma}\bigr) \Bigr\|
-   \;\le\; C\,\bigl(n^{-\sigma} - (n+1)^{-\sigma}\bigr).`
-The majorant on the right telescopes: summed over $`n < N` it equals
-$`C\,(n_0^{-\sigma} - N^{-\sigma}) \le C\, n_0^{-\sigma}`, so
-$`\|\tilde A_f(\sigma)\| \le \sum_n \|\text{term}\| \le C\, n_0^{-\sigma}`. In the race
-application the coefficients are supported on primes, so the partial sums below $`n = 2`
-vanish, giving $`n_0 = 2` and the bound $`C \cdot 2^{-\sigma}`. $`\blacksquare`
+The partial sums of $`\sum_n \|\text{term}\|` are bounded by $`C\, n_0^{-\sigma}` (previous
+lemma), so the full series $`\|\tilde A_f(\sigma)\| \le \sum_n \|\text{term}\|` inherits that
+bound. In the race application the coefficients are supported on primes, so the partial sums
+below $`n = 2` vanish, giving $`n_0 = 2` and the bound $`C \cdot 2^{-\sigma}`. $`\blacksquare`
 :::
 
 :::lemma_ "lem:bpSeries-bound-const" (lean := "norm_bpSeries_le_const") (parent := "n1") (uses := "lem:bpSeries-bound")
@@ -128,7 +188,18 @@ Immediate from the real-segment bound: $`n_0^{-\sigma} \le 1` because $`n_0 \ge 
 $`-\sigma \le 0`, so $`C\, n_0^{-\sigma} \le C`. $`\blacksquare`
 :::
 
-:::theorem "thm:bpSeries-dirichlet" (lean := "tsum_mul_cpow_neg_eq_bpSeries") (parent := "n1") (uses := "def:bpSeries")
+:::lemma_ "lem:boundary-term" (lean := "tendsto_boundary_term") (parent := "n1") (uses := "def:bpSeries")
+*Vanishing boundary term.* If the partial sums of $`f` are bounded by $`C`, then for
+$`\mathrm{Re}\, s > 0` the Abel boundary term tends to zero:
+$$`\Bigl(\sum_{i \le N} f(i)\Bigr) N^{-s} \;\longrightarrow\; 0 \qquad (N \to \infty).`
+:::
+
+:::proof "lem:boundary-term"
+Its norm is at most $`C\, N^{-\mathrm{Re}\, s}`, which tends to $`0` because
+$`\mathrm{Re}\, s > 0`. $`\blacksquare`
+:::
+
+:::theorem "thm:bpSeries-dirichlet" (lean := "tsum_mul_cpow_neg_eq_bpSeries") (parent := "n1") (uses := "def:bpSeries, lem:boundary-term")
 *Identification with the Dirichlet series.* If the partial sums of $`f` are bounded
 by $`C`, then for $`\mathrm{Re}\, s > 1`
 $$`\sum_{n \ge 0} f(n)\, n^{-s} \;=\; \tilde A_f(s).`

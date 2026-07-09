@@ -33,8 +33,8 @@ The mod-4 character, the k = 2 and k ≥ 3 layers of the Euler-product logarithm
 power series of the logarithm, and the divergence transfer.
 :::
 
-Step D expands $`-\log(1 - \chi(p) p^{-s})` as a power series in $`\chi(p) p^{-s}` and
-groups the terms by the exponent $`k`: the $`k = 1` layer carries the race, the $`k = 2`
+The analytic core expands $`-\log(1 - \chi(p) p^{-s})` as a power series in $`\chi(p) p^{-s}`
+and groups the terms by the exponent $`k`: the $`k = 1` layer carries the race, the $`k = 2`
 layer $`B` diverges as $`s \downarrow 1/2`, and the $`k \ge 3` tail $`T` is uniformly
 bounded. This chapter builds $`B` and $`T` with their bounds, the divergence-transfer and
 logarithm-series lemmas they share, and the per-prime split that feeds the Euler product in
@@ -63,10 +63,9 @@ $`\Omega = \{\mathrm{Re}\, s > 1/2\}` by locally uniform convergence of its part
 :::definition "def:layerBReal" (lean := "A362583.layerBReal") (parent := "layers") (uses := "def:layerB")
 *Real companion of the $`k = 2` layer.* On the real axis $`B` is repackaged with real powers
 as $`B(\sigma)`, agreeing with the complex $`B` at real arguments. This is the form the
-endgame evaluates: $`B(\sigma) \ge 0`, and $`B(\sigma) \le C_B := \tfrac12 \sum_p p^{-2}` for
-$`\sigma \ge 1`. The blow-up of $`B(\sigma)` as $`\sigma \downarrow 1/2` is *not* proved
-here — it is one instance of the divergence transfer below, and it is the engine of the
-endgame.
+$`c = 0` case evaluates: $`B(\sigma) \ge 0`, and $`B(\sigma) \le c_B := \tfrac12 \sum_p p^{-2}`
+for $`\sigma \ge 1`. The blow-up of $`B(\sigma)` as $`\sigma \downarrow 1/2` is *not* proved
+here — it is one instance of the divergence transfer below.
 :::
 
 :::definition "def:tp" (lean := "A362583.tp") (parent := "layers") (uses := "def:chi")
@@ -74,14 +73,13 @@ endgame.
 $$`t_p(s) \;=\; \sum_{k \ge 0} \frac{z_p^{\,k+3}}{k+3}`
 — the terms of the logarithm series from the third onward. Geometric tails give the
 per-prime bound $`|t_p(s)| \le \tfrac43 p^{-3/2}` on $`\mathrm{Re}\, s \ge 1/2`. (The constant
-is a deliberately crude bound — generous constants formalize fastest, and nothing downstream
-is tight.)
+is deliberately loose; nothing downstream needs a tight bound.)
 :::
 
 :::definition "def:layerT" (lean := "A362583.layerT") (parent := "layers") (uses := "def:tp")
 *The $`k \ge 3` layer* $`T(s) = \sum_p t_p(s)`, summed over all primes. The per-prime bound
 $`|t_p| \le \tfrac43 p^{-3/2}` feeds the Weierstrass $`M`-test, so $`T` is holomorphic on
-$`\Omega` with the *uniform* bound $`\|T(s)\| \le C_T := \tfrac43 \sum_p p^{-3/2}` on
+$`\Omega` with the *uniform* bound $`\|T(s)\| \le c_T := \tfrac43 \sum_p p^{-3/2}` on
 $`\mathrm{Re}\, s \ge 1/2`, and real on the real axis.
 :::
 
@@ -118,7 +116,7 @@ filters or limits appear. $`\blacksquare`
 :::lemma_ "lem:divergence-transfer" (lean := "A362583.exists_layerBReal_gt") (parent := "layers") (uses := "def:layerBReal")
 *Divergence transfer to layer $`B`.* For every $`M` and $`\eta > 0` there is
 $`\sigma \in (1/2, 1/2+\eta)` with $`B(\sigma) > M` — the blow-up of the $`k = 2` layer just
-above $`1/2` that drives the endgame.
+above $`1/2` that drives the $`c = 0` case.
 :::
 
 :::proof "lem:divergence-transfer"
@@ -129,7 +127,7 @@ $`\sum_{p \in F} p^{-2\sigma} = \sum_{p \in F} p^{-1} > 2M`, and by continuity i
 persists at some $`\sigma \in (1/2, 1/2+\eta)`. There the odd-prime series dominates its finite
 subsum over $`F` (nonnegative terms), so
 $`B(\sigma) \ge \tfrac12 \sum_{p \in F} p^{-2\sigma} > \tfrac12 \cdot 2M = M`. As in the
-prime-sum instance, a single point $`\sigma^*` is all the endgame needs. $`\blacksquare`
+prime-sum instance, a single point $`\sigma^*` suffices. $`\blacksquare`
 :::
 
 :::lemma_ "lem:neg-log-split" (lean := "A362583.neg_log_split") (parent := "layers") (uses := "lem:log-series, def:chi, def:layerB, def:tp")

@@ -61,7 +61,7 @@ $$`\varrho \;=\; \sum_{k \ge 0} \frac{b_k}{2^{\,k+1}} \;=\; 0.7004001\ldots,`
 which converges absolutely by comparison with the geometric series. Since each $`b_k` is
 $`0` or $`1`, the series is exactly the place-value reading of the binary numeral
 $`0.b_0 b_1 b_2 \ldots_2` — and these are genuinely *the* binary digits of $`\varrho`:
-infinitely many $`b_k` are $`0` (Dirichlet's theorem, Step A), so the digit string is not
+infinitely many $`b_k` are $`0` (Dirichlet's theorem), so the digit string is not
 eventually all $`1`s and no carry ambiguity arises. Reading successive digit prefixes as
 binary integers recovers the OEIS sequence A362583, which is why we call $`\varrho` the
 A362583 constant. The theorem of this blueprint is that $`\varrho` is irrational.
@@ -72,8 +72,8 @@ The *Chebyshev race sum* is the integer
 $$`S(N) \;=\; \sum_{\substack{p \le N \\ p \text{ prime}}} \begin{cases} +1 & p \equiv 1 \pmod 4 \\ -1 & p \equiv 3 \pmod 4 \\ \;\;\,0 & p = 2, \end{cases}`
 i.e. $`S(N) = \sum_{p \le N} \chi_4(p)` — but stated with plain remainder arithmetic rather
 than a character, per the statement-hygiene principle. The convention "primes $`\le N`"
-matches Mathlib's prime-counting function $`\pi(N)` (Nat.primeCounting), which Step C and
-Step D quantify against.
+matches Mathlib's prime-counting function $`\pi(N)` (Nat.primeCounting), which the race-sum
+theorems quantify against.
 :::
 
 Sanity pins guard against definitional drift: the module A362583/Pins.lean proves,
