@@ -8,9 +8,10 @@ import Mathlib.NumberTheory.EulerProduct.DirichletLSeries
 import Mathlib.NumberTheory.LSeries.DirichletContinuation
 
 /-!
-# Euler product / L-function wiring for Step D
+# Euler product / L-function wiring
 
-The `k = 1` layer `A(s)` and the two consolidated Step D identities on `{Re s > 1}`:
+The `k = 1` layer `A(s)` and the two consolidated identities on `{Re s > 1}` connecting the
+layers to the Dirichlet `L`-function:
 
 * **Per-`p` split summed over primes**: `tsum_neg_log_eq_layers`,
   `Σ_p -log(1 - χ(p) p^(-s)) = A(s) + B(s) + T(s)` — the per-prime split
@@ -21,7 +22,7 @@ The `k = 1` layer `A(s)` and the two consolidated Step D identities on `{Re s > 
   `DirichletCharacter.LFunction`, via `DirichletCharacter.LSeries_eulerProduct_exp_log`
   and `DirichletCharacter.LFunction_eq_LSeries`.
 
-Bridges consumed by the later Step D tracks:
+Bridges consumed downstream:
 
 * `fChi`, `sum_range_fChi`, `layerA_eq_tsum_fChi` — the ℕ-indexed form of `A(s)`
   whose partial sums are exactly `raceSum` (feeds the by-parts continuation
@@ -133,7 +134,7 @@ lemma layerA_eq_tsum_fChi (s : ℂ) :
         · rw [if_pos hn, if_pos hn, χ_natCast_eq_kernel]
         · rw [if_neg hn, if_neg hn, zero_mul]
 
-/-! ## Real companion on the real axis (consumed by the Step D endgame) -/
+/-! ## Real companion on the real axis -/
 
 /-- Real companion of `layerA` (real `rpow`; agreement: `layerA_ofReal`). -/
 noncomputable def layerAReal (σ : ℝ) : ℝ :=

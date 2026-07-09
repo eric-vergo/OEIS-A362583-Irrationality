@@ -10,17 +10,19 @@ import A362583.RaceCount
 /-!
 # A362583 is irrational: final assembly
 
-The primary deliverable: `A362583.irrational_ϱ`, assembled from the four proof
-layers, each proved in its own file:
+The primary deliverable `A362583.irrational_ϱ`, assembled from four results, each proved in
+its own file:
 
-* `bits_infinite_ones`, `bits_infinite_zeros` — Step A, `A362583/DigitLayer.lean`
-* `eventuallyPeriodic_of_not_irrational` — Step B, `A362583/DigitLayer.lean`
-* `raceSum_linear_of_eventuallyPeriodic` — Step C, `A362583/RaceCount.lean`
-* `raceSum_not_linear` — Step D, `A362583/CaseZero.lean`
+* `bits_infinite_ones`, `bits_infinite_zeros` (`A362583/DigitLayer.lean`) — Dirichlet's
+  theorem at modulus 4 gives infinitely many ones and infinitely many zeros in the bits;
+* `eventuallyPeriodic_of_not_irrational` (`A362583/DigitLayer.lean`) — a rational `ϱ` has
+  eventually periodic bits;
+* `raceSum_linear_of_eventuallyPeriodic` (`A362583/RaceCount.lean`) — eventually periodic
+  bits force the race sum onto a linear trajectory `c·π + O(1)`;
+* `raceSum_not_linear` (`A362583/CaseZero.lean`) — the race sum is never linear.
 
-Assembly: if `ϱ` were rational, its bits would be eventually periodic (Step B,
-using Step A), forcing the race sum to be `c·π + O(1)` (Step C), which Step D
-rules out.
+Assembly: if `ϱ` were rational, its bits would be eventually periodic, forcing the race sum
+to be `c·π + O(1)`, which `raceSum_not_linear` rules out.
 -/
 
 namespace A362583

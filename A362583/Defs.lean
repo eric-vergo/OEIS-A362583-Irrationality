@@ -21,6 +21,8 @@ is confined to proofs, never to statements.
 * `A362583.bit k` — the `k`-th binary digit of the constant.
 * `A362583.ϱ` — the prime race constant `ϱ = Σ_{k ≥ 0} bit k · 2^{-(k+1)}` (the A362583
   constant); its binary expansion is `0.b₀b₁b₂…₂ ≈ 0.7004001…` (decimal).
+* `A362583.raceKernel n` — the summand of the Chebyshev race sum: `+1` on `n ≡ 1 (mod 4)`,
+  `-1` on `n ≡ 3 (mod 4)`, `0` otherwise.
 * `A362583.raceSum N` — the Chebyshev race sum `S(N) = Σ_{p ≤ N} χ₄(p)`.
 -/
 
@@ -42,12 +44,19 @@ noncomputable def bit (k : ℕ) : ℕ := if oddPrime k % 4 = 3 then 1 else 0
 successive digit prefixes read as binary integers. -/
 noncomputable def ϱ : ℝ := ∑' k : ℕ, (bit k : ℝ) / 2 ^ (k + 1)
 
-/-- Chebyshev race sum `S(N) = Σ_{p ≤ N} χ₄(p)`, stated elementarily:
-`+1` for primes `≡ 1 (mod 4)`, `-1` for primes `≡ 3 (mod 4)`, `0` for `p = 2`.
-The range `Finset.range (N + 1)` means primes `≤ N`, matching the convention of
-`Nat.primeCounting N` (# primes `≤ N`). -/
+/-- The summand of the Chebyshev race sum: `+1` on `n ≡ 1 (mod 4)`, `-1` on
+`n ≡ 3 (mod 4)`, `0` otherwise.  At a prime `p` this is `χ₄(p)`. -/
+def raceKernel (n : ℕ) : ℤ := if n % 4 = 1 then 1 else if n % 4 = 3 then -1 else 0
+
+/-- Chebyshev race sum `S(N) = Σ_{p ≤ N} χ₄(p)`, stated elementarily as the sum of
+`raceKernel` over primes `≤ N`: `+1` for primes `≡ 1 (mod 4)`, `-1` for primes
+`≡ 3 (mod 4)`, `0` for `p = 2`.  The range `Finset.range (N + 1)` means primes `≤ N`,
+matching the convention of `Nat.primeCounting N` (# primes `≤ N`). -/
 def raceSum (N : ℕ) : ℤ :=
-  ∑ p ∈ (Finset.range (N + 1)).filter Nat.Prime,
-    (if p % 4 = 1 then 1 else if p % 4 = 3 then -1 else 0)
+  ∑ p ∈ (Finset.range (N + 1)).filter Nat.Prime, raceKernel p
+
+/-- `raceSum` is the sum of `raceKernel` over primes `≤ N` (definitional). -/
+lemma raceSum_eq_sum_raceKernel (N : ℕ) :
+    raceSum N = ∑ p ∈ (Finset.range (N + 1)).filter Nat.Prime, raceKernel p := rfl
 
 end A362583

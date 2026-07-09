@@ -11,7 +11,7 @@ import Mathlib.Analysis.SpecialFunctions.ExpDeriv
 import Mathlib.Tactic.IntervalCases
 
 /-!
-# Case `c = 0` endgame: the race sum is never linear (Step D)
+# Case `c = 0`: the race sum is never linear
 
 The main analytic theorem `raceSum_not_linear`: there are no constants `c`, `C` with
 `|S(N) - c·π(N)| ≤ C` for all `N`, where `S = raceSum` and `π = Nat.primeCounting`.
@@ -29,9 +29,9 @@ bounded-race hypothesis `|S(N)| ≤ C`.  Then:
   `{Re s > 1}` (`exp_contLog_eq`, via the Euler wiring `exp_layers_eq_LFunction`).
 * **Identity theorem.** By the identity theorem on the open preconnected `Ω`,
   `exp ∘ contLog = L(χ, ·)` on all of `Ω` (`exp_contLog_eqOn`).
-* **Endgame at `1/2` (single-point form).** `L(χ, ·)` is entire, hence continuous at `1/2`
+* **The value `1/2` (single point).** `L(χ, ·)` is entire, hence continuous at `1/2`
   with some bound `M₀` on a `δ₀`-ball.  The divergence transfer `exists_layerBReal_gt`
-  supplies a real `σ ∈ (1/2, 1/2 + δ₀)` with `layerBReal σ > log M₀ + C + C_T`; at
+  supplies a real `σ ∈ (1/2, 1/2 + δ₀)` with `layerBReal σ > log M₀ + C + cT`; at
   `s* = σ` the identity gives `‖L(χ, σ)‖ = exp (Re (contLog σ)) > M₀`, contradicting the
   ball bound.  The contradiction is evaluated at a single point, with no filters toward
   `1/2⁺`.
@@ -119,72 +119,88 @@ lemma exp_contLog_eqOn {C : ℝ} (hB : ∀ n, ‖∑ k ∈ Finset.range (n + 1),
   exact (hf.analyticOnNhd hΩ).eqOn_of_preconnected_of_eventuallyEq
     (hg.analyticOnNhd hΩ) hpre h₂Ω hev
 
-/-! ## The endgame at `1/2` (single-point form) -/
+/-! ## The value `1/2` (single point) -/
 
-/-- **Main analytic theorem**: the mod-4 prime race is never linear — there are no
-constants `c`, `C` with `|S(N) - c·π(N)| ≤ C` for all `N`, where `S = raceSum` and
-`π = Nat.primeCounting` (# primes `≤ N`).
+/-- `L(χ, ·)` is entire, hence continuous at `1/2`: there are `M₀ > 0` and `δ₀ > 0` with
+`‖L(χ, s)‖ < M₀` for every `s` within `δ₀` of `1/2`.  No bounded-race hypothesis is used. -/
+theorem exists_norm_LFunction_lt_near_half :
+    ∃ M₀ : ℝ, 0 < M₀ ∧ ∃ δ₀ : ℝ, 0 < δ₀ ∧ ∀ s : ℂ, ‖s - ((1 / 2 : ℝ) : ℂ)‖ < δ₀ →
+      ‖DirichletCharacter.LFunction χ s‖ < M₀ := by
+  have hcont : ContinuousAt (DirichletCharacter.LFunction χ) ((1 / 2 : ℝ) : ℂ) :=
+    (DirichletCharacter.differentiable_LFunction χ_ne_one).continuous.continuousAt
+  obtain ⟨δ₀, hδ₀pos, hδ₀⟩ := Metric.continuousAt_iff.mp hcont 1 one_pos
+  refine ⟨‖DirichletCharacter.LFunction χ ((1 / 2 : ℝ) : ℂ)‖ + 1,
+    add_pos_of_nonneg_of_pos (norm_nonneg _) one_pos, δ₀, hδ₀pos, fun s hs ↦ ?_⟩
+  have hd : dist (DirichletCharacter.LFunction χ s)
+      (DirichletCharacter.LFunction χ ((1 / 2 : ℝ) : ℂ)) < 1 :=
+    hδ₀ (by rwa [dist_eq_norm])
+  rw [dist_eq_norm] at hd
+  have hn := norm_sub_norm_le (DirichletCharacter.LFunction χ s)
+    (DirichletCharacter.LFunction χ ((1 / 2 : ℝ) : ℂ))
+  linarith
 
-Case `c ≠ 0` is `c_eq_zero_of_raceSum_linear`; case `c = 0` runs the Step D endgame: the
-continued logarithm `contLog` satisfies `exp ∘ contLog = L(χ, ·)` on `Ω = {Re s > 1/2}`
-by the identity theorem, but `Re (contLog σ) ≥ layerBReal σ - C - C_T → ∞` as `σ ↓ 1/2`
-by divergence transfer, contradicting the continuity of the entire `L(χ, ·)` at `1/2` —
-evaluated at a single point `σ*`, with no filters. -/
-theorem raceSum_not_linear :
-    ¬ ∃ (c C : ℝ), ∀ N : ℕ, |(raceSum N : ℝ) - c * (Nat.primeCounting N : ℝ)| ≤ C := by
-  rintro ⟨c, C, hC⟩
-  -- Case `c ≠ 0` (CaseNonzero.lean) forces `c = 0`.
-  have hc : c = 0 := c_eq_zero_of_raceSum_linear hC
-  subst hc
-  have hS : ∀ N : ℕ, |(raceSum N : ℝ)| ≤ C := fun N ↦ by simpa using hC N
-  -- Bounded partial sums, and the half-plane identity.
-  have hB : ∀ n, ‖∑ k ∈ Finset.range (n + 1), fChi k‖ ≤ C := norm_sum_range_fChi_le hS
-  have hEq := exp_contLog_eqOn hB
-  -- `L(χ, ·)` is entire, hence continuous at `1/2`: a bound `M₀` on a `δ₀`-ball.
-  obtain ⟨M₀, hM₀pos, δ₀, hδ₀pos, hball⟩ :
-      ∃ M₀ : ℝ, 0 < M₀ ∧ ∃ δ₀ : ℝ, 0 < δ₀ ∧ ∀ s : ℂ, ‖s - ((1 / 2 : ℝ) : ℂ)‖ < δ₀ →
-        ‖DirichletCharacter.LFunction χ s‖ < M₀ := by
-    have hcont : ContinuousAt (DirichletCharacter.LFunction χ) ((1 / 2 : ℝ) : ℂ) :=
-      (DirichletCharacter.differentiable_LFunction χ_ne_one).continuous.continuousAt
-    obtain ⟨δ₀, hδ₀pos, hδ₀⟩ := Metric.continuousAt_iff.mp hcont 1 one_pos
-    refine ⟨‖DirichletCharacter.LFunction χ ((1 / 2 : ℝ) : ℂ)‖ + 1,
-      add_pos_of_nonneg_of_pos (norm_nonneg _) one_pos, δ₀, hδ₀pos, fun s hs ↦ ?_⟩
-    have hd : dist (DirichletCharacter.LFunction χ s)
-        (DirichletCharacter.LFunction χ ((1 / 2 : ℝ) : ℂ)) < 1 :=
-      hδ₀ (by rwa [dist_eq_norm])
-    rw [dist_eq_norm] at hd
-    have hn := norm_sub_norm_le (DirichletCharacter.LFunction χ s)
-      (DirichletCharacter.LFunction χ ((1 / 2 : ℝ) : ℂ))
-    linarith
-  -- Divergence transfer: a single point `σ ∈ (1/2, 1/2 + δ₀)` where `layerBReal` is huge.
-  obtain ⟨σ, hσlo, hσhi, hσB⟩ :=
-    exists_layerBReal_gt (Real.log M₀ + C + C_T) hδ₀pos
-  -- `s* := σ` lies in `Ω`; evaluate the identity there.
+/-- Under the bounded-race hypothesis, on `Ω` the L-function has norm `exp (Re (contLog σ))`:
+for real `σ` with `1/2 < σ`, `‖L(χ, σ)‖ = Real.exp ((contLog σ).re)`, from the identity
+`exp ∘ contLog = L(χ, ·)` (`exp_contLog_eqOn`). -/
+theorem norm_LFunction_eq_exp_re_contLog {C : ℝ}
+    (hB : ∀ n, ‖∑ k ∈ Finset.range (n + 1), fChi k‖ ≤ C) {σ : ℝ} (hσ : 1 / 2 < σ) :
+    ‖DirichletCharacter.LFunction χ ((σ : ℝ) : ℂ)‖
+      = Real.exp ((contLog ((σ : ℝ) : ℂ)).re) := by
   have hmem : ((σ : ℝ) : ℂ) ∈ {s : ℂ | 1 / 2 < s.re} := by
     simp only [Set.mem_setOf_eq, Complex.ofReal_re]
-    exact hσlo
+    exact hσ
   have hexp : Complex.exp (contLog ((σ : ℝ) : ℂ)) = DirichletCharacter.LFunction χ σ :=
-    hEq hmem
-  have hnormL : ‖DirichletCharacter.LFunction χ ((σ : ℝ) : ℂ)‖ =
-      Real.exp ((contLog ((σ : ℝ) : ℂ)).re) := by
-    rw [← hexp, Complex.norm_exp]
-  -- `Re (contLog σ) = Re (bpSeries fChi σ) + layerBReal σ + layerTReal σ`.
+    exp_contLog_eqOn hB hmem
+  rw [← hexp, Complex.norm_exp]
+
+/-- Under the bounded-race hypothesis, `Re (contLog σ)` is bounded below by
+`layerBReal σ - C - cT` on `Ω`: writing
+`Re (contLog σ) = Re (bpSeries fChi σ) + layerBReal σ + layerTReal σ`, the by-parts real
+part is `≥ -C` (`norm_bpSeries_le_const`) and `layerTReal σ ≥ -cT` (`abs_layerTReal_le`). -/
+theorem layerBReal_sub_le_re_contLog {C : ℝ}
+    (hB : ∀ n, ‖∑ k ∈ Finset.range (n + 1), fChi k‖ ≤ C) {σ : ℝ} (hσ : 1 / 2 < σ) :
+    layerBReal σ - C - cT ≤ (contLog ((σ : ℝ) : ℂ)).re := by
   have hre : (contLog ((σ : ℝ) : ℂ)).re =
       (bpSeries fChi ((σ : ℝ) : ℂ)).re + layerBReal σ + layerTReal σ := by
     simp only [contLog, Complex.add_re, layerB_re, layerT_re]
-  -- Lower bounds: `Re (bpSeries fChi σ) ≥ -C` and `layerTReal σ ≥ -C_T`.
   have hσ0 : (0 : ℝ) ≤ σ := by linarith
   have hbp : ‖bpSeries fChi ((σ : ℝ) : ℂ)‖ ≤ C :=
     norm_bpSeries_le_const (n₀ := 2) hB one_le_two sum_range_fChi_vanish hσ0
   have hbpre : -C ≤ (bpSeries fChi ((σ : ℝ) : ℂ)).re :=
     (abs_le.mp ((Complex.abs_re_le_norm _).trans hbp)).1
-  have hT : -C_T ≤ layerTReal σ := (abs_le.mp (abs_layerTReal_le hσlo.le)).1
-  -- `Re (contLog σ) > log M₀`, so `‖L(χ, σ)‖ > M₀` …
+  have hT : -cT ≤ layerTReal σ := (abs_le.mp (abs_layerTReal_le hσ.le)).1
+  rw [hre]
+  linarith
+
+/-- **Main analytic theorem**: the mod-4 prime race is never linear — there are no
+constants `c`, `C` with `|S(N) - c·π(N)| ≤ C` for all `N`, where `S = raceSum` and
+`π = Nat.primeCounting` (# primes `≤ N`).
+
+Case `c ≠ 0` is `c_eq_zero_of_raceSum_linear`; case `c = 0` reduces to the bounded-race
+hypothesis `|S(N)| ≤ C`.  The continued logarithm `contLog` satisfies
+`exp ∘ contLog = L(χ, ·)` on `Ω = {Re s > 1/2}` by the identity theorem
+(`norm_LFunction_eq_exp_re_contLog`), but `Re (contLog σ) ≥ layerBReal σ - C - cT → ∞` as
+`σ ↓ 1/2` by divergence transfer (`layerBReal_sub_le_re_contLog` + `exists_layerBReal_gt`),
+contradicting the continuity of the entire `L(χ, ·)` at `1/2`
+(`exists_norm_LFunction_lt_near_half`) — evaluated at a single point `σ*`, with no filters. -/
+theorem raceSum_not_linear :
+    ¬ ∃ (c C : ℝ), ∀ N : ℕ, |(raceSum N : ℝ) - c * (Nat.primeCounting N : ℝ)| ≤ C := by
+  rintro ⟨c, C, hC⟩
+  -- Case `c ≠ 0` (CaseNonzero.lean) forces `c = 0`, leaving the bounded-race case.
+  have hc : c = 0 := c_eq_zero_of_raceSum_linear hC
+  subst hc
+  have hS : ∀ N : ℕ, |(raceSum N : ℝ)| ≤ C := fun N ↦ by simpa using hC N
+  have hB : ∀ n, ‖∑ k ∈ Finset.range (n + 1), fChi k‖ ≤ C := norm_sum_range_fChi_le hS
+  -- Continuity of `L(χ, ·)` at `1/2`: a bound `M₀` on a `δ₀`-ball.
+  obtain ⟨M₀, hM₀pos, δ₀, hδ₀pos, hball⟩ := exists_norm_LFunction_lt_near_half
+  -- Divergence transfer: a single point `σ ∈ (1/2, 1/2 + δ₀)` where `layerBReal` is huge.
+  obtain ⟨σ, hσlo, hσhi, hσB⟩ := exists_layerBReal_gt (Real.log M₀ + C + cT) hδ₀pos
+  -- At `σ` the identity gives `‖L(χ, σ)‖ = exp (Re (contLog σ)) > M₀` …
   have hGgt : Real.log M₀ < (contLog ((σ : ℝ) : ℂ)).re := by
-    rw [hre]
+    have := layerBReal_sub_le_re_contLog hB hσlo
     linarith
   have hLbig : M₀ < ‖DirichletCharacter.LFunction χ ((σ : ℝ) : ℂ)‖ := by
-    rw [hnormL]
+    rw [norm_LFunction_eq_exp_re_contLog hB hσlo]
     calc M₀ = Real.exp (Real.log M₀) := (Real.exp_log hM₀pos).symm
       _ < Real.exp ((contLog ((σ : ℝ) : ℂ)).re) := Real.exp_lt_exp.mpr hGgt
   -- … but `σ` is within `δ₀` of `1/2`, so `‖L(χ, σ)‖ < M₀`.  Contradiction.

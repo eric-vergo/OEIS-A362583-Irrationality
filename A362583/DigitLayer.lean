@@ -11,23 +11,24 @@ import Mathlib.NumberTheory.LSeries.PrimesInAP
 import Mathlib.NumberTheory.Real.Irrational
 
 /-!
-# A362583: the digit layer (Step A and Step B)
+# A362583: the binary digits of `ϱ`
 
-* **Step A** (`bits_infinite_ones`, `bits_infinite_zeros`): both residue classes
-  mod 4 contain infinitely many primes (Dirichlet's theorem), hence the bit
-  sequence has infinitely many ones and infinitely many zeros.  The transfer
-  from primes to bit indices is the injection `p ↦ Nat.count Nat.Prime p - 1`,
-  inverted by `oddPrime` via `Nat.nth_count`.
+Two facts about the bit sequence `bit`:
 
-* **Step B** (`eventuallyPeriodic_of_not_irrational`): if `ϱ` is rational its
-  bit sequence is eventually periodic — a pigeonhole on the binary tails
-  `t k = ∑_{j≥0} b_{k+j} 2^{-(j+1)}` (with `t 0 = ϱ`), following the standard
-  chain of lemmas B1–B5 below.  No general digit-expansion theory is used.
+* infinitude of both digit values (`bits_infinite_ones`, `bits_infinite_zeros`): both residue
+  classes mod 4 contain infinitely many primes (Dirichlet's theorem), hence the bit sequence
+  has infinitely many ones and infinitely many zeros.  The transfer from primes to bit indices
+  is the injection `p ↦ Nat.count Nat.Prime p - 1`, inverted by `oddPrime` via `Nat.nth_count`;
+
+* eventual periodicity of a rational's digits (`eventuallyPeriodic_of_not_irrational`): if `ϱ`
+  is rational its bit sequence is eventually periodic — a pigeonhole on the binary tails
+  `t k = ∑_{j≥0} b_{k+j} 2^{-(j+1)}` (with `t 0 = ϱ`).  No general digit-expansion theory is
+  used.
 -/
 
 namespace A362583
 
-/-! ## Step A: both bit values occur infinitely often -/
+/-! ## Both bit values occur infinitely often -/
 
 /-- Bookkeeping: `bit k = 1` iff the `k`-th odd prime is `≡ 3 (mod 4)`
 (definitional unfolding of `bit`). -/
@@ -97,7 +98,7 @@ private lemma infinite_primes_one_mod_four : {p : ℕ | p.Prime ∧ p % 4 = 1}.I
     simp only [Set.mem_setOf_eq, hbr]
   rwa [hset] at h
 
-/-- **Step A**: infinitely many primes are `≡ 3 (mod 4)`, so the bit
+/-- Infinitely many primes are `≡ 3 (mod 4)`, so the bit
 sequence contains infinitely many ones. -/
 lemma bits_infinite_ones : {k | bit k = 1}.Infinite := by
   have hidx := infinite_oddPrime_index infinite_primes_three_mod_four
@@ -105,7 +106,7 @@ lemma bits_infinite_ones : {k | bit k = 1}.Infinite := by
   refine hidx.mono fun k hk ↦ ?_
   exact bit_eq_one_iff.mpr hk.2
 
-/-- **Step A**: infinitely many primes are `≡ 1 (mod 4)`, so the bit
+/-- Infinitely many primes are `≡ 1 (mod 4)`, so the bit
 sequence contains infinitely many zeros. -/
 lemma bits_infinite_zeros : {k | bit k = 0}.Infinite := by
   have hidx := infinite_oddPrime_index infinite_primes_one_mod_four
@@ -114,11 +115,11 @@ lemma bits_infinite_zeros : {k | bit k = 0}.Infinite := by
   have h1 : oddPrime k % 4 = 1 := hk.2
   exact bit_eq_zero_iff.mpr (by omega)
 
-/-! ## Step B: rational ⇒ eventually periodic bits
+/-! ## Rational ⇒ eventually periodic bits
 
 The tail `t k = ∑_{j≥0} b_{k+j} 2^{-(j+1)}` is the 0-based reindexing of the
-1-based bit sequence (`b_{k+1} = bit k`), so `t 0 = ϱ`, the recurrence B2 reads
-`t k = (bit k + t (k+1))/2`, and B3 reads `t k = Int.fract (2^k * ϱ)`. -/
+1-based bit sequence (`b_{k+1} = bit k`), so `t 0 = ϱ`, the recurrence reads
+`t k = (bit k + t (k+1))/2`, and `t k = Int.fract (2^k * ϱ)`. -/
 
 /-- The binary tail `t k = ∑_{j≥0} b_{k+j} 2^{-(j+1)}`. -/
 private noncomputable def t (k : ℕ) : ℝ := ∑' j : ℕ, (bit (k + j) : ℝ) / 2 ^ (j + 1)
@@ -162,7 +163,7 @@ private lemma tsum_geom : ∑' j : ℕ, ((1 : ℝ) / 2) ^ (j + 1) = 1 := by
 private lemma summable_t (k : ℕ) : Summable (fun j : ℕ ↦ (bit (k + j) : ℝ) / 2 ^ (j + 1)) :=
   Summable.of_nonneg_of_le (term_nonneg k) (term_le_geom k) summable_geom
 
-/-- **(B1)**: `0 < t k`, from infinitely many later ones (Step A). -/
+/-- `0 < t k`, from infinitely many later ones (`bits_infinite_ones`). -/
 private lemma t_pos (k : ℕ) : 0 < t k := by
   obtain ⟨m, hm, hkm⟩ := bits_infinite_ones.exists_gt k
   have hm' : bit m = 1 := hm
@@ -172,7 +173,7 @@ private lemma t_pos (k : ℕ) : 0 < t k := by
   push_cast
   positivity
 
-/-- **(B1)**: `t k < 1`, from infinitely many later zeros (Step A);
+/-- `t k < 1`, from infinitely many later zeros (`bits_infinite_zeros`);
 strictness by the `Pins.lean` incantation `Summable.tsum_lt_tsum_of_nonneg`. -/
 private lemma t_lt_one (k : ℕ) : t k < 1 := by
   obtain ⟨m, hm, hkm⟩ := bits_infinite_zeros.exists_gt k
@@ -185,7 +186,7 @@ private lemma t_lt_one (k : ℕ) : t k < 1 := by
         Summable.tsum_lt_tsum_of_nonneg (term_nonneg k) (term_le_geom k) hstrict summable_geom
     _ = 1 := tsum_geom
 
-/-- **(B2)**: the recurrence `t k = (bit k + t (k+1)) / 2`; peel `j = 0` off
+/-- The recurrence `t k = (bit k + t (k+1)) / 2`; peel `j = 0` off
 the tsum. -/
 private lemma t_rec (k : ℕ) : t k = ((bit k : ℝ) + t (k + 1)) / 2 := by
   have h0 : t k = (bit (k + 0) : ℝ) / 2 ^ (0 + 1)
@@ -202,13 +203,13 @@ private lemma t_rec (k : ℕ) : t k = ((bit k : ℝ) + t (k + 1)) / 2 := by
   simp only [Nat.add_zero, Nat.zero_add, pow_one]
   ring
 
-/-- **(B2)**: `t (k+1) = 2·t k - bit k`. -/
+/-- `t (k+1) = 2·t k - bit k`. -/
 private lemma t_succ (k : ℕ) : t (k + 1) = 2 * t k - (bit k : ℝ) := by
   have := t_rec k
   linarith
 
-/-- **(B2)**: the tail determines the bit — `bit k = 1 ↔ 1/2 < t k`
-(uses B1 at `k+1`; in particular `t k ≠ 1/2`). -/
+/-- The tail determines the bit — `bit k = 1 ↔ 1/2 < t k`
+(uses `t_pos` and `t_lt_one` at `k+1`; in particular `t k ≠ 1/2`). -/
 private lemma bit_one_iff_half_lt (k : ℕ) : bit k = 1 ↔ 1 / 2 < t k := by
   have hrec := t_rec k
   have hpos := t_pos (k + 1)
@@ -225,15 +226,15 @@ private lemma bit_one_iff_half_lt (k : ℕ) : bit k = 1 ↔ 1 / 2 < t k := by
       linarith
     · exact h1
 
-/-- **(B2)** consequence: equal tails give equal bits. -/
+/-- Equal tails give equal bits. -/
 private lemma bit_eq_of_t_eq {m n : ℕ} (h : t m = t n) : bit m = bit n := by
   have hm := bit_one_iff_half_lt m
   have hn := bit_one_iff_half_lt n
   rw [h] at hm
   grind [bit_zero_or_one]
 
-/-- **(B5)** induction: a tail collision propagates to all later
-indices, via B2's determinism. -/
+/-- A tail collision propagates to all later
+indices, via the recurrence's determinism. -/
 private lemma t_eq_add {m n : ℕ} (h : t m = t n) (i : ℕ) : t (m + i) = t (n + i) := by
   induction i with
   | zero => simpa using h
@@ -242,7 +243,7 @@ private lemma t_eq_add {m n : ℕ} (h : t m = t n) (i : ℕ) : t (m + i) = t (n 
     change t ((m + i) + 1) = t ((n + i) + 1)
     rw [t_succ, t_succ, ih, hb]
 
-/-- **(B3)**: `t k = fract (2^k ϱ)` — the binary prefix of `2^k ϱ`
+/-- `t k = fract (2^k ϱ)` — the binary prefix of `2^k ϱ`
 is an integer and the tail lies in `[0,1)` (via `Int.fract_intCast_add`). -/
 private lemma t_eq_fract (k : ℕ) : t k = Int.fract ((2 : ℝ) ^ k * ϱ) := by
   induction k with
@@ -260,7 +261,7 @@ private lemma t_eq_fract (k : ℕ) : t k = Int.fract ((2 : ℝ) ^ k * ϱ) := by
       linear_combination 2 * hfl - hsucc
     rw [hkey, Int.fract_intCast_add, Int.fract_eq_self.mpr ⟨(t_pos _).le, t_lt_one _⟩]
 
-/-- **(B4)**: if `ϱ` is rational then the tails
+/-- If `ϱ` is rational then the tails
 `t k = fract (2^k · a/b) ∈ {0, 1/b, …, (b-1)/b}` take finitely many values, so
 two collide (pigeonhole through `ZMod q.den`). -/
 private lemma exists_t_collision (h : ¬ Irrational ϱ) : ∃ m n : ℕ, m < n ∧ t m = t n := by
@@ -281,9 +282,10 @@ private lemma exists_t_collision (h : ¬ Irrational ϱ) : ∃ m n : ℕ, m < n �
   · exact ⟨k₁, k₂, hlt, hteq⟩
   · exact ⟨k₂, k₁, hlt, hteq.symm⟩
 
-/-- **Step B** (B1–B5): if `ϱ` is rational, its bit sequence is
-eventually periodic — pigeonhole two equal tails `t m = t n` (B4), propagate the
-collision by B2's determinism (B5), giving period `P = n - m` from index `m`. -/
+/-- If `ϱ` is rational, its bit sequence is
+eventually periodic — pigeonhole two equal tails `t m = t n` (`exists_t_collision`),
+propagate the collision by the recurrence's determinism (`t_eq_add`), giving period
+`P = n - m` from index `m`. -/
 lemma eventuallyPeriodic_of_not_irrational :
     ¬ Irrational ϱ → ∃ N P, 0 < P ∧ ∀ k ≥ N, bit (k + P) = bit k := by
   intro h
