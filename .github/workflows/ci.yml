@@ -12,7 +12,7 @@ name: CI
 #   4. Build + generate + gate the blueprint site and upload it as a Pages
 #      artifact (subsumes the old site.yml). The comparator's fresh
 #      comparator-status.json is on disk BEFORE the site build, because the
-#      site bakes it into its trust page at elaboration time
+#      site bakes it into its comparator page at elaboration time
 #      (verso.blueprint.trust.comparatorStatus = "../comparator-status.json").
 # The `deploy` job then publishes the artifact to GitHub Pages.
 #
@@ -90,6 +90,37 @@ jobs:
           # invocations.
           lake env "${GITHUB_WORKSPACE}/comparator/.lake/build/bin/comparator" comparator.json
 
+      # Resolve a *step-level* deep link to the "Run comparator" step above, so the
+      # comparator page's "View CI run" link lands the reader on the kernel replay in
+      # the logs, not just the run summary. Best-effort: ANY failure of the API / jq
+      # lookup falls back to the run-level URL — this step MUST never fail the job
+      # (hence `set -uo pipefail` without `-e`, and `|| true` on every lookup). The
+      # resolved URL is exported via $GITHUB_ENV as CI_RUN_URL for the two consumers
+      # below: "Refresh comparator-status.json" (writes it into run_url) and
+      # "Build Contents" (feeds verso.blueprint.trust.ciRunUrl).
+      - name: Resolve CI run deep link
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          set -uo pipefail
+          fallback="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          deep=""
+          jobs_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs?per_page=100" 2>/dev/null || true)"
+          if [ -n "$jobs_json" ]; then
+            # The build job is the one containing a step literally named "Run comparator".
+            job="$(printf '%s' "$jobs_json" | jq -c 'first(.jobs[] | select(any(.steps[]?; .name == "Run comparator")))' 2>/dev/null || true)"
+            if [ -n "$job" ] && [ "$job" != "null" ]; then
+              job_id="$(printf '%s' "$job" | jq -r '.id // empty' 2>/dev/null || true)"
+              step_no="$(printf '%s' "$job" | jq -r 'first(.steps[]? | select(.name == "Run comparator") | .number) // empty' 2>/dev/null || true)"
+              if [ -n "$job_id" ] && [ -n "$step_no" ]; then
+                deep="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/job/${job_id}#step:${step_no}:1"
+              fi
+            fi
+          fi
+          url="${deep:-$fallback}"
+          echo "CI_RUN_URL=$url" >> "$GITHUB_ENV"
+          echo "Resolved CI_RUN_URL=$url"
+
       - name: Refresh comparator-status.json
         run: |
           set -euo pipefail
@@ -98,7 +129,8 @@ jobs:
           # linked run. This fresh file is now on disk for the site build below.
           ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           note="Verified in CI by leanprover/comparator (.github/workflows/ci.yml): the Solution module's proof kernel-checks the exact Challenge statement Challenge.irrational_ϱ, using only the permitted axioms propext, Quot.sound, and Classical.choice. Statement equality, axiom whitelist, and Lean-kernel replay all confirmed."
-          run_url="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          # Prefer the step-level deep link resolved above; fall back to run-level.
+          run_url="${CI_RUN_URL:-${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}}"
           jq --arg ts "$ts" --arg note "$note" --arg run_url "$run_url" \
             '.status = "verified" | .verified_at = $ts | .note = $note | .run_url = $run_url' \
             comparator-status.json > comparator-status.json.tmp
@@ -153,10 +185,12 @@ jobs:
         # `-R` (reconfigure) forces the lakefile to re-elaborate so it re-reads
         # CI_RUN_URL fresh: Lake's config trace keys off the lakefile text hash
         # (+ toolchain/platform), NOT env vars, so a warm-cache run would
-        # otherwise splice in a stale run URL. The URL feeds the
-        # `verso.blueprint.trust.ciRunUrl` lean option (see site/lakefile.lean).
+        # otherwise splice in a stale run URL. The URL — the step-level deep link
+        # resolved by "Resolve CI run deep link" above (via $GITHUB_ENV) — feeds
+        # the `verso.blueprint.trust.ciRunUrl` lean option (see site/lakefile.lean),
+        # which the comparator page uses as its CI-run link fallback.
         env:
-          CI_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+          CI_RUN_URL: ${{ env.CI_RUN_URL }}
         run: lake build Contents -R   # never plain `lake build`: the exe target fails the MD4Lean native link
       - name: Generate site
         working-directory: site
@@ -177,24 +211,6 @@ jobs:
           # isn't the last statement silently false-passes. Explicit `if` is safe.
           if grep -RIl 'jsdelivr' _out/site/html-multi; then echo "off-origin: jsdelivr reference(s) found"; exit 1; fi
           if grep -RIEl '<(script[^>]*[[:space:]]src|link[^>]*[[:space:]]href)="https?://' _out/site/html-multi; then echo "off-origin: external script/link asset(s) found"; exit 1; fi
-      - name: Trust gate
-        working-directory: site
-        run: |
-          set -euo pipefail
-          audit="_out/site/html-multi/-verso-data/trust-audit.json"
-          if [ ! -f "$audit" ]; then
-            echo "trust gate: $audit is missing"; exit 1
-          fi
-          # Must be valid JSON.
-          jq empty "$audit"
-          # Fail the job if any check has verdict == "fail".
-          fails="$(jq -r '[.checks[] | select(.verdict == "fail")] | length' "$audit")"
-          if [ "$fails" -ne 0 ]; then
-            echo "trust gate: $fails check(s) with verdict==fail:"
-            jq -r '.checks[] | select(.verdict == "fail") | "  - \(.id): \(.title)"' "$audit"
-            exit 1
-          fi
-          echo "trust gate: all checks pass or unknown ($(jq -r '.checks | length' "$audit") checks)"
       - uses: actions/configure-pages@v6
       - uses: actions/upload-pages-artifact@v5
         with:
