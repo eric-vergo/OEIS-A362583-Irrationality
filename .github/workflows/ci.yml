@@ -150,7 +150,14 @@ jobs:
         run: lake exe cache get || true
       - name: Build Contents
         working-directory: site
-        run: lake build Contents   # never plain `lake build`: the exe target fails the MD4Lean native link
+        # `-R` (reconfigure) forces the lakefile to re-elaborate so it re-reads
+        # CI_RUN_URL fresh: Lake's config trace keys off the lakefile text hash
+        # (+ toolchain/platform), NOT env vars, so a warm-cache run would
+        # otherwise splice in a stale run URL. The URL feeds the
+        # `verso.blueprint.trust.ciRunUrl` lean option (see site/lakefile.lean).
+        env:
+          CI_RUN_URL: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}
+        run: lake build Contents -R   # never plain `lake build`: the exe target fails the MD4Lean native link
       - name: Generate site
         working-directory: site
         run: |
