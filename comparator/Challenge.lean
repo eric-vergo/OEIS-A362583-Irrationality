@@ -16,7 +16,7 @@ verbatim from `A362583/Defs.lean` and the main theorem statement from
 `A362583/Main.lean`, here left with proof `sorry`.
 
 The `sorry` is **by design**: this file is the comparator's *input*, not part of
-any proof.  Its companion, the `Solution` module (`Solution/Solution.lean`),
+any proof.  Its companion, the `Solution` module (`comparator/Solution.lean`),
 re-states the same definitions and *proves* this theorem, deriving it from the
 library's `A362583.irrational_ϱ`.  The comparator (`leanprover/comparator`;
 Linux-only, run in CI — see `comparator.json` and `comparator-status.json`)

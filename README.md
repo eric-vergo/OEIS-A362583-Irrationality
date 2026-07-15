@@ -47,8 +47,7 @@ oscillation results.
 |------|----------|
 | `A362583/` | The formalization library. `Defs.lean` (the four elementary definitions), `Pins.lean` (sanity checks), `DigitLayer.lean` (Steps A, B), `RaceCount.lean` (Step C), `Layers.lean` / `EulerLog.lean` / `BoundedHolo.lean` / `CaseNonzero.lean` / `CaseZero.lean` (Step D), `Main.lean` (final assembly). |
 | `A362583.lean` | Library root; imports every module. |
-| `Challenge/`, `Challenge.lean` | An independent restatement of the main theorem for the comparator (see below). |
-| `comparator.json`, `comparator-status.json` | Comparator configuration and status. |
+| `comparator/` | Independent-verification bundle for the [comparator](https://github.com/leanprover/comparator) (see below): `Challenge.lean` (the `sorry`d restatement of the main theorem), `Solution.lean` (its proof, derived from `A362583`), and `comparator.json` / `comparator-status.json` (its configuration and status). |
 | `formalization.yaml` | Project metadata in the [formalization.yaml](https://github.com/mathlib-initiative/formalization.yaml) standard. |
 | `lakefile.toml`, `lean-toolchain`, `lake-manifest.json` | Build configuration. |
 | `LICENSE` | Apache License 2.0. |
@@ -60,7 +59,7 @@ from `lean-toolchain`. Fetch Mathlib's prebuilt artifacts and build:
 
 ```bash
 lake exe cache get   # download Mathlib oleans (optional but much faster)
-lake build           # builds the A362583 and Challenge libraries
+lake build           # builds the A362583, Challenge, and Solution libraries
 ```
 
 A successful build is `sorry`-free by construction. To check the axiom footprint of the
@@ -82,13 +81,30 @@ This prints exactly
 
 ## Independent verification
 
-`Challenge/Challenge.lean` restates the main theorem (and the three definitions it
+`comparator/Challenge.lean` restates the main theorem (and the three definitions it
 mentions) from scratch, importing nothing from the `A362583` library, with proof
 `sorry`. This `sorry` is intentional: the file is the input to the
-[comparator](https://github.com/leanprover/comparator), which elaborates the challenge
-and the library in separate environments and certifies, kernel-checked, that the library
-proves this exact statement using only the permitted axioms. The comparator requires
-Linux and is run in CI; `comparator-status.json` records the result.
+[comparator](https://github.com/leanprover/comparator). Its companion
+`comparator/Solution.lean` re-states the same definitions and proves the challenge
+theorem by deriving it from the `A362583` library. The comparator elaborates the two
+modules in separate environments and certifies, kernel-checked, that the solution proves
+this exact statement using only the permitted axioms. The comparator requires Linux and
+is run in CI; `comparator/comparator-status.json` records the result.
+
+To reproduce the check locally (on Linux), check the comparator out as `comparator-tool`
+— a sibling of this repository's own `comparator/` folder, so the two never collide — and
+run it from the repository root:
+
+```bash
+git clone --branch v4.31.0 https://github.com/leanprover/comparator.git comparator-tool
+( cd comparator-tool && lake build lean4export comparator )
+lake env comparator-tool/.lake/build/bin/comparator comparator/comparator.json
+```
+
+The `--branch` tag is the toolchain-matched comparator release (see the `ref:` in
+`.github/workflows/ci.yml`, mirrored by `tool_ref` in `comparator/comparator-status.json`).
+The comparator runs its checks inside a Linux Landlock sandbox; its repository documents
+the environment setup.
 
 ## Blueprint site
 

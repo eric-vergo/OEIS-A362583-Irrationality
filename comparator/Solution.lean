@@ -9,7 +9,7 @@ import A362583
 # Comparator solution: proving the challenge statement
 
 This module is the **official solution** to the comparator challenge
-(`Challenge/Challenge.lean`).  It re-states the three definitions verbatim and
+(`comparator/Challenge.lean`).  It re-states the three definitions verbatim and
 *proves* the challenge theorem `Challenge.irrational_ϱ`, deriving it from the
 `A362583` library's `A362583.irrational_ϱ`.
 

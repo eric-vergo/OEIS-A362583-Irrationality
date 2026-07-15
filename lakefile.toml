@@ -22,6 +22,7 @@ leanOptions = { weak.linter.style.header = false }
 
 [[lean_lib]]
 name = "Challenge"
+srcDir = "comparator"
 # Comparator challenge (see comparator.json): a self-contained restatement of
 # the locked claims with `sorry` proofs — sorry *warnings* here are expected
 # and by design.  Skip the strict Mathlib header linter.
@@ -29,6 +30,7 @@ leanOptions = { weak.linter.style.header = false }
 
 [[lean_lib]]
 name = "Solution"
+srcDir = "comparator"
 # Comparator solution (see comparator.json): the official proof of the challenge
 # theorem Challenge.irrational_ϱ, derived from the A362583 library — no `sorry`,
 # no axioms beyond the whitelist.  Only the strict Mathlib header linter is

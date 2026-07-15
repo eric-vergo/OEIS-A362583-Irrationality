@@ -1,6 +1,6 @@
 {
   "status": "verified",
-  "config": "comparator.json",
+  "config": "comparator/comparator.json",
   "solution_module": "Solution",
   "theorem_names": [
     "Challenge.irrational_ϱ"

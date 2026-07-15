@@ -7,13 +7,14 @@ name: CI
 #   2. Run leanprover/comparator: kernel-replay + axiom-whitelist + statement
 #      equality that the Solution module proves the exact Challenge statement
 #      Challenge.irrational_ϱ (subsumes the old comparator.yml).
-#   3. Refresh comparator-status.json on disk (status/verified_at/note/run_url)
-#      and, on a push to main, commit it back as github-actions[bot].
+#   3. Refresh comparator/comparator-status.json on disk (status/verified_at/
+#      note/run_url/tool_ref) and, on a push to main, commit it back as
+#      github-actions[bot].
 #   4. Build + generate + gate the blueprint site and upload it as a Pages
 #      artifact (subsumes the old site.yml). The comparator's fresh
-#      comparator-status.json is on disk BEFORE the site build, because the
-#      site bakes it into its comparator page at elaboration time
-#      (verso.blueprint.trust.comparatorStatus = "../comparator-status.json").
+#      comparator/comparator-status.json is on disk BEFORE the site build,
+#      because the site bakes it into its comparator page at elaboration time
+#      (verso.blueprint.trust.comparatorStatus = "../comparator/comparator-status.json").
 # The `deploy` job then publishes the artifact to GitHub Pages.
 #
 # create-release.yml stays separate (it fires only on a lean-toolchain bump).
@@ -25,7 +26,7 @@ on:
       # The comparator's own status-flip commit must not re-trigger this
       # workflow. The commit-back also uses GITHUB_TOKEN, which does not fire
       # `push:` — this paths-ignore is the belt-and-braces second guard.
-      - 'comparator-status.json'
+      - 'comparator/comparator-status.json'
   pull_request:
   workflow_dispatch:
 
@@ -58,8 +59,14 @@ jobs:
         uses: actions/checkout@v5
         with:
           repository: leanprover/comparator
+          # Toolchain-matched comparator tag. Kept in lockstep with the
+          # `.tool_ref` value written into comparator/comparator-status.json by
+          # the "Refresh" step below — bump the two together on a toolchain bump.
           ref: v4.31.0
-          path: comparator
+          # Check the tool out as `comparator-tool`, NOT `comparator`: the repo
+          # now tracks a `comparator/` directory (Challenge/Solution + JSON), so
+          # `path: comparator` would have actions/checkout clobber it.
+          path: comparator-tool
 
       # Installs elan + the v4.31.0 toolchain, restores the Mathlib olean cache,
       # and builds both formalization libraries. With A362583 fully pre-built,
@@ -75,20 +82,20 @@ jobs:
           lint: false
 
       - name: Build the comparator tool and lean4export
-        working-directory: comparator
+        working-directory: comparator-tool
         run: lake build lean4export comparator
 
       - name: Run comparator
         env:
-          COMPARATOR_LANDRUN: ${{ github.workspace }}/comparator/scripts/fake-landrun.sh
-          COMPARATOR_LEAN4EXPORT: ${{ github.workspace }}/comparator/.lake/packages/lean4export/.lake/build/bin/lean4export
+          COMPARATOR_LANDRUN: ${{ github.workspace }}/comparator-tool/scripts/fake-landrun.sh
+          COMPARATOR_LEAN4EXPORT: ${{ github.workspace }}/comparator-tool/.lake/packages/lean4export/.lake/build/bin/lean4export
         run: |
           set -euo pipefail
           chmod +x "$COMPARATOR_LANDRUN"
           # Run from the solution repo root so `lake env` supplies A362583's
           # LEAN_PATH (Mathlib et al.) to the comparator and its child `lake`
           # invocations.
-          lake env "${GITHUB_WORKSPACE}/comparator/.lake/build/bin/comparator" comparator.json
+          lake env "${GITHUB_WORKSPACE}/comparator-tool/.lake/build/bin/comparator" comparator/comparator.json
 
       # Resolve a *step-level* deep link to the "Run comparator" step above, so the
       # comparator page's "View CI run" link lands the reader on the kernel replay in
@@ -124,17 +131,22 @@ jobs:
       - name: Refresh comparator-status.json
         run: |
           set -euo pipefail
-          # Always refresh the record: status, verified_at, note, and run_url all
-          # describe this successful certifying run, so the timestamp matches the
-          # linked run. This fresh file is now on disk for the site build below.
+          # Always refresh the record: status, verified_at, note, run_url, and
+          # tool_ref all describe this successful certifying run, so the timestamp
+          # matches the linked run. This fresh file is now on disk for the site
+          # build below.
           ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
           note="Verified in CI by leanprover/comparator (.github/workflows/ci.yml): the Solution module's proof kernel-checks the exact Challenge statement Challenge.irrational_ϱ, using only the permitted axioms propext, Quot.sound, and Classical.choice. Statement equality, axiom whitelist, and Lean-kernel replay all confirmed."
           # Prefer the step-level deep link resolved above; fall back to run-level.
           run_url="${CI_RUN_URL:-${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}}"
+          # tool_ref records the comparator tag used for this run so the blueprint's
+          # "reproduce it yourself" section can `git clone --branch <tool_ref>`.
+          # It MUST stay in lockstep with the checkout `ref:` above (both are the
+          # toolchain-matched comparator tag) — bump the two together.
           jq --arg ts "$ts" --arg note "$note" --arg run_url "$run_url" \
-            '.status = "verified" | .verified_at = $ts | .note = $note | .run_url = $run_url' \
-            comparator-status.json > comparator-status.json.tmp
-          mv comparator-status.json.tmp comparator-status.json
+            '.status = "verified" | .verified_at = $ts | .note = $note | .run_url = $run_url | .tool_ref = "v4.31.0"' \
+            comparator/comparator-status.json > comparator/comparator-status.json.tmp
+          mv comparator/comparator-status.json.tmp comparator/comparator-status.json
 
       - name: Commit comparator-status.json back to main
         # Only on a real push to main. On PRs/dispatch we keep the refreshed file
@@ -143,13 +155,13 @@ jobs:
         if: github.event_name == 'push'
         run: |
           set -euo pipefail
-          if git diff --quiet -- comparator-status.json; then
+          if git diff --quiet -- comparator/comparator-status.json; then
             echo "No change to comparator-status.json; skipping commit."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add comparator-status.json
+          git add comparator/comparator-status.json
           git commit \
             -m "comparator: verified" \
             -m "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
