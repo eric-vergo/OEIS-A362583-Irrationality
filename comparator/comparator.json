@@ -3,5 +3,5 @@
   "solution_module": "Solution",
   "theorem_names": ["Challenge.irrational_ϱ"],
   "permitted_axioms": ["propext", "Quot.sound", "Classical.choice"],
-  "enable_nanoda": false
+  "enable_nanoda": true
 }

@@ -17,7 +17,7 @@ open Lake DSL
 -- self-hosted-`marked` invariant that the forks provide.
 require subverso from git "https://github.com/eric-vergo/subverso.git" @ "62b4fda523e8b367180fac5e3c47a7d0f81dadd4"
 require verso from git "https://github.com/eric-vergo/verso.git" @ "8352397591c64bc9d7543aea295330ad5083b140"
-require VersoBlueprint from git "https://github.com/eric-vergo/verso-blueprint.git" @ "5bf480a4cb52caeb88a4a04b23b12377ebdc3fd4"
+require VersoBlueprint from git "https://github.com/eric-vergo/verso-blueprint.git" @ "f680898dc77f99aa56ab57960431b8b593952706"
 require A362583 from ".."
 require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.31.0"
 
