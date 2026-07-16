@@ -4,13 +4,17 @@ name: CI
 #   1. Set up Lean (elan + v4.31.0), restore the Mathlib cache, and build the
 #      formalization libraries A362583 + Challenge + Solution (subsumes the old
 #      lean_action_ci.yml plain-build check).
-#   2. Run leanprover/comparator: kernel-replay + axiom-whitelist + statement
+#   2. Build the sandbox + verifier binaries (real landrun for Landlock
+#      sandboxing, nanoda_bin for the independent second kernel), SHA-pinned
+#      and cached, then self-test that Landlock actually confines.
+#   3. Run leanprover/comparator: sandboxed (landrun) kernel-replay with BOTH
+#      the Lean kernel and the nanoda kernel + axiom-whitelist + statement
 #      equality that the Solution module proves the exact Challenge statement
 #      Challenge.irrational_ϱ (subsumes the old comparator.yml).
-#   3. Refresh comparator/comparator-status.json on disk (status/verified_at/
+#   4. Refresh comparator/comparator-status.json on disk (status/verified_at/
 #      note/run_url/tool_ref) and, on a push to main, commit it back as
 #      github-actions[bot].
-#   4. Build + generate + gate the blueprint site and upload it as a Pages
+#   5. Build + generate + gate the blueprint site and upload it as a Pages
 #      artifact (subsumes the old site.yml). The comparator's fresh
 #      comparator/comparator-status.json is on disk BEFORE the site build,
 #      because the site bakes it into its comparator page at elaboration time
@@ -47,13 +51,22 @@ jobs:
   build:
     runs-on: ubuntu-latest
     timeout-minutes: 240
+    env:
+      # Zouuup/landrun main-branch HEAD (the comparator README requires landrun
+      # built from main), resolved 2026-07-16. Bump deliberately; the verifier
+      # cache key derives from these SHAs, so a bump forces a rebuild.
+      LANDRUN_REF: "5ed4a3db3a4ad930d577215c6b9abaa19df7f99f"
+      # ammkrn/nanoda_lib default-branch HEAD (ahead of tag v0.3.2), resolved
+      # 2026-07-16.
+      NANODA_REF: "f58f2f6d535e189a40fcb02ede8eb95f97a92d37"
     steps:
       - name: Check out this repository (solution + challenge + site)
         uses: actions/checkout@v5
         with:
-          # Needed so the comparator step can commit comparator-status.json
-          # back to main.
-          persist-credentials: true
+          # Do NOT leave the write-capable token in .git/config for the whole
+          # job (many minutes of third-party build code run here). The
+          # commit-back step below authenticates its single push explicitly.
+          persist-credentials: false
 
       - name: Check out leanprover/comparator (toolchain-matched tag)
         uses: actions/checkout@v5
@@ -67,12 +80,71 @@ jobs:
           # now tracks a `comparator/` directory (Challenge/Solution + JSON), so
           # `path: comparator` would have actions/checkout clobber it.
           path: comparator-tool
+          persist-credentials: false
+
+      # --- Sandbox + second-kernel verifier binaries -------------------------
+      # Real landrun (Landlock) replaces the tool's fake-landrun.sh no-op shim,
+      # and nanoda_bin provides the independent second kernel for
+      # enable_nanoda in comparator/comparator.json. Both are SHA-pinned and
+      # cached; no restore-keys on purpose — a binary at the wrong SHA must
+      # never be silently reused, a miss just rebuilds (~2-3 min).
+      - name: Restore verifier binaries (landrun + nanoda)
+        id: verifier-cache
+        uses: actions/cache@v5
+        with:
+          path: ~/.verifier-bin
+          key: ${{ runner.os }}-verifiers-v1-${{ env.LANDRUN_REF }}-${{ env.NANODA_REF }}
+
+      - name: Build landrun (cache miss only)
+        if: steps.verifier-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.verifier-bin"
+          # Module path is lowercase (module github.com/zouuup/landrun); the
+          # proxy + sumdb verify the module zip and all deps at this exact SHA.
+          GOBIN="$HOME/.verifier-bin" go install "github.com/zouuup/landrun/cmd/landrun@${LANDRUN_REF}"
+
+      - name: Build nanoda_bin (cache miss only)
+        if: steps.verifier-cache.outputs.cache-hit != 'true'
+        run: |
+          set -euo pipefail
+          mkdir -p "$HOME/.verifier-bin"
+          git clone https://github.com/ammkrn/nanoda_lib.git "$RUNNER_TEMP/nanoda_lib"
+          git -C "$RUNNER_TEMP/nanoda_lib" checkout --detach "$NANODA_REF"
+          # nanoda_lib commits Cargo.lock, so --locked pins the crate graph.
+          cargo build --release --locked --manifest-path "$RUNNER_TEMP/nanoda_lib/Cargo.toml"
+          install -m 0755 "$RUNNER_TEMP/nanoda_lib/target/release/nanoda_bin" "$HOME/.verifier-bin/nanoda_bin"
+
+      - name: Expose verifier binaries
+        run: |
+          set -euo pipefail
+          test -x "$HOME/.verifier-bin/landrun"
+          test -x "$HOME/.verifier-bin/nanoda_bin"
+          echo "COMPARATOR_LANDRUN=$HOME/.verifier-bin/landrun" >> "$GITHUB_ENV"
+          echo "COMPARATOR_NANODA=$HOME/.verifier-bin/nanoda_bin" >> "$GITHUB_ENV"
+
+      # landrun is invoked with --best-effort, which silently degrades to
+      # no-sandbox on a Landlock-less kernel. This step turns that silent
+      # degradation into a hard failure: if the canary write is not denied,
+      # the runner image regressed and the run must not certify anything.
+      - name: Landlock sandbox self-test
+        run: |
+          set -euo pipefail
+          # Positive control: an allowed command must succeed under landrun.
+          "$COMPARATOR_LANDRUN" --best-effort --ro / --rw /dev -ldd -add-exec true
+          # Negative control: a write outside the allowed paths must be denied.
+          if "$COMPARATOR_LANDRUN" --best-effort --ro / --rw /dev -ldd -add-exec touch "$HOME/landlock-canary" 2>/dev/null; then
+            echo "landrun failed to block a write outside the allowed paths"
+            exit 1
+          fi
+          test ! -e "$HOME/landlock-canary"
 
       # Installs elan + the v4.31.0 toolchain, restores the Mathlib olean cache,
       # and builds both formalization libraries. With A362583 fully pre-built,
-      # the comparator's own (unsandboxed) `lake build` steps are no-ops, so it
-      # only exports the oleans and verifies. elan is left on PATH for the later
-      # comparator and site steps (site/lean-toolchain pins the same v4.31.0).
+      # the comparator's sandboxed `lake build` steps are no-ops (the tool
+      # README's recommended trust posture), so it only exports the oleans and
+      # verifies. elan is left on PATH for the later comparator and site steps
+      # (site/lean-toolchain pins the same v4.31.0).
       - name: Set up Lean and build A362583 + Challenge
         uses: leanprover/lean-action@v1
         with:
@@ -86,16 +158,35 @@ jobs:
         run: lake build lean4export comparator
 
       - name: Run comparator
+        # COMPARATOR_LANDRUN / COMPARATOR_NANODA come from "Expose verifier
+        # binaries" via GITHUB_ENV.
         env:
-          COMPARATOR_LANDRUN: ${{ github.workspace }}/comparator-tool/scripts/fake-landrun.sh
           COMPARATOR_LEAN4EXPORT: ${{ github.workspace }}/comparator-tool/.lake/packages/lean4export/.lake/build/bin/lean4export
         run: |
           set -euo pipefail
-          chmod +x "$COMPARATOR_LANDRUN"
           # Run from the solution repo root so `lake env` supplies A362583's
           # LEAN_PATH (Mathlib et al.) to the comparator and its child `lake`
           # invocations.
-          lake env "${GITHUB_WORKSPACE}/comparator-tool/.lake/build/bin/comparator" comparator/comparator.json
+          cmd=(lake env "${GITHUB_WORKSPACE}/comparator-tool/.lake/build/bin/comparator" comparator/comparator.json)
+          # Best-effort AF_UNIX guard (comparator README): a known landrun
+          # escape uses AF_UNIX; systemd-run can mask it. Probe first — hosted
+          # runners may lack a user manager session — and degrade to unwrapped
+          # (the Landlock sandbox itself is still active either way).
+          if timeout 30 systemd-run --user --pipe --wait --collect \
+               -p RestrictAddressFamilies=~AF_UNIX -- true >/dev/null 2>&1; then
+            echo "systemd-run AF_UNIX guard: active"
+            exec systemd-run --user --pipe --wait --collect \
+              -p RestrictAddressFamilies=~AF_UNIX \
+              --working-directory "$PWD" \
+              -E PATH="$PATH" \
+              -E COMPARATOR_LANDRUN="$COMPARATOR_LANDRUN" \
+              -E COMPARATOR_NANODA="$COMPARATOR_NANODA" \
+              -E COMPARATOR_LEAN4EXPORT="$COMPARATOR_LEAN4EXPORT" \
+              -- "${cmd[@]}"
+          else
+            echo "::warning::systemd-run --user unavailable; comparator runs without the AF_UNIX guard (Landlock sandbox still active)"
+            "${cmd[@]}"
+          fi
 
       # Resolve a *step-level* deep link to the "Run comparator" step above, so the
       # comparator page's "View CI run" link lands the reader on the kernel replay in
@@ -136,7 +227,7 @@ jobs:
           # matches the linked run. This fresh file is now on disk for the site
           # build below.
           ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          note="Verified in CI by leanprover/comparator (.github/workflows/ci.yml): the Solution module's proof kernel-checks the exact Challenge statement Challenge.irrational_ϱ, using only the permitted axioms propext, Quot.sound, and Classical.choice. Statement equality, axiom whitelist, and Lean-kernel replay all confirmed."
+          note="Verified in CI by leanprover/comparator (.github/workflows/ci.yml): the Solution module's proof kernel-checks the exact Challenge statement Challenge.irrational_ϱ, using only the permitted axioms propext, Quot.sound, and Classical.choice. Statement equality, axiom whitelist, Lean-kernel replay, and an independent nanoda-kernel replay all confirmed; the solution builds and exports ran inside a Landlock (landrun) sandbox."
           # Prefer the step-level deep link resolved above; fall back to run-level.
           run_url="${CI_RUN_URL:-${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}}"
           # tool_ref records the comparator tag used for this run so the blueprint's
@@ -151,8 +242,12 @@ jobs:
       - name: Commit comparator-status.json back to main
         # Only on a real push to main. On PRs/dispatch we keep the refreshed file
         # on disk for the site build but never push. The GITHUB_TOKEN push does
-        # not re-fire `push:` (and paths-ignore double-guards it).
+        # not re-fire `push:` (and paths-ignore double-guards it). The token is
+        # supplied only to this step's single push (persist-credentials is
+        # false on checkout, so nothing lives in .git/config).
         if: github.event_name == 'push'
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
         run: |
           set -euo pipefail
           if git diff --quiet -- comparator/comparator-status.json; then
@@ -165,12 +260,15 @@ jobs:
           git commit \
             -m "comparator: verified" \
             -m "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
-          git push origin HEAD:main
+          git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
 
       # --- Blueprint site build (subsumes site.yml) ---------------------------
-      # The site's A362583 path dep builds into the repo-root .lake/build, which
-      # the lean-action step just warmed; the site/.lake/build cache preserves it
-      # (and the site's own oleans) across runs.
+      # Only the site's own build dir is cached. The repo-root .lake/build is
+      # rebuilt fresh every run by the lean-action step above — restoring a
+      # stale copy over it would overlay old oleans on the fresh build (lake's
+      # trace checks recover, but it is pure wasted work), so it is deliberately
+      # NOT in the cache paths. Key family v2 retires the old archives that
+      # still contain a root .lake/build.
       - name: Restore Lake package cache
         uses: actions/cache@v5
         with:
@@ -184,11 +282,10 @@ jobs:
         with:
           path: |
             site/.lake/build
-            .lake/build
-          key: ${{ runner.os }}-site-build-v1-${{ hashFiles('site/lean-toolchain', 'site/lake-manifest.json', 'site/lakefile.lean') }}-${{ github.sha }}
+          key: ${{ runner.os }}-site-build-v2-${{ hashFiles('site/lean-toolchain', 'site/lake-manifest.json', 'site/lakefile.lean') }}-${{ github.sha }}
           restore-keys: |
-            ${{ runner.os }}-site-build-v1-${{ hashFiles('site/lean-toolchain', 'site/lake-manifest.json', 'site/lakefile.lean') }}-
-            ${{ runner.os }}-site-build-v1-
+            ${{ runner.os }}-site-build-v2-${{ hashFiles('site/lean-toolchain', 'site/lake-manifest.json', 'site/lakefile.lean') }}-
+            ${{ runner.os }}-site-build-v2-
       - name: Get Mathlib olean cache (site)
         working-directory: site
         run: lake exe cache get || true
