@@ -10,8 +10,8 @@
     "Quot.sound",
     "Classical.choice"
   ],
-  "verified_at": "2026-07-16T21:00:46Z",
+  "verified_at": "2026-07-17T19:54:29Z",
   "note": "Verified in CI by leanprover/comparator (.github/workflows/ci.yml): the Solution module's proof kernel-checks the exact Challenge statement Challenge.irrational_ϱ, using only the permitted axioms propext, Quot.sound, and Classical.choice. Statement equality, axiom whitelist, Lean-kernel replay, and an independent nanoda-kernel replay all confirmed; the solution builds and exports ran inside a Landlock (landrun) sandbox.",
-  "run_url": "https://github.com/eric-vergo/OEIS-A362583-Irrationality/actions/runs/29533982322/job/87740748148#step:11:1",
-  "tool_ref": "v4.31.0"
+  "run_url": "https://github.com/eric-vergo/OEIS-A362583-Irrationality/actions/runs/29608692979/job/87977990740#step:14:1",
+  "tool_ref": "v4.32.0"
 }
