@@ -1,12 +1,12 @@
 name: Create Release
 
+# Manual only. This repository tags releases by hand on a semantic-version
+# scheme (v1.0.0, …), so an automatic release fired on every `lean-toolchain`
+# bump — which would tag toolchain-versioned releases like `v4.32.0` — is
+# clutter that collides with the semver tags. Trigger this from the Actions
+# tab (workflow_dispatch) if a lean-release-tag release is ever wanted.
 on:
-  push:
-    branches:
-      - 'main'
-      - 'master'
-    paths:
-      - 'lean-toolchain'
+  workflow_dispatch:
 
 jobs:
   lean-release-tag:
