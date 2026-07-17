@@ -5,6 +5,17 @@ Authors: Eric Vergo, Claude Fable 5 (Claude Code)
 -/
 /-
 A362583 irrationality blueprint — top-level document.
+
+`standard-blueprint` branch notes (vs `main`, which uses the eric-vergo forks):
+  * The fork homepage `{blueprint_dashboard}` overview widget is a fork-only
+    command (upstream v4.32.0 has no dashboard); a short prose intro replaces it.
+  * `{blueprint_formalization "../formalization.yaml"}` is a fork-only
+    formalization-metadata command (dropped; upstream has no equivalent).
+  * `import VersoBlueprint.Commands.Formalization` and `import A362583.Pins`
+    (the latter only fed the fork-only `graph.includeAllDecls` all-decls
+    registry) are dropped.
+  * The `{blueprint_graph}` / `{blueprint_summary}` / `{blueprint_bibliography}`
+    blocks are all stock upstream commands and are kept.
 -/
 
 import Verso
@@ -13,13 +24,12 @@ import VersoBlueprint
 import VersoBlueprint.Commands.Graph
 import VersoBlueprint.Commands.Summary
 import VersoBlueprint.Commands.Bibliography
-import VersoBlueprint.Commands.Formalization
+-- NB (standard-blueprint branch): upstream v4.32.0 ships no `Commands.Formalization`
+-- command, so the fork's `import VersoBlueprint.Commands.Formalization` and the
+-- `A362583.Pins` import (which only fed the fork-only
+-- `verso.blueprint.graph.includeAllDecls` all-decls registry) are dropped here.
 
 import Contents.TeXPrelude
--- Bring the sanity-pin declarations into the environment so the all-declarations
--- registry (`verso.blueprint.graph.includeAllDecls`) tracks every A362583 decl,
--- including the pin-scoped helpers that no blueprint node wires.
-import A362583.Pins
 import Authors
 import Bibliography
 import Chapters.Introduction
@@ -49,7 +59,12 @@ shortTitle := "A362583"
 authors := ["Eric Vergo", "Claude Fable 5"]
 %%%
 
-{blueprint_dashboard (featured := "def:rho, thm:irrational")}
+This blueprint tracks the `sorry`-free Lean 4 proof that the prime race constant
+$`\varrho` is irrational. Its two headline nodes are the definition of
+$`\varrho` (label `def:rho`) and the top-level irrationality theorem (label
+`thm:irrational`); the dependency graph and progress summary at the foot of this
+page give the full picture, and the chapters below build the argument from the
+digit layer up.
 
 {include 0 Chapters.Introduction}
 
@@ -74,7 +89,5 @@ authors := ["Eric Vergo", "Claude Fable 5"]
 {blueprint_graph}
 
 {blueprint_summary}
-
-{blueprint_formalization "../formalization.yaml"}
 
 {blueprint_bibliography}

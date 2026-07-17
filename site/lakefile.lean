@@ -6,35 +6,25 @@ Authors: Eric Vergo, Claude Fable 5 (Claude Code)
 import Lake
 open Lake DSL
 
--- Root-level git requires for the three forks, tracking their `blueprint`
--- branches.  Lake resolves dependencies by NAME and honours the ROOT package's
--- `require`s first, so requiring subverso / verso / VersoBlueprint here shadows
--- every transitive `require` of the same name: verso's own
--- `require subverso from "../subverso"`, verso-blueprint's
--- `require verso from "../verso"` path specs are never materialized, and
--- verso-slides' transitive pin of the upstream `leanprover/verso` is out-ranked.
--- That keeps the site building against the forks (preserving the offline /
--- self-hosted-`marked` invariant they provide) rather than whatever sibling
--- working trees happen to be on disk.  The exact commit is recorded in
--- lake-manifest.json; a `lake update subverso verso VersoBlueprint` re-pins to
--- the current `blueprint` HEAD of each fork.
-require subverso from git "https://github.com/eric-vergo/subverso.git" @ "blueprint"
-require verso from git "https://github.com/eric-vergo/verso.git" @ "blueprint"
-require VersoBlueprint from git "https://github.com/eric-vergo/verso-blueprint.git" @ "blueprint"
+-- `standard-blueprint` branch: this site is built against STOCK upstream
+-- `leanprover/verso-blueprint` (default branch `v4.32.0`), NOT the eric-vergo
+-- forks used on `main`.  Upstream verso-blueprint transitively brings its own
+-- `verso`, `verso-slides`, `subverso`, and `proofwidgets`, so the three fork
+-- `require`s (subverso / verso / VersoBlueprint from eric-vergo) are gone.
+--
+-- Ordering matters for shared transitive deps: upstream verso-blueprint pins
+-- `proofwidgets @ v0.0.104` (e4952a) while Mathlib v4.32.0 uses a different
+-- `proofwidgets` revision (6e311e, tracked in Mathlib's manifest) — and
+-- `lake exe cache get` only computes correct hashes when the project's
+-- `proofwidgets` matches Mathlib's.  Per Mathlib's own post-update hook, the fix
+-- is to require `mathlib` LAST so its transitive versions take precedence; that
+-- overrides verso's `proofwidgets` pin down to Mathlib's revision (verso still
+-- compiles against it — the same revision `main` already uses).  Regenerate with
+-- a TARGETED `lake update VersoBlueprint` (never a blanket `lake update`, which
+-- floats the `@main` deps and can drag the toolchain forward).
 require A362583 from ".."
+require VersoBlueprint from git "https://github.com/leanprover/verso-blueprint" @ "v4.32.0"
 require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.32.0"
-
-/-- URL of the CI run that produced these checks, read from the `CI_RUN_URL`
-environment variable at configuration time.  Empty on a local build (the env var
-is unset) ⇒ the comparator page renders no "View CI run" link, which is the
-expected local behaviour.  CI (`.github/workflows/ci.yml`) sets `CI_RUN_URL` to
-a step-level deep link into the "Run comparator" step and
-passes `-R`/`--reconfigure` on the `lake build Contents` step so this value is
-re-read fresh each run — Lake's config trace keys off the lakefile *text* hash
-(plus toolchain/platform), not env vars, so without `-R` a warm-cache run would
-splice in a stale URL. -/
-def ciRunUrl : String :=
-  run_io return ((← IO.getEnv "CI_RUN_URL").getD "")
 
 package Contents where
   precompileModules := false
@@ -44,24 +34,22 @@ package Contents where
     ⟨`autoImplicit, false⟩,
     ⟨`relaxedAutoImplicit, false⟩,
     ⟨`maxSynthPendingDepth, .ofNat 3⟩,
+    -- Blueprint rendering options that upstream v4.32.0 actually defines.
     ⟨`weak.verso.blueprint.math.lint, true⟩,
-    ⟨`weak.verso.blueprint.externalCode.strictResolve, true⟩,
-    ⟨`weak.verso.blueprint.graph.includeAllDecls, true⟩,
-    ⟨`weak.verso.blueprint.declNamePrefix, "A362583"⟩,
-    ⟨`weak.verso.blueprint.trust.formalizationYaml, "../formalization.yaml"⟩,
-    ⟨`weak.verso.blueprint.trust.comparatorStatus, "../comparator/comparator-status.json"⟩,
-    ⟨`weak.verso.blueprint.trust.comparatorConfig, "../comparator/comparator.json"⟩,
-    ⟨`weak.verso.blueprint.trust.challengeFile, "../comparator/Challenge.lean"⟩,
-    ⟨`weak.verso.blueprint.trust.solutionFile, "../comparator/Solution.lean"⟩,
-    ⟨`weak.verso.blueprint.trust.ciRunUrl, ciRunUrl⟩,
-    ⟨`weak.verso.code.warnLineLength, .ofNat 0⟩
+    ⟨`weak.verso.blueprint.externalCode.strictResolve, true⟩
   ]
+  -- Dropped on this branch (fork-only or unsupported upstream):
+  --   verso.blueprint.graph.includeAllDecls  (fork extension; upstream lacks it)
+  --   verso.blueprint.declNamePrefix          (fork extension)
+  --   verso.blueprint.trust.*                 (fork trust/comparator surface)
+  --   verso.code.warnLineLength               (fork code-lint tuning)
+  --   the `ciRunUrl` config-time env read      (fed the fork comparator page)
 
 @[default_target]
 lean_lib Contents where
   roots := #[`Authors, `Contents, `Chapters, `Bibliography, `Macros]
 
-@[default_target]
-lean_exe «blueprint-gen» where
-  root := `Main
-  supportInterpreter := true
+-- No `lean_exe` target on this branch: the upstream project template ships none.
+-- Generation runs the entry point through Lake's Lean wrapper
+-- (`lake exe vbp build`, which discovers `Main.lean`; or the direct
+-- `lake build Contents && lake env lean --run Main.lean --output _out/site`).
