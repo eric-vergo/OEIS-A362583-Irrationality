@@ -6,20 +6,23 @@ Authors: Eric Vergo, Claude Fable 5 (Claude Code)
 import Lake
 open Lake DSL
 
--- Root-level git pins for the three forks.  Lake resolves dependencies by NAME
--- and honours the ROOT package's `require`s first, so pinning subverso / verso /
--- VersoBlueprint here shadows every transitive `require` of the same name:
--- verso's own `require subverso from "../subverso"`, verso-blueprint's
+-- Root-level git requires for the three forks, tracking their `blueprint`
+-- branches.  Lake resolves dependencies by NAME and honours the ROOT package's
+-- `require`s first, so requiring subverso / verso / VersoBlueprint here shadows
+-- every transitive `require` of the same name: verso's own
+-- `require subverso from "../subverso"`, verso-blueprint's
 -- `require verso from "../verso"` path specs are never materialized, and
 -- verso-slides' transitive pin of the upstream `leanprover/verso` is out-ranked.
--- That keeps the site building against these exact commits (instead of whatever
--- sibling working trees happen to be on disk) while preserving the offline /
--- self-hosted-`marked` invariant that the forks provide.
-require subverso from git "https://github.com/eric-vergo/subverso.git" @ "62b4fda523e8b367180fac5e3c47a7d0f81dadd4"
-require verso from git "https://github.com/eric-vergo/verso.git" @ "8352397591c64bc9d7543aea295330ad5083b140"
-require VersoBlueprint from git "https://github.com/eric-vergo/verso-blueprint.git" @ "f680898dc77f99aa56ab57960431b8b593952706"
+-- That keeps the site building against the forks (preserving the offline /
+-- self-hosted-`marked` invariant they provide) rather than whatever sibling
+-- working trees happen to be on disk.  The exact commit is recorded in
+-- lake-manifest.json; a `lake update subverso verso VersoBlueprint` re-pins to
+-- the current `blueprint` HEAD of each fork.
+require subverso from git "https://github.com/eric-vergo/subverso.git" @ "blueprint"
+require verso from git "https://github.com/eric-vergo/verso.git" @ "blueprint"
+require VersoBlueprint from git "https://github.com/eric-vergo/verso-blueprint.git" @ "blueprint"
 require A362583 from ".."
-require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.31.0"
+require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.32.0"
 
 /-- URL of the CI run that produced these checks, read from the `CI_RUN_URL`
 environment variable at configuration time.  Empty on a local build (the env var
