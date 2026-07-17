@@ -1,5 +1,19 @@
 # A362583 Irrationality
 
+> **`standard-blueprint` branch.** This branch demonstrates the *same* blueprint
+> built with **stock upstream [`leanprover/verso-blueprint`](https://github.com/leanprover/verso-blueprint)
+> (`v4.32.0`)** instead of the eric-vergo forks used on `main`. The mathematical
+> content, node structure, dependency graph, and progress summary all carry over;
+> the fork-only surface — comparator certification page, project-management hub,
+> side-by-side node cards, verbatim-source signatures, and the offline / no-CDN
+> guarantee — is intentionally dropped here (upstream loads `marked` from a CDN).
+> The **flagship site**, with all of those features, is built from `main` and
+> served at
+> **<https://eric-vergo.github.io/OEIS-A362583-Irrationality/>**.
+>
+> Only `site/`, the CI workflow, and this banner differ from `main` on this
+> branch; the A362583 proof code is untouched.
+
 A complete, `sorry`-free Lean 4 formalization that the
 [OEIS A362583](https://oeis.org/A362583) constant is irrational. Pinned to Lean
 and Mathlib `v4.32.0`.
