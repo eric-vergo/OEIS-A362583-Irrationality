@@ -2,7 +2,7 @@
 
 A complete, `sorry`-free Lean 4 formalization that the
 [OEIS A362583](https://oeis.org/A362583) constant is irrational. Pinned to Lean
-and Mathlib `v4.31.0`.
+and Mathlib `v4.32.0`.
 
 The *prime race constant* `ϱ` is the sum of the series
 
@@ -45,7 +45,7 @@ oscillation results.
 
 | Path | Contents |
 |------|----------|
-| `A362583/` | The formalization library. `Defs.lean` (the four elementary definitions), `Pins.lean` (sanity checks), `DigitLayer.lean` (Steps A, B), `RaceCount.lean` (Step C), `Layers.lean` / `EulerLog.lean` / `BoundedHolo.lean` / `CaseNonzero.lean` / `CaseZero.lean` (Step D), `Main.lean` (final assembly). |
+| `A362583/` | The formalization library. `Defs.lean` (the four elementary definitions), `Pins.lean` (sanity checks), `DigitLayer.lean` (Steps A, B), `RaceCount.lean` (Step C), `Character.lean` (the mod-4 Dirichlet character `χ` and the Euler-product layers built from it), `Divergence.lean` (the sole use of the divergence of `Σ 1/p`, isolated as two blow-up statements), `Layers.lean` / `EulerLog.lean` / `BoundedHolo.lean` / `CaseNonzero.lean` / `CaseZero.lean` (Step D), `Main.lean` (final assembly). |
 | `A362583.lean` | Library root; imports every module. |
 | `comparator/` | Independent-verification bundle for the [comparator](https://github.com/leanprover/comparator) (see below): `Challenge.lean` (the `sorry`d restatement of the main theorem), `Solution.lean` (its proof, derived from `A362583`), and `comparator.json` / `comparator-status.json` (its configuration and status). |
 | `formalization.yaml` | Project metadata in the [formalization.yaml](https://github.com/mathlib-initiative/formalization.yaml) standard. |
@@ -96,7 +96,7 @@ To reproduce the check locally (on Linux), check the comparator out as `comparat
 run it from the repository root:
 
 ```bash
-git clone --branch v4.31.0 https://github.com/leanprover/comparator.git comparator-tool
+git clone --branch v4.32.0 https://github.com/leanprover/comparator.git comparator-tool
 ( cd comparator-tool && lake build lean4export comparator )
 lake env comparator-tool/.lake/build/bin/comparator comparator/comparator.json
 ```
