@@ -47,10 +47,12 @@ What has been proved, precisely: the irrationality of $`\varrho` above — a sta
 only the $`n`-th-prime function, remainder arithmetic, finite sums, and one convergent
 series. Its analytic core, the non-linearity of the mod-4 prime race (the main analytic
 theorem of the *Nonlinearity of the Prime Race* chapter), is proved in full and quantifies
-over the same elementary objects. The formalization is complete and sorry-free; the axiom
-audit of both reports exactly the three standard Lean axioms — propext, Classical.choice,
-Quot.sound — and nothing else: no custom axioms, no unproved hypotheses, every statement
-kernel-checked against Mathlib (pinned at toolchain v4.31.0).
+over the same elementary objects. Both are sorry-free, and that is checked rather than
+asserted: building this site runs collectAxioms over every declaration it presents and over
+every declaration named in formalization.yaml, and the build fails if an axiom closure falls
+outside propext, Classical.choice, Quot.sound. sorryAx is an axiom for that purpose, so the
+same check also rules out a sorry reached through a dependency, not only one written here.
+Mathlib is pinned at toolchain v4.32.0.
 
 The analytic footprint stayed as small as promised in the Introduction: the continued
 $`L(s, \chi_4)` and its entirety, $`L(1, \chi_4) \ne 0`, the exponential Euler product, the

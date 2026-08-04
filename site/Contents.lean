@@ -77,4 +77,6 @@ authors := ["Eric Vergo", "Claude Fable 5"]
 
 {blueprint_formalization "../formalization.yaml"}
 
+{blueprint_trust_model}
+
 {blueprint_bibliography}

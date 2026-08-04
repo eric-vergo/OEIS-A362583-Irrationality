@@ -42,7 +42,7 @@ $`\mathrm{Re}\, s > 1`. This is the layer that carries the race: everything the 
 argument ever learns about the distribution of the bits flows through $`A`.
 :::
 
-:::theorem "thm:tsum-split" (lean := "A362583.tsum_neg_log_eq_layers") (parent := "euler") (uses := "lem:neg-log-split, def:layerA, def:layerB, def:layerT")
+:::theorem "thm:tsum-split" (lean := "A362583.tsum_neg_log_eq_layers") (parent := "euler") (uses := "lem:neg-log-split, def:chi, def:layerA, def:layerB, def:layerT, def:tp")
 *Layer split.* For $`\mathrm{Re}\, s > 1`,
 $$`\sum_p -\operatorname{Log}\bigl(1 - \chi(p)\, p^{-s}\bigr) \;=\; A(s) + B(s) + T(s).`
 :::
@@ -59,7 +59,7 @@ $`\chi(p)^2 = 1` for odd $`p`. No absolutely-summable-double-family machinery ap
 $`\blacksquare`
 :::
 
-:::theorem "thm:exp-L" (lean := "A362583.exp_layers_eq_LFunction") (parent := "euler") (uses := "thm:tsum-split")
+:::theorem "thm:exp-L" (lean := "A362583.exp_layers_eq_LFunction") (parent := "euler") (uses := "def:chi, def:layerA, def:layerB, def:layerT, thm:tsum-split")
 *Euler wiring.* For $`\mathrm{Re}\, s > 1`,
 $$`\exp\bigl(A(s) + B(s) + T(s)\bigr) \;=\; L(s, \chi),`
 where $`L` is Mathlib's analytically continued Dirichlet $`L`-function of $`\chi` — an
@@ -85,7 +85,7 @@ $`\mathbb{N}`-indexed coefficient sequence. The two exact identities developed i
 below feed $`f_\chi` to the by-parts machinery.
 :::
 
-:::lemma_ "lem:fChi-partial-sums" (lean := "A362583.sum_range_fChi") (parent := "euler") (uses := "def:fChi, def:raceSum")
+:::lemma_ "lem:fChi-partial-sums" (lean := "A362583.sum_range_fChi") (parent := "euler") (uses := "def:fChi, def:raceKernel, def:raceSum")
 *Partial sums are race sums.* $`\sum_{k \le n} f_\chi(k) = S(n)`. The partial sums of
 $`f_\chi` *are* the race sums, so a bounded race is precisely the "bounded partial sums"
 hypothesis the by-parts machinery needs.
@@ -98,7 +98,7 @@ discards the non-prime indices, whose terms are $`0`, leaving exactly the prime-
 that defines $`S(n)`. Unconditional bookkeeping — no summability is involved. $`\blacksquare`
 :::
 
-:::lemma_ "lem:layerA-dirichlet" (lean := "A362583.layerA_eq_tsum_fChi") (parent := "euler") (uses := "def:fChi, def:layerA")
+:::lemma_ "lem:layerA-dirichlet" (lean := "A362583.layerA_eq_tsum_fChi") (parent := "euler") (uses := "def:chi, def:fChi, def:layerA, def:raceKernel")
 *Layer $`A` as a Dirichlet series.* $`A(s) = \sum_{n \ge 0} f_\chi(n)\, n^{-s}`. This exhibits
 $`A` as the $`\mathbb{N}`-indexed Dirichlet series of $`f_\chi`, so its by-parts series
 continues $`A`.

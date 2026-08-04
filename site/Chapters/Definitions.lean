@@ -67,7 +67,7 @@ binary integers recovers the OEIS sequence A362583, which is why we call $`\varr
 A362583 constant. The theorem of this blueprint is that $`\varrho` is irrational.
 :::
 
-:::definition "def:raceSum" (lean := "A362583.raceSum") (parent := "defs")
+:::definition "def:raceSum" (lean := "A362583.raceSum") (parent := "defs") (uses := "def:raceKernel")
 The *Chebyshev race sum* is the integer
 $$`S(N) \;=\; \sum_{\substack{p \le N \\ p \text{ prime}}} \begin{cases} +1 & p \equiv 1 \pmod 4 \\ -1 & p \equiv 3 \pmod 4 \\ \;\;\,0 & p = 2, \end{cases}`
 i.e. $`S(N) = \sum_{p \le N} \chi_4(p)` — but stated with plain remainder arithmetic rather

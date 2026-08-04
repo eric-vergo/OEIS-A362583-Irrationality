@@ -1,6 +1,11 @@
 name: CI
 
 # Single do-everything workflow. One `build` job, in order:
+#   0. Source-integrity assertions, cheap and first: the comparator tool sits at
+#      the exact pinned commit and its tag still names that commit; the three
+#      shared definitions are byte-identical across A362583/Defs.lean,
+#      comparator/Challenge.lean and comparator/Solution.lean; the version pins
+#      stated in reader-facing prose match lean-toolchain.
 #   1. Set up Lean (elan + v4.32.0), restore the Mathlib cache, and build the
 #      formalization libraries A362583 + Challenge + Solution (subsumes the old
 #      lean_action_ci.yml plain-build check).
@@ -11,9 +16,10 @@ name: CI
 #      the Lean kernel and the nanoda kernel + axiom-whitelist + statement
 #      equality that the Solution module proves the exact Challenge statement
 #      Challenge.irrational_ϱ (subsumes the old comparator.yml).
-#   4. Refresh comparator/comparator-status.json on disk (status/verified_at/
-#      note/run_url/tool_ref) and, on a push to main, commit it back as
-#      github-actions[bot].
+#   4. Rewrite comparator/comparator-status.json on disk — every claim in it is
+#      machine-derived here, from comparator.json (the certified names and
+#      permitted axioms) and from this run's own pins (tool/landrun/nanoda) —
+#      and, on a push to main, commit it back as github-actions[bot].
 #   5. Build + generate + gate the blueprint site and upload it as a Pages
 #      artifact (subsumes the old site.yml). The comparator's fresh
 #      comparator/comparator-status.json is on disk BEFORE the site build,
@@ -59,6 +65,22 @@ jobs:
       # ammkrn/nanoda_lib default-branch HEAD (ahead of tag v0.3.2), resolved
       # 2026-07-16.
       NANODA_REF: "f58f2f6d535e189a40fcb02ede8eb95f97a92d37"
+      # leanprover/comparator, pinned by COMMIT like the other two verifiers —
+      # a tag is a mutable pointer, and what this repository certifies must not
+      # change because someone upstream moved one. COMPARATOR_TOOL_REF is kept
+      # only as the human-readable name of that commit: it is what the blueprint
+      # tells readers to clone and what `tool_ref` records, and the "Assert
+      # comparator tool pin" step below fails the run if the tag stops resolving
+      # to COMPARATOR_TOOL_SHA. Resolved 2026-08-03 with
+      #   git ls-remote https://github.com/leanprover/comparator.git refs/tags/v4.32.0
+      # (lightweight tag; no peeled `^{}` entry). Bump the two together.
+      COMPARATOR_TOOL_REF: "v4.32.0"
+      COMPARATOR_TOOL_SHA: "07bc4ea40f2266dcb861820a2ec1fa3244ed307f"
+      # The comparator configuration this run certifies. Single source of truth:
+      # the "Run comparator" step invokes exactly this file and the status
+      # refresh copies its contents and records this path, so the artifact can
+      # never describe a different config than the one that was checked.
+      COMPARATOR_CONFIG: "comparator/comparator.json"
     steps:
       # Reclaim disk BEFORE anything else. A prior run (29533982322) exhausted
       # the ~14 GB free on the hosted runner: cargo-built landrun + nanoda, then
@@ -82,27 +104,139 @@ jobs:
       - name: Disk space after cleanup
         run: df -h /
 
+      # Every third-party action below is pinned by commit SHA with the tag it
+      # corresponded to in a trailing comment (resolved 2026-08-03 via
+      # `git ls-remote https://github.com/<owner>/<repo>.git refs/tags/<tag>`;
+      # all of them are lightweight tags, so the listed object IS the commit).
+      # Marketplace major-version tags are mutable pointers: `@v5` is a promise
+      # about compatibility, not about code, and this job holds a write token
+      # and produces the artifact the trust pages quote.
       - name: Check out this repository (solution + challenge + site)
-        uses: actions/checkout@v5
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           # Do NOT leave the write-capable token in .git/config for the whole
           # job (many minutes of third-party build code run here). The
           # commit-back step below authenticates its single push explicitly.
           persist-credentials: false
 
-      - name: Check out leanprover/comparator (toolchain-matched tag)
-        uses: actions/checkout@v5
+      - name: Check out leanprover/comparator (pinned commit)
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
           repository: leanprover/comparator
-          # Toolchain-matched comparator tag. Kept in lockstep with the
-          # `.tool_ref` value written into comparator/comparator-status.json by
-          # the "Refresh" step below — bump the two together on a toolchain bump.
-          ref: v4.32.0
+          # The commit, not the tag (see COMPARATOR_TOOL_SHA above). The tag is
+          # still asserted to name it by the step right below.
+          ref: ${{ env.COMPARATOR_TOOL_SHA }}
           # Check the tool out as `comparator-tool`, NOT `comparator`: the repo
           # now tracks a `comparator/` directory (Challenge/Solution + JSON), so
           # `path: comparator` would have actions/checkout clobber it.
           path: comparator-tool
           persist-credentials: false
+
+      # --- Source-integrity assertions ---------------------------------------
+      - name: Assert comparator tool pin
+        working-directory: comparator-tool
+        run: |
+          set -euo pipefail
+          head="$(git rev-parse HEAD)"
+          if [ "$head" != "$COMPARATOR_TOOL_SHA" ]; then
+            echo "comparator checkout is at $head, expected $COMPARATOR_TOOL_SHA"
+            exit 1
+          fi
+          # The tag is what this repository publishes as the name of that
+          # commit, so it has to keep naming it. Annotated tags report the
+          # commit under the peeled `^{}` ref, lightweight tags directly —
+          # accept whichever is present, require the tag to exist.
+          refs="$(git ls-remote https://github.com/leanprover/comparator.git \
+                    "refs/tags/${COMPARATOR_TOOL_REF}" "refs/tags/${COMPARATOR_TOOL_REF}^{}")"
+          printf '%s\n' "$refs"
+          resolved="$(printf '%s\n' "$refs" \
+            | awk -v t="refs/tags/${COMPARATOR_TOOL_REF}^{}" '$2 == t { print $1 }')"
+          if [ -z "$resolved" ]; then
+            resolved="$(printf '%s\n' "$refs" \
+              | awk -v t="refs/tags/${COMPARATOR_TOOL_REF}" '$2 == t { print $1 }')"
+          fi
+          if [ -z "$resolved" ]; then
+            echo "tag ${COMPARATOR_TOOL_REF} no longer exists in leanprover/comparator"
+            exit 1
+          fi
+          if [ "$resolved" != "$COMPARATOR_TOOL_SHA" ]; then
+            echo "tag ${COMPARATOR_TOOL_REF} moved: it now names $resolved, we pin $COMPARATOR_TOOL_SHA"
+            exit 1
+          fi
+          echo "comparator pin OK: ${COMPARATOR_TOOL_REF} = ${COMPARATOR_TOOL_SHA}"
+
+      # The comparator certifies that Solution proves the Challenge statement —
+      # it says nothing about whether the Challenge is the claim this project
+      # actually makes. Challenge.lean and Solution.lean each re-declare
+      # oddPrime / bit / ϱ from scratch (Solution must not import Challenge:
+      # they are elaborated in separate environments), and both are supposed to
+      # be byte-identical copies of A362583/Defs.lean. Solution.lean's
+      # `ϱ_eq : ϱ = A362583.ϱ := rfl` catches drift on the solution side; NOTHING
+      # catches drift on the challenge side, where it would quietly weaken the
+      # certified claim. This step is that missing check.
+      - name: Assert the shared definitions are byte-identical
+        run: |
+          set -euo pipefail
+          # `index($0, s) == 1` is a byte-exact prefix test — no regex engine,
+          # so the multibyte identifiers (ϱ, ℝ, ℕ) are compared as bytes and the
+          # extraction cannot drift with the awk implementation or the locale.
+          extract() {
+            awk '
+              index($0, "/-- The `k`-th odd prime: `oddPrime 0 = 3`,") == 1 { inblock = 1 }
+              inblock { print }
+              inblock && index($0, "noncomputable def ϱ : ℝ := ") == 1 { exit }
+            ' "$1"
+          }
+          for f in A362583/Defs.lean comparator/Challenge.lean comparator/Solution.lean; do
+            out="${RUNNER_TEMP}/$(printf '%s' "$f" | tr / _).block"
+            extract "$f" > "$out"
+            lines="$(wc -l < "$out" | tr -d '[:space:]')"
+            # 15 = three docstring+definition pairs plus the two blank lines
+            # between them. Anything else means an anchor moved and the diff
+            # below would be comparing the wrong thing.
+            if [ "$lines" -ne 15 ]; then
+              echo "definition-block extraction failed for $f: got $lines lines, expected 15"
+              exit 1
+            fi
+          done
+          diff "${RUNNER_TEMP}/A362583_Defs.lean.block" "${RUNNER_TEMP}/comparator_Challenge.lean.block"
+          diff "${RUNNER_TEMP}/A362583_Defs.lean.block" "${RUNNER_TEMP}/comparator_Solution.lean.block"
+          echo "oddPrime / bit / ϱ are byte-identical across the three modules."
+
+      # Prose that states a pin must state the true one: formalization.yaml and
+      # the Main Theorem chapter both claimed Mathlib v4.31.0 for a full
+      # toolchain cycle after the real pin moved to v4.32.0, and nothing noticed.
+      - name: Assert stated pins match lean-toolchain
+        run: |
+          set -euo pipefail
+          if ! cmp -s lean-toolchain site/lean-toolchain; then
+            echo "lean-toolchain and site/lean-toolchain disagree:"
+            diff lean-toolchain site/lean-toolchain || true
+            exit 1
+          fi
+          toolchain="$(cut -d: -f2 lean-toolchain | tr -d '[:space:]')"  # leanprover/lean4:v4.32.0 -> v4.32.0
+          files=(README.md formalization.yaml site/Chapters/*.lean)
+          # (a) A version named in a "pinned …" sentence must be the toolchain.
+          #     Whole-file match (`-0777`, `/s`): these sentences wrap across
+          #     lines, so a line-oriented grep would miss them.
+          bad="$(perl -0777 -ne 'while (/[Pp]inned.{0,120}?(v4\.\d+\.\d+)/gs) { print "$ARGV: $1\n" }' \
+                   "${files[@]}" | grep -v ": ${toolchain}\$" || true)"
+          if [ -n "$bad" ]; then
+            echo "stated pin disagrees with lean-toolchain (${toolchain}):"
+            printf '%s\n' "$bad"
+            exit 1
+          fi
+          # (b) No stray toolchain-shaped version anywhere in those files. The
+          #     only two legitimate ones are the toolchain and the comparator
+          #     tag (which the repro instructions quote).
+          stray="$(grep -RhoE 'v4\.[0-9]+\.[0-9]+' "${files[@]}" | sort -u \
+                   | grep -vxF -e "$toolchain" -e "$COMPARATOR_TOOL_REF" || true)"
+          if [ -n "$stray" ]; then
+            echo "unrecognised version token(s) in reader-facing prose:"
+            printf '%s\n' "$stray"
+            exit 1
+          fi
+          echo "stated pins agree with lean-toolchain (${toolchain})."
 
       # --- Sandbox + second-kernel verifier binaries -------------------------
       # Real landrun (Landlock) replaces the tool's fake-landrun.sh no-op shim,
@@ -112,7 +246,7 @@ jobs:
       # never be silently reused, a miss just rebuilds (~2-3 min).
       - name: Restore verifier binaries (landrun + nanoda)
         id: verifier-cache
-        uses: actions/cache@v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: ~/.verifier-bin
           key: ${{ runner.os }}-verifiers-v1-${{ env.LANDRUN_REF }}-${{ env.NANODA_REF }}
@@ -180,7 +314,7 @@ jobs:
       # verifies. elan is left on PATH for the later comparator and site steps
       # (site/lean-toolchain pins the same v4.32.0).
       - name: Set up Lean and build A362583 + Challenge
-        uses: leanprover/lean-action@v1
+        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1
         with:
           lake-package-directory: .
           build-args: "A362583 Challenge Solution"
@@ -201,7 +335,7 @@ jobs:
           # Run from the solution repo root so `lake env` supplies A362583's
           # LEAN_PATH (Mathlib et al.) to the comparator and its child `lake`
           # invocations.
-          cmd=(lake env "${GITHUB_WORKSPACE}/comparator-tool/.lake/build/bin/comparator" comparator/comparator.json)
+          cmd=(lake env "${GITHUB_WORKSPACE}/comparator-tool/.lake/build/bin/comparator" "${COMPARATOR_CONFIG}")
           # Best-effort AF_UNIX guard (comparator README): a known landrun
           # escape uses AF_UNIX; systemd-run can mask it. Probe first — hosted
           # runners may lack a user manager session — and degrade to unwrapped
@@ -256,22 +390,68 @@ jobs:
       - name: Refresh comparator-status.json
         run: |
           set -euo pipefail
-          # Always refresh the record: status, verified_at, note, run_url, and
-          # tool_ref all describe this successful certifying run, so the timestamp
-          # matches the linked run. This fresh file is now on disk for the site
-          # build below.
+          # This artifact is the sole evidence the blueprint's trust surfaces
+          # quote, so everything in it is written here, by machine, and nothing
+          # in it is author-typed. Until 2026-08-03 the certified theorem names,
+          # the permitted axioms and the solution module were hand-committed
+          # strings that CI never touched and never cross-checked against
+          # comparator.json, and the `note` enumerating the checks was prose in
+          # this file: a stale or simply wrong claim would have rendered as a
+          # green verdict with no way to tell. Now the claim fields are copied
+          # out of the very config the "Run comparator" step passed to the tool,
+          # the pins are this run's own env, and the note is composed from those.
           ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          note="Verified in CI by leanprover/comparator (.github/workflows/ci.yml): the Solution module's proof kernel-checks the exact Challenge statement Challenge.irrational_ϱ, using only the permitted axioms propext, Quot.sound, and Classical.choice. Statement equality, axiom whitelist, Lean-kernel replay, and an independent nanoda-kernel replay all confirmed; the solution builds and exports ran inside a Landlock (landrun) sandbox."
           # Prefer the step-level deep link resolved above; fall back to run-level.
           run_url="${CI_RUN_URL:-${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}}"
-          # tool_ref records the comparator tag used for this run so the blueprint's
-          # "reproduce it yourself" section can `git clone --branch <tool_ref>`.
-          # It MUST stay in lockstep with the checkout `ref:` above (both are the
-          # toolchain-matched comparator tag) — bump the two together.
-          jq --arg ts "$ts" --arg note "$note" --arg run_url "$run_url" \
-            '.status = "verified" | .verified_at = $ts | .note = $note | .run_url = $run_url | .tool_ref = "v4.32.0"' \
-            comparator/comparator-status.json > comparator/comparator-status.json.tmp
+          jq \
+            --slurpfile cfg "$COMPARATOR_CONFIG" \
+            --arg config "$COMPARATOR_CONFIG" \
+            --arg ts "$ts" \
+            --arg run_url "$run_url" \
+            --arg tool_ref "$COMPARATOR_TOOL_REF" \
+            --arg tool_sha "$COMPARATOR_TOOL_SHA" \
+            --arg landrun_ref "$LANDRUN_REF" \
+            --arg nanoda_ref "$NANODA_REF" \
+            '
+            ($cfg[0]) as $c
+            | ($c.theorem_names // []) as $thms
+            | ($c.permitted_axioms // []) as $axs
+            | (($c.enable_nanoda // false) == true) as $nanoda
+            | if ($c.challenge_module // "") == "" or ($c.solution_module // "") == ""
+                 or ($thms | length) == 0 or ($axs | length) == 0 then
+                error("comparator.json is missing challenge_module / solution_module / theorem_names / permitted_axioms")
+              else . end
+            | . + {
+                status: "verified",
+                config: $config,
+                challenge_module: $c.challenge_module,
+                solution_module: $c.solution_module,
+                theorem_names: $thms,
+                permitted_axioms: $axs,
+                verified_at: $ts,
+                run_url: $run_url,
+                tool_ref: $tool_ref,
+                tool_sha: $tool_sha,
+                landrun_ref: $landrun_ref
+              }
+            | (if $nanoda then . + { nanoda_ref: $nanoda_ref } else del(.nanoda_ref) end)
+            | .note =
+                ( "Verified in CI by leanprover/comparator " + $tool_ref + " (commit " + $tool_sha
+                + "), .github/workflows/ci.yml: the " + .solution_module
+                + " module kernel-checks the exact " + .challenge_module + " statement"
+                + (if ($thms | length) == 1 then " " else "s " end) + ($thms | join(", "))
+                + ", using only the permitted axioms " + ($axs | join(", "))
+                + ". Statement equality, axiom whitelist and Lean-kernel replay confirmed"
+                + (if $nanoda then
+                     ", together with an independent replay by the nanoda kernel (ammkrn/nanoda_lib "
+                     + $nanoda_ref + ")"
+                   else "" end)
+                + "; the solution build and the kernel export ran inside a Landlock sandbox "
+                + "(Zouuup/landrun " + $landrun_ref + ")."
+                )
+            ' comparator/comparator-status.json > comparator/comparator-status.json.tmp
           mv comparator/comparator-status.json.tmp comparator/comparator-status.json
+          cat comparator/comparator-status.json
 
       - name: Commit comparator-status.json back to main
         # Only on a real push to main. On PRs/dispatch we keep the refreshed file
@@ -318,7 +498,7 @@ jobs:
       # NOT in the cache paths. Key family v2 retires the old archives that
       # still contain a root .lake/build.
       - name: Restore Lake package cache
-        uses: actions/cache@v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: |
             site/.lake/packages
@@ -326,7 +506,7 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-site-packages-v1-
       - name: Restore Lean build caches
-        uses: actions/cache@v5
+        uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
           path: |
             site/.lake/build
@@ -360,16 +540,44 @@ jobs:
           set -euo pipefail
           test -f _out/site/html-multi/index.html
           test -f _out/site/html-multi/-verso-data/blueprint-manifest.json
+          # The trust surfaces have to be ON DISK, not merely configured. The
+          # generator probes-and-degrades throughout: the comparator page is only
+          # written when a dashboard block cached the trust payload, so dropping
+          # that block silently takes the whole evidence page with it, no error.
+          # Their absence is exactly the kind of quiet regression a gate exists
+          # for. `Trust-model` is the sluggified title of the
+          # {blueprint_trust_model} page in site/Contents.lean — retitling that
+          # page renames this directory, so the two move together.
+          test -f _out/site/html-multi/comparator/index.html
+          test -d _out/site/html-multi/Trust-model
+          test -f _out/site/html-multi/Trust-model/index.html
           count="$(find _out/site/html-multi -type f | wc -l | tr -d ' ')"
           [ "$count" -ge 50 ] || { echo "only $count files"; exit 1; }
+          # --- Off-origin asset gates ------------------------------------------
+          # The published site must load nothing from another origin. Only ASSET
+          # positions are matched: outbound <a href="https://…"> links are the
+          # point of a blueprint and stay allowed.
           # NB: use `if grep …; then exit 1; fi` rather than `! grep …`. Under
           # `set -e`, a non-final `!`-inverted command that "fails" (grep found a
           # match) is exempt from -e and does NOT abort — so a `! grep` gate that
-          # isn't the last statement silently false-passes. Explicit `if` is safe.
-          if grep -RIl 'jsdelivr' _out/site/html-multi; then echo "off-origin: jsdelivr reference(s) found"; exit 1; fi
-          if grep -RIEl '<(script[^>]*[[:space:]]src|link[^>]*[[:space:]]href)="https?://' _out/site/html-multi; then echo "off-origin: external script/link asset(s) found"; exit 1; fi
-      - uses: actions/configure-pages@v6
-      - uses: actions/upload-pages-artifact@v5
+          # isn't the last statement silently false-passes. Explicit `if` is safe;
+          # `exit` inside the helper below exits this shell, not just the function.
+          fail_on() {  # fail_on <what> <extended regex>
+            if grep -RIEl "$2" _out/site/html-multi; then
+              echo "off-origin: $1 found in the generated site"
+              exit 1
+            fi
+          }
+          fail_on "jsdelivr reference(s)" "jsdelivr"
+          fail_on "external <script src>/<link href>" "<(script[^>]*[[:space:]]src|link[^>]*[[:space:]]href)=[\"']https?://"
+          fail_on "external media src" "<(img|iframe|embed|source|video|audio|track|object)[^>]*[[:space:]]src=[\"']https?://"
+          fail_on "external CSS url()" "url\([[:space:]]*[\"']?https?://"
+          fail_on "external CSS @import" "@import[[:space:]]+(url\()?[[:space:]]*[\"']?https?://"
+          fail_on "off-origin fetch()/dynamic import()" "(fetch|import)\([[:space:]]*[\"']https?://"
+          fail_on "off-origin ES module import" "(^|[^A-Za-z0-9_])(import|export)[^\"']*[[:space:]]from[[:space:]]*[\"']https?://"
+          fail_on "protocol-relative asset reference" "[[:space:]](src|srcset)=[\"']//|<link[^>]*[[:space:]]href=[\"']//"
+      - uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6
+      - uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5
         with:
           path: site/_out/site/html-multi
 
@@ -382,4 +590,4 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - id: deployment
-        uses: actions/deploy-pages@v5
+        uses: actions/deploy-pages@cd2ce8fcbc39b97be8ca5fce6e763baed58fa128 # v5

@@ -16,7 +16,11 @@ jobs:
       contents: write
     steps:
     - name: lean-release-tag action
-      uses: leanprover-community/lean-release-tag@v1
+      # Pinned by commit. NB `@v1` here is a BRANCH, not a tag (the repo has no
+      # `refs/tags/v1`), i.e. even more mutable than a marketplace major tag.
+      # SHA resolved 2026-08-03 with
+      #   git ls-remote https://github.com/leanprover-community/lean-release-tag.git refs/heads/v1
+      uses: leanprover-community/lean-release-tag@9ca7ed09e240259871327bfc3a3a8d8c4bcb41aa # v1 branch
       with:
         do-release: true
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -38,7 +38,7 @@ enters; the eventual-periodicity argument is a self-contained binary-tail argume
 deliberately dodges any general "rational iff eventually periodic digits" library, which
 Mathlib does not currently have.
 
-:::theorem "thm:bits-ones" (lean := "A362583.bits_infinite_ones") (parent := "digit") (uses := "def:bit")
+:::theorem "thm:bits-ones" (lean := "A362583.bits_infinite_ones") (parent := "digit") (uses := "def:bit, def:oddPrime")
 The set $`\{k \mid b_k = 1\}` is infinite.
 :::
 
@@ -51,7 +51,7 @@ $`2 \not\equiv 3 \pmod 4`. So infinitely many indices $`k` have $`p_k \equiv 3 \
 $`b_k = 1`. $`\blacksquare`
 :::
 
-:::theorem "thm:bits-zeros" (lean := "A362583.bits_infinite_zeros") (parent := "digit") (uses := "def:bit")
+:::theorem "thm:bits-zeros" (lean := "A362583.bits_infinite_zeros") (parent := "digit") (uses := "def:bit, def:oddPrime")
 The set $`\{k \mid b_k = 0\}` is infinite. Together with the previous theorem: the digit
 sequence is neither eventually all ones nor eventually all zeros, which is exactly what the
 eventual-periodicity argument needs to keep the binary tails strictly between $`0` and $`1`.
@@ -64,7 +64,7 @@ enumeration injects them into the index set, and for such an index $`k`, $`p_k \
 is in particular $`\not\equiv 3 \pmod 4`, so $`b_k = 0`. $`\blacksquare`
 :::
 
-:::theorem "thm:eventually-periodic" (lean := "A362583.eventuallyPeriodic_of_not_irrational") (parent := "digit") (uses := "def:rho, thm:bits-ones, thm:bits-zeros")
+:::theorem "thm:eventually-periodic" (lean := "A362583.eventuallyPeriodic_of_not_irrational") (parent := "digit") (uses := "def:bit, def:rho, thm:bits-ones, thm:bits-zeros")
 If $`\varrho` is not irrational, then the bit sequence is eventually periodic: there
 exist $`N` and $`P > 0` with $`b_{k+P} = b_k` for all $`k \ge N`.
 :::

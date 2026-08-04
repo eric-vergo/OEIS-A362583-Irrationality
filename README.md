@@ -62,8 +62,12 @@ lake exe cache get   # download Mathlib oleans (optional but much faster)
 lake build           # builds the A362583, Challenge, and Solution libraries
 ```
 
-A successful build is `sorry`-free by construction. To check the axiom footprint of the
-main result, elaborate:
+The `A362583` library is `sorry`-free — but a green `lake build` is not by itself the check
+for that. The same command also builds `Challenge`, and `comparator/Challenge.lean` carries
+exactly one deliberate `sorry`: that file is the comparator's *input*, an independent
+restatement of the claim with no proof (see [Independent verification](#independent-verification)
+below, and the `Challenge` stanza in `lakefile.toml`, where the sorry warning is documented as
+expected). What does check it mechanically is the axiom footprint. Elaborate:
 
 ```lean
 import A362583.Main
@@ -77,7 +81,12 @@ This prints exactly
 'A362583.irrational_ϱ' depends on axioms: [propext, Classical.choice, Quot.sound]
 ```
 
-— the three standard axioms of Lean's classical logic, and no others.
+— the three standard axioms of Lean's classical logic, and no others. `sorryAx` would appear
+in that list if the proof rested on a `sorry`, directly or through any dependency.
+
+CI performs the same check without being asked: the blueprint site build (see below) runs
+`collectAxioms` over every declaration it presents and over every declaration named in
+`formalization.yaml`, and fails if a closure falls outside those three axioms.
 
 ## Independent verification
 
@@ -93,18 +102,42 @@ is run in CI; `comparator/comparator-status.json` records the result.
 
 To reproduce the check locally (on Linux), check the comparator out as `comparator-tool`
 — a sibling of this repository's own `comparator/` folder, so the two never collide — and
-run it from the repository root:
+run it from the repository root. The commands below are the ones CI runs, at the same
+commits; they need a Go toolchain and a Rust toolchain in addition to `elan`.
 
 ```bash
-git clone --branch v4.32.0 https://github.com/leanprover/comparator.git comparator-tool
+# The comparator tool, at the exact commit CI uses (tag v4.32.0).
+git clone https://github.com/leanprover/comparator.git comparator-tool
+git -C comparator-tool checkout --detach 07bc4ea40f2266dcb861820a2ec1fa3244ed307f
 ( cd comparator-tool && lake build lean4export comparator )
+
+# The Landlock sandbox and the independent second kernel, at the commits CI uses.
+mkdir -p verifier-bin
+GOBIN="$PWD/verifier-bin" go install \
+  github.com/zouuup/landrun/cmd/landrun@5ed4a3db3a4ad930d577215c6b9abaa19df7f99f
+git clone https://github.com/ammkrn/nanoda_lib.git nanoda_lib
+git -C nanoda_lib checkout --detach f58f2f6d535e189a40fcb02ede8eb95f97a92d37
+cargo build --release --locked --manifest-path nanoda_lib/Cargo.toml
+install -m 0755 nanoda_lib/target/release/nanoda_bin verifier-bin/nanoda_bin
+
+export COMPARATOR_LANDRUN="$PWD/verifier-bin/landrun"
+export COMPARATOR_NANODA="$PWD/verifier-bin/nanoda_bin"
+export COMPARATOR_LEAN4EXPORT="$PWD/comparator-tool/.lake/packages/lean4export/.lake/build/bin/lean4export"
 lake env comparator-tool/.lake/build/bin/comparator comparator/comparator.json
 ```
 
-The `--branch` tag is the toolchain-matched comparator release (see the `ref:` in
-`.github/workflows/ci.yml`, mirrored by `tool_ref` in `comparator/comparator-status.json`).
-The comparator runs its checks inside a Linux Landlock sandbox; its repository documents
-the environment setup.
+`tool_sha` in `comparator/comparator-status.json` records that comparator commit and
+`tool_ref` the tag naming it; CI asserts on every run both that its own checkout sits at that
+commit and that the tag still resolves to it, so the tag moving upstream is a build failure
+rather than a silent change of what was certified.
+
+The two verifier binaries are what make the check as strong as CI's, and skipping them
+weakens it in ways worth stating. Without `COMPARATOR_LANDRUN` the comparator uses its
+bundled `fake-landrun.sh`, a no-op shim: the kernel replay still runs, but unsandboxed.
+(Landlock needs Linux ≥ 5.13; CI additionally self-tests, before certifying anything, that a
+write outside the allowed paths is genuinely denied.) `COMPARATOR_NANODA` supplies the
+independent second kernel that `enable_nanoda` in `comparator.json` asks for — set it, or
+turn `enable_nanoda` off and accept a replay checked by Lean's kernel alone.
 
 ## Blueprint site
 

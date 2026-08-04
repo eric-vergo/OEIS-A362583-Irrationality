@@ -154,7 +154,7 @@ alignment:
       status: "proved"
 
 acknowledgements: >-
-  Built on mathlib4 (pinned v4.31.0). The proof route is only feasible because
+  Built on mathlib4 (pinned v4.32.0). The proof route is only feasible because
   mathlib already contains the analytically continued Dirichlet L-function,
   its nonvanishing at s = 1, the exponential form of the Euler product, the
   divergence of the sum of prime reciprocals, and the identity theorem.

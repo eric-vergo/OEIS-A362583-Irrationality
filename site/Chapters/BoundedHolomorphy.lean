@@ -110,7 +110,7 @@ bound $`\|s\|\, n^{-\mathrm{Re}\,s - 1}`, then use $`\|s\| < R` and
 $`n^{-\mathrm{Re}\,s - 1} \le n^{-\delta - 1}` on the box. $`\blacksquare`
 :::
 
-:::theorem "thm:bpSeries-holo-box" (lean := "differentiableOn_bpSeries_box") (parent := "n1") (uses := "lem:box-summable, lem:term-holo, lem:term-box-bound")
+:::theorem "thm:bpSeries-holo-box" (lean := "differentiableOn_bpSeries_box") (parent := "n1") (uses := "def:bpSeries, lem:box-summable, lem:term-holo, lem:term-box-bound")
 *Holomorphy on a box.* If the partial sums of $`f` are bounded by $`C`, then for $`\delta > 0`
 and $`R \ge 1` the by-parts series $`\tilde A_f` is holomorphic on the box
 $`\{\mathrm{Re}\, s > \delta\} \cap B(0, R)`.
@@ -176,7 +176,7 @@ bound. In the race application the coefficients are supported on primes, so the 
 below $`n = 2` vanish, giving $`n_0 = 2` and the bound $`C \cdot 2^{-\sigma}`. $`\blacksquare`
 :::
 
-:::lemma_ "lem:bpSeries-bound-const" (lean := "norm_bpSeries_le_const") (parent := "n1") (uses := "lem:bpSeries-bound")
+:::lemma_ "lem:bpSeries-bound-const" (lean := "norm_bpSeries_le_const") (parent := "n1") (uses := "def:bpSeries, lem:bpSeries-bound")
 *Real-segment bound, constant form.* Under the same hypotheses, for real $`\sigma \ge 0`,
 $$`\bigl\| \tilde A_f(\sigma) \bigr\| \;\le\; C.`
 This is the convenience form consumed downstream, where only a uniform bound on the segment is

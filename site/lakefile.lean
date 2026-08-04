@@ -20,7 +20,7 @@ open Lake DSL
 -- the current `blueprint` HEAD of each fork.
 require subverso from git "https://github.com/eric-vergo/subverso.git" @ "blueprint"
 require verso from git "https://github.com/eric-vergo/verso.git" @ "blueprint"
-require VersoBlueprint from git "https://github.com/eric-vergo/verso-blueprint.git" @ "blueprint"
+require VersoBlueprint from git "https://github.com/eric-vergo/Showcase.git" @ "blueprint"
 require A362583 from ".."
 require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.32.0"
 
@@ -53,6 +53,17 @@ package Contents where
     ⟨`weak.verso.blueprint.trust.comparatorConfig, "../comparator/comparator.json"⟩,
     ⟨`weak.verso.blueprint.trust.challengeFile, "../comparator/Challenge.lean"⟩,
     ⟨`weak.verso.blueprint.trust.solutionFile, "../comparator/Solution.lean"⟩,
+    -- The build-time axiom audit (`Lean.collectAxioms` over every presented
+    -- declaration, every registry entry, and every declaration named in
+    -- formalization.yaml) is advisory by default: a decl whose closure carries
+    -- `sorryAx` or a nonstandard axiom is badged and warned about.  This project
+    -- claims a clean audit in its prose, so here it is a build error instead.
+    ⟨`weak.verso.blueprint.trust.requireAuditClean, true⟩,
+    -- comparator.live project id for the "check this claim yourself" permalinks
+    -- on the comparator page: "mathlib-stable" is the toolchain-matched
+    -- Lean + Mathlib environment there.  Links only — nothing is fetched at
+    -- build time and nothing off-origin is emitted into the site.
+    ⟨`weak.verso.blueprint.trust.comparatorLiveProject, "mathlib-stable"⟩,
     ⟨`weak.verso.blueprint.trust.ciRunUrl, ciRunUrl⟩,
     ⟨`weak.verso.code.warnLineLength, .ofNat 0⟩
   ]

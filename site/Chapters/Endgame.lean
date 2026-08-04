@@ -47,7 +47,7 @@ unconditionally — so $`G` is holomorphic on $`\Omega`, the largest half-plane 
 needs.
 :::
 
-:::theorem "thm:eqOn" (lean := "A362583.exp_contLog_eqOn") (parent := "czero") (uses := "def:contLog, thm:exp-L, thm:bpSeries-dirichlet, thm:bpSeries-holo")
+:::theorem "thm:eqOn" (lean := "A362583.exp_contLog_eqOn") (parent := "czero") (uses := "def:chi, def:contLog, def:fChi, thm:exp-L, thm:bpSeries-dirichlet, thm:bpSeries-holo")
 *Identity theorem.* Under the bounded-race hypothesis,
 $$`\exp\bigl(G(s)\bigr) \;=\; L(s, \chi) \qquad \text{for all } s \in \Omega = \{\mathrm{Re}\, s > 1/2\}.`
 :::
@@ -74,7 +74,7 @@ $`M_0 := \|L(1/2, \chi)\| + 1`, continuity supplies a radius $`\delta_0 > 0` on 
 $`\|L(s, \chi)\| < M_0`. $`\blacksquare`
 :::
 
-:::lemma_ "lem:norm-L-eq-exp" (lean := "A362583.norm_LFunction_eq_exp_re_contLog") (parent := "czero") (uses := "def:contLog, thm:eqOn")
+:::lemma_ "lem:norm-L-eq-exp" (lean := "A362583.norm_LFunction_eq_exp_re_contLog") (parent := "czero") (uses := "def:chi, def:contLog, def:fChi, thm:eqOn")
 *Modulus on the real segment.* Under the bounded-race hypothesis, for real $`\sigma > 1/2`
 $$`\bigl\| L(\sigma, \chi) \bigr\| \;=\; \exp\bigl(\mathrm{Re}\, G(\sigma)\bigr).`
 :::
@@ -85,7 +85,7 @@ $`\sigma > 1/2` lies in $`\Omega`. Taking norms,
 $`\|\exp(G(\sigma))\| = \exp(\mathrm{Re}\, G(\sigma))`. $`\blacksquare`
 :::
 
-:::lemma_ "lem:layerB-le-re-contLog" (lean := "A362583.layerBReal_sub_le_re_contLog") (parent := "czero") (uses := "def:contLog, def:layerBReal, def:layerT, lem:bpSeries-bound-const")
+:::lemma_ "lem:layerB-le-re-contLog" (lean := "A362583.layerBReal_sub_le_re_contLog") (parent := "czero") (uses := "def:bpSeries, def:contLog, def:fChi, def:layerB, def:layerBReal, def:layerT, lem:bpSeries-bound-const")
 *Lower bound by the $`k = 2` layer.* Under the bounded-race hypothesis, for real
 $`\sigma > 1/2`
 $$`B(\sigma) - C - c_T \;\le\; \mathrm{Re}\, G(\sigma).`
@@ -101,7 +101,7 @@ uniform bound $`T(\sigma) \ge -|T(\sigma)| \ge -c_T`. Adding these gives
 $`\mathrm{Re}\, G(\sigma) \ge B(\sigma) - C - c_T`. $`\blacksquare`
 :::
 
-:::theorem "thm:race-not-linear" (lean := "A362583.raceSum_not_linear") (parent := "czero") (uses := "def:raceSum, thm:c-zero, lem:divergence-transfer, lem:L-cont-half, lem:norm-L-eq-exp, lem:layerB-le-re-contLog")
+:::theorem "thm:race-not-linear" (lean := "A362583.raceSum_not_linear") (parent := "czero") (uses := "def:chi, def:contLog, def:fChi, def:layerBReal, def:raceSum, thm:c-zero, lem:divergence-transfer, lem:L-cont-half, lem:norm-L-eq-exp, lem:layerB-le-re-contLog")
 *Main analytic theorem.* There are no constants $`c, C` with
 $$`\bigl| S(N) - c\,\pi(N) \bigr| \;\le\; C \qquad \text{for all } N.`
 The mod-4 prime race is never linear in the prime count. The statement is meaningful
