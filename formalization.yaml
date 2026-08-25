@@ -1,5 +1,8 @@
-# formalization.yaml (v0.3) — see https://github.com/mathlib-initiative/formalization.yaml
-version: "v0.3"
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/99c678e569c7c4c0772db297c5ddd5e4c9b6322e/schema/v0.4.schema.json
+# formalization.yaml (v0.4) — see https://github.com/mathlib-initiative/formalization.yaml
+# CI validates this file against the schema at the commit pinned above
+# (FORMALIZATION_SCHEMA_REF in .github/workflows/ci.yml); keep the two in step.
+version: "v0.4"
 
 project:
   name: "A362583 Irrationality"
@@ -14,14 +17,25 @@ sources:
     id: "self-authored informal proof blueprint for this project; realized as the browsable blueprint site generated from this repository"
     type: "specification / informal blueprint"
     license: "Apache-2.0"
-    author_contacted: "n/a"          # self-authored
-    prior_work: ""                   # none known; novelty of the race-oscillation statement not yet independently verified
+    relationship: "formalizes"
+    author_endorsement: "n/a"        # self-authored
   - title: "OEIS A362583 — Concatenation of ((p mod 4) - 1)/2 for primes 3..prime(n), read as binary"
     authors: ["Eric Vergo"]
     id: "https://oeis.org/A362583"
     type: "OEIS entry (integer sequence: successive binary-integer digit prefixes; a(35) = 12032782746 used as a numeric cross-pin)"
     license: "CC BY-NC 4.0 (OEIS)"
-    author_contacted: "n/a"          # self-authored
+    relationship: "background"
+    author_endorsement: "n/a"        # self-authored
+
+# None known. The novelty of the race-oscillation statement has not been
+# independently verified.
+related_formalizations: []
+
+classification:
+  arxiv: ["math.NT"]
+  msc2020:
+    - "11J72"   # irrationality
+    - "11N13"   # primes in progressions (the mod-4 Chebyshev race)
 
 status:
   scope: >-
@@ -98,6 +112,20 @@ fidelity:
     via limits (one plain
     one-sided limit remains, pinning L(1) real-positive); constants are
     deliberately generous rather than sharp.
+
+review:
+  status: "self-assessed"
+  notes: >-
+    No external review. What the repository establishes mechanically, on every
+    CI run: the A362583 library is sorry-free and no declaration under its root
+    namespace reaches an axiom outside propext, Classical.choice and Quot.sound
+    (axiom audit); and leanprover/comparator kernel-replays
+    Challenge.irrational_ϱ against an independently stated challenge module,
+    inside a Landlock sandbox, with a second, independent kernel (nanoda).
+    Statement fidelity — that the formal statement is the intended mathematical
+    claim — rests on the author's review at the Phase-1 statement lock and on
+    the agent auditors described under `automation`, not on an independent
+    reader.
 
 alignment:
   namespace: "A362583"
