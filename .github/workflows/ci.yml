@@ -1,33 +1,30 @@
 name: CI
 
-# Single do-everything workflow. One `build` job, in order:
-#   0. Source-integrity assertions, cheap and first: the comparator tool sits at
-#      the exact pinned commit and its tag still names that commit; the three
-#      shared definitions are byte-identical across A362583/Defs.lean,
-#      comparator/Challenge.lean and comparator/Solution.lean; the version pins
-#      stated in reader-facing prose match lean-toolchain.
-#   1. Set up Lean (elan + the pinned toolchain), restore the Mathlib cache, and build the
-#      formalization libraries A362583 + Challenge + Solution (subsumes the old
-#      lean_action_ci.yml plain-build check).
-#   2. Build the sandbox + verifier binaries (real landrun for Landlock
-#      sandboxing, nanoda_bin for the independent second kernel), SHA-pinned
-#      and cached, then self-test that Landlock actually confines.
-#   3. Run leanprover/comparator: sandboxed (landrun) kernel-replay with BOTH
-#      the Lean kernel and the nanoda kernel + axiom-whitelist + statement
-#      equality that the Solution module proves the exact Challenge statement
-#      Challenge.irrational_ϱ (subsumes the old comparator.yml).
-#   4. Rewrite comparator/comparator-status.json on disk — every claim in it is
-#      machine-derived here, from comparator.json (the certified names and
-#      permitted axioms) and from this run's own pins (tool/landrun/nanoda) —
-#      and, on a push to main, commit it back as github-actions[bot].
-#   5. Build + generate + gate the blueprint site and upload it as a Pages
-#      artifact (subsumes the old site.yml). The comparator's fresh
-#      comparator/comparator-status.json is on disk BEFORE the site build,
-#      because the site bakes it into its comparator page at elaboration time
-#      (verso.blueprint.trust.comparatorStatus = "../comparator/comparator-status.json").
-# The `deploy` job then publishes the artifact to GitHub Pages.
+# Four jobs, split along the trust boundary (codex-audit CX-012: Lean elaboration
+# is arbitrary code execution, so the untrusted comparator modules must not be
+# elaborated in a job that holds a write token, and must not be elaborated at all
+# before the sandbox confines them):
 #
-# create-release.yml stays separate (it fires only on a lean-toolchain bump).
+#   build      TRUSTED. Source-integrity assertions, formalization.yaml schema
+#              validation, and the A362583 build + axiom audit. Builds only the
+#              subject library — never Challenge/Solution — and hands its oleans
+#              to the next job as an artifact. contents: read.
+#   comparator UNTRUSTED. The first elaboration of Challenge and Solution happens
+#              here and happens inside landrun, driven by leanprover/comparator.
+#              No write token, no OIDC, no Pages scope. Hashes every executable
+#              and certified input immediately before and after the run, proves an
+#              elaboration-time write is denied (the CX-012 regression test), and
+#              emits comparator-result.json as the sole evidence record.
+#   publish    TRUSTED. Re-derives the input hashes from its own checkout, checks
+#              them against the result record, writes comparator/comparator-status.json
+#              from that record (committing it back to main on push events — this
+#              is the only job with contents: write), then builds, gates and
+#              uploads the blueprint site. The status file must be on disk before
+#              the site build: the site bakes it into its comparator page at
+#              elaboration time (verso.blueprint.trust.comparatorStatus).
+#   deploy     Publishes the Pages artifact.
+#
+# create-release.yml stays separate (workflow_dispatch only).
 
 on:
   push:
@@ -40,12 +37,9 @@ on:
   pull_request:
   workflow_dispatch:
 
-# contents: write  -> commit comparator-status.json back to main
-# pages: write / id-token: write -> deploy to GitHub Pages
+# Deny by default; every job re-declares exactly what it needs.
 permissions:
-  contents: write
-  pages: write
-  id-token: write
+  contents: read
 
 # Serialize per-ref and never cancel in-progress: a cancelled run could
 # interrupt the comparator commit-back or a Pages deploy.
@@ -53,42 +47,57 @@ concurrency:
   group: ci-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  # Zouuup/landrun v0.1.17. Bump deliberately; the verifier cache key derives
+  # from these SHAs, so a bump forces a rebuild.
+  LANDRUN_REF: "811cfff51ceaf3d9843708aa6d22e9b84ccac8b4"
+  # ammkrn/nanoda_lib default-branch HEAD, carrying the kernel fixes that match
+  # the Lean version this project pins.
+  NANODA_REF: "05055695879dfebb6628a67da88ceca6cd6b0421"
+  # leanprover/comparator, pinned by COMMIT like the other two verifiers — a tag
+  # is a mutable pointer, and what this repository certifies must not change
+  # because someone upstream moved one. COMPARATOR_TOOL_REF is kept only as the
+  # human-readable name of that commit: it is what the blueprint tells readers to
+  # clone and what `tool_ref` records, and the "Assert comparator tool pin" step
+  # fails the run if the tag stops resolving to COMPARATOR_TOOL_SHA. Resolved
+  # with `git ls-remote https://github.com/leanprover/comparator.git
+  # refs/tags/v4.33.0` (lightweight tag; no peeled `^{}` entry). Bump together.
+  COMPARATOR_TOOL_REF: "v4.33.0"
+  COMPARATOR_TOOL_SHA: "3927ad383f208ae977c340a91c48ac9b497d2097"
+  # The comparator configuration this run certifies. Single source of truth: the
+  # "Run comparator" step invokes exactly this file, the hash manifest covers it
+  # and the status refresh copies its contents, so the published artifact can
+  # never describe a different config than the one that was checked.
+  COMPARATOR_CONFIG: "comparator/comparator.json"
+  # Same config with `solution_module` swapped for the sandbox regression
+  # fixture; see the "Denied-write probe" step.
+  COMPARATOR_PROBE_CONFIG: "comparator/comparator-probe.json"
+  # mathlib-initiative/formalization.yaml, pinned by commit: a schema fetched
+  # from `main` could start or stop rejecting this file without a commit here.
+  # The version dispatcher (schema/formalization.schema.json) carries an $id on
+  # `main`, so relative $refs inside it would resolve back to `main` and defeat
+  # the pin — validate against the versioned schema directly instead, and assert
+  # separately that formalization.yaml declares that version.
+  FORMALIZATION_SCHEMA_REF: "99c678e569c7c4c0772db297c5ddd5e4c9b6322e"
+  FORMALIZATION_SCHEMA_VERSION: "v0.4"
+  CHECK_JSONSCHEMA_VERSION: "0.38.0"
+
 jobs:
+  # =====================================================================
+  # 1. Trusted build: assertions + the subject library. No untrusted Lean.
+  # =====================================================================
   build:
     runs-on: ubuntu-latest
-    timeout-minutes: 240
-    env:
-      # Zouuup/landrun v0.1.17. Bump deliberately; the verifier cache key
-      # derives from these SHAs, so a bump forces a rebuild.
-      LANDRUN_REF: "811cfff51ceaf3d9843708aa6d22e9b84ccac8b4"
-      # ammkrn/nanoda_lib default-branch HEAD, carrying the kernel fixes that
-      # match the Lean version this project pins.
-      NANODA_REF: "05055695879dfebb6628a67da88ceca6cd6b0421"
-      # leanprover/comparator, pinned by COMMIT like the other two verifiers —
-      # a tag is a mutable pointer, and what this repository certifies must not
-      # change because someone upstream moved one. COMPARATOR_TOOL_REF is kept
-      # only as the human-readable name of that commit: it is what the blueprint
-      # tells readers to clone and what `tool_ref` records, and the "Assert
-      # comparator tool pin" step below fails the run if the tag stops resolving
-      # to COMPARATOR_TOOL_SHA. Resolved with
-      #   git ls-remote https://github.com/leanprover/comparator.git refs/tags/v4.33.0
-      # (lightweight tag; no peeled `^{}` entry). Bump the two together.
-      COMPARATOR_TOOL_REF: "v4.33.0"
-      COMPARATOR_TOOL_SHA: "3927ad383f208ae977c340a91c48ac9b497d2097"
-      # The comparator configuration this run certifies. Single source of truth:
-      # the "Run comparator" step invokes exactly this file and the status
-      # refresh copies its contents and records this path, so the artifact can
-      # never describe a different config than the one that was checked.
-      COMPARATOR_CONFIG: "comparator/comparator.json"
+    timeout-minutes: 120
+    permissions:
+      contents: read
     steps:
       # Reclaim disk BEFORE anything else. A prior run (29533982322) exhausted
-      # the ~14 GB free on the hosted runner: cargo-built landrun + nanoda, then
-      # two materialized Mathlib copies (root .lake/packages + site/.lake/packages)
-      # with no cleanup. Dropping the toolchains this job never touches (Android
-      # SDK/NDK, .NET, GHC/Haskell) plus large apt packages frees ~20-25 GB.
-      # Keep the hosted tool-cache (elan/go/cargo live outside it but removing it
-      # is slow for no gain here), Docker images (nothing here needs them, but
-      # removal is slow), and swap (Mathlib elaboration is memory-heavy).
+      # the ~14 GB free on the hosted runner. Dropping the toolchains this job
+      # never touches (Android SDK/NDK, .NET, GHC/Haskell) plus large apt
+      # packages frees ~20-25 GB. Keep the hosted tool-cache (elan/go/cargo live
+      # outside it but removing it is slow for no gain here), Docker images
+      # (removal is slow), and swap (Mathlib elaboration is memory-heavy).
       - name: Free up disk space
         uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
         with:
@@ -104,18 +113,180 @@ jobs:
         run: df -h /
 
       # Every third-party action below is pinned by commit SHA with the tag it
-      # corresponded to in a trailing comment (resolved 2026-08-03 via
+      # corresponded to in a trailing comment (resolved via
       # `git ls-remote https://github.com/<owner>/<repo>.git refs/tags/<tag>`;
       # all of them are lightweight tags, so the listed object IS the commit).
       # Marketplace major-version tags are mutable pointers: `@v5` is a promise
-      # about compatibility, not about code, and this job holds a write token
-      # and produces the artifact the trust pages quote.
+      # about compatibility, not about code.
       - name: Check out this repository (solution + challenge + site)
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
-          # Do NOT leave the write-capable token in .git/config for the whole
-          # job (many minutes of third-party build code run here). The
-          # commit-back step below authenticates its single push explicitly.
+          persist-credentials: false
+
+      # --- Source-integrity assertions ---------------------------------------
+      # The comparator certifies that Solution proves the Challenge statement —
+      # it says nothing about whether the Challenge is the claim this project
+      # actually makes. Challenge.lean and Solution.lean each re-declare
+      # oddPrime / bit / ϱ from scratch (Solution must not import Challenge:
+      # they are elaborated in separate environments), and both are supposed to
+      # be byte-identical copies of A362583/Defs.lean. Solution.lean's
+      # `ϱ_eq : ϱ = A362583.ϱ := rfl` catches drift on the solution side; NOTHING
+      # catches drift on the challenge side, where it would quietly weaken the
+      # certified claim. This step is that missing check. SolutionProbe.lean is
+      # held to the same standard: if it stopped being a faithful copy of the
+      # solution, the sandbox probe below would stop testing what it claims to.
+      - name: Assert the shared definitions are byte-identical
+        run: |
+          set -euo pipefail
+          # `index($0, s) == 1` is a byte-exact prefix test — no regex engine,
+          # so the multibyte identifiers (ϱ, ℝ, ℕ) are compared as bytes and the
+          # extraction cannot drift with the awk implementation or the locale.
+          extract() {
+            awk '
+              index($0, "/-- The `k`-th odd prime: `oddPrime 0 = 3`,") == 1 { inblock = 1 }
+              inblock { print }
+              inblock && index($0, "noncomputable def ϱ : ℝ := ") == 1 { exit }
+            ' "$1"
+          }
+          for f in A362583/Defs.lean comparator/Challenge.lean comparator/Solution.lean \
+                   comparator/SolutionProbe.lean; do
+            out="${RUNNER_TEMP}/$(printf '%s' "$f" | tr / _).block"
+            extract "$f" > "$out"
+            lines="$(wc -l < "$out" | tr -d '[:space:]')"
+            # 15 = three docstring+definition pairs plus the two blank lines
+            # between them. Anything else means an anchor moved and the diff
+            # below would be comparing the wrong thing.
+            if [ "$lines" -ne 15 ]; then
+              echo "definition-block extraction failed for $f: got $lines lines, expected 15"
+              exit 1
+            fi
+          done
+          diff "${RUNNER_TEMP}/A362583_Defs.lean.block" "${RUNNER_TEMP}/comparator_Challenge.lean.block"
+          diff "${RUNNER_TEMP}/A362583_Defs.lean.block" "${RUNNER_TEMP}/comparator_Solution.lean.block"
+          diff "${RUNNER_TEMP}/A362583_Defs.lean.block" "${RUNNER_TEMP}/comparator_SolutionProbe.lean.block"
+          echo "oddPrime / bit / ϱ are byte-identical across the four modules."
+
+      # Prose that states a pin must state the true one: formalization.yaml and
+      # the Main Theorem chapter both claimed Mathlib v4.31.0 for a full
+      # toolchain cycle after the real pin moved to v4.32.0, and nothing noticed.
+      - name: Assert stated pins match lean-toolchain
+        run: |
+          set -euo pipefail
+          if ! cmp -s lean-toolchain site/lean-toolchain; then
+            echo "lean-toolchain and site/lean-toolchain disagree:"
+            diff lean-toolchain site/lean-toolchain || true
+            exit 1
+          fi
+          toolchain="$(cut -d: -f2 lean-toolchain | tr -d '[:space:]')"  # leanprover/lean4:v4.33.1 -> v4.33.1
+          files=(README.md formalization.yaml site/Chapters/*.lean)
+          # (a) A version named in a "pinned …" sentence must be the toolchain.
+          #     Whole-file match (`-0777`, `/s`): these sentences wrap across
+          #     lines, so a line-oriented grep would miss them.
+          bad="$(perl -0777 -ne 'while (/[Pp]inned.{0,120}?(v4\.\d+\.\d+)/gs) { print "$ARGV: $1\n" }' \
+                   "${files[@]}" | grep -v ": ${toolchain}\$" || true)"
+          if [ -n "$bad" ]; then
+            echo "stated pin disagrees with lean-toolchain (${toolchain}):"
+            printf '%s\n' "$bad"
+            exit 1
+          fi
+          # (b) No stray toolchain-shaped version anywhere in those files. The
+          #     only two legitimate ones are the toolchain and the comparator
+          #     tag (which the repro instructions quote).
+          stray="$(grep -RhoE 'v4\.[0-9]+\.[0-9]+' "${files[@]}" | sort -u \
+                   | grep -vxF -e "$toolchain" -e "$COMPARATOR_TOOL_REF" || true)"
+          if [ -n "$stray" ]; then
+            echo "unrecognised version token(s) in reader-facing prose:"
+            printf '%s\n' "$stray"
+            exit 1
+          fi
+          echo "stated pins agree with lean-toolchain (${toolchain})."
+
+      # formalization.yaml is read by third parties (and by the blueprint's
+      # metadata page) as structured data, so it has to actually satisfy the
+      # published schema rather than merely look like it does.
+      - name: Validate formalization.yaml against the pinned schema
+        run: |
+          set -euo pipefail
+          export PATH="$HOME/.local/bin:$PATH"
+          declared="$(grep -m1 '^version:' formalization.yaml | tr -d ' "' | cut -d: -f2)"
+          if [ "$declared" != "$FORMALIZATION_SCHEMA_VERSION" ]; then
+            echo "formalization.yaml declares version '$declared' but CI validates against ${FORMALIZATION_SCHEMA_VERSION}"
+            exit 1
+          fi
+          pipx install "check-jsonschema==${CHECK_JSONSCHEMA_VERSION}"
+          check-jsonschema \
+            --schemafile "https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/${FORMALIZATION_SCHEMA_REF}/schema/${FORMALIZATION_SCHEMA_VERSION}.schema.json" \
+            formalization.yaml
+
+      # Installs elan + the pinned toolchain, restores the Mathlib olean cache
+      # and builds the subject library. Challenge and Solution are deliberately
+      # NOT built here (CX-012): their first elaboration must happen inside the
+      # comparator's sandbox, in the next job, which holds no write token.
+      # axiom-audit fails the run if anything under the A362583 root namespace
+      # reaches an axiom outside propext / Classical.choice / Quot.sound — which
+      # includes `sorry` (sorryAx) and `native_decide` (Lean.ofReduceBool). Both
+      # the allowlist and the root namespace are lean-action's defaults (the root
+      # is auto-detected from the first lean_lib, `A362583`).
+      - name: Set up Lean, build A362583 and audit its axioms
+        uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1.6.0
+        with:
+          lake-package-directory: .
+          build-args: "A362583"
+          test: false
+          lint: false
+          axiom-audit: "true"
+
+      # The subject oleans are a trusted input to both later jobs: the sandboxed
+      # comparator build imports A362583, and the site build consumes it as a
+      # path dependency. Ship them as a tarball so the artifact roundtrip cannot
+      # drop hidden files or perturb the paths and mtimes Lake's traces rest on.
+      - name: Package the subject oleans
+        run: |
+          set -euo pipefail
+          tar -czf "${RUNNER_TEMP}/subject-oleans.tar.gz" .lake/build
+          ls -l "${RUNNER_TEMP}/subject-oleans.tar.gz"
+
+      - name: Upload the subject oleans
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: subject-oleans
+          path: ${{ runner.temp }}/subject-oleans.tar.gz
+          retention-days: 1
+          if-no-files-found: error
+
+      - name: Disk space after build
+        run: df -h /
+
+  # =====================================================================
+  # 2. Untrusted verification: the first elaboration of Challenge and
+  #    Solution, inside landrun, with no write token and no OIDC.
+  # =====================================================================
+  comparator:
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 180
+    permissions:
+      # Read only, and nothing else: this is the job that runs code the
+      # comparator's threat model treats as hostile.
+      contents: read
+    steps:
+      - name: Free up disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: false
+          swap-storage: false
+
+      - name: Disk space after cleanup
+        run: df -h /
+
+      - name: Check out this repository (solution + challenge)
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
           persist-credentials: false
 
       - name: Check out leanprover/comparator (pinned commit)
@@ -126,12 +297,11 @@ jobs:
           # still asserted to name it by the step right below.
           ref: ${{ env.COMPARATOR_TOOL_SHA }}
           # Check the tool out as `comparator-tool`, NOT `comparator`: the repo
-          # now tracks a `comparator/` directory (Challenge/Solution + JSON), so
+          # tracks a `comparator/` directory (Challenge/Solution + JSON), so
           # `path: comparator` would have actions/checkout clobber it.
           path: comparator-tool
           persist-credentials: false
 
-      # --- Source-integrity assertions ---------------------------------------
       - name: Assert comparator tool pin
         working-directory: comparator-tool
         run: |
@@ -187,85 +357,12 @@ jobs:
           printf '%s\n' "$toolchain" > comparator-tool/lean-toolchain
           cat comparator-tool/lean-toolchain
 
-      # The comparator certifies that Solution proves the Challenge statement —
-      # it says nothing about whether the Challenge is the claim this project
-      # actually makes. Challenge.lean and Solution.lean each re-declare
-      # oddPrime / bit / ϱ from scratch (Solution must not import Challenge:
-      # they are elaborated in separate environments), and both are supposed to
-      # be byte-identical copies of A362583/Defs.lean. Solution.lean's
-      # `ϱ_eq : ϱ = A362583.ϱ := rfl` catches drift on the solution side; NOTHING
-      # catches drift on the challenge side, where it would quietly weaken the
-      # certified claim. This step is that missing check.
-      - name: Assert the shared definitions are byte-identical
-        run: |
-          set -euo pipefail
-          # `index($0, s) == 1` is a byte-exact prefix test — no regex engine,
-          # so the multibyte identifiers (ϱ, ℝ, ℕ) are compared as bytes and the
-          # extraction cannot drift with the awk implementation or the locale.
-          extract() {
-            awk '
-              index($0, "/-- The `k`-th odd prime: `oddPrime 0 = 3`,") == 1 { inblock = 1 }
-              inblock { print }
-              inblock && index($0, "noncomputable def ϱ : ℝ := ") == 1 { exit }
-            ' "$1"
-          }
-          for f in A362583/Defs.lean comparator/Challenge.lean comparator/Solution.lean; do
-            out="${RUNNER_TEMP}/$(printf '%s' "$f" | tr / _).block"
-            extract "$f" > "$out"
-            lines="$(wc -l < "$out" | tr -d '[:space:]')"
-            # 15 = three docstring+definition pairs plus the two blank lines
-            # between them. Anything else means an anchor moved and the diff
-            # below would be comparing the wrong thing.
-            if [ "$lines" -ne 15 ]; then
-              echo "definition-block extraction failed for $f: got $lines lines, expected 15"
-              exit 1
-            fi
-          done
-          diff "${RUNNER_TEMP}/A362583_Defs.lean.block" "${RUNNER_TEMP}/comparator_Challenge.lean.block"
-          diff "${RUNNER_TEMP}/A362583_Defs.lean.block" "${RUNNER_TEMP}/comparator_Solution.lean.block"
-          echo "oddPrime / bit / ϱ are byte-identical across the three modules."
-
-      # Prose that states a pin must state the true one: formalization.yaml and
-      # the Main Theorem chapter both claimed Mathlib v4.31.0 for a full
-      # toolchain cycle after the real pin moved to v4.32.0, and nothing noticed.
-      - name: Assert stated pins match lean-toolchain
-        run: |
-          set -euo pipefail
-          if ! cmp -s lean-toolchain site/lean-toolchain; then
-            echo "lean-toolchain and site/lean-toolchain disagree:"
-            diff lean-toolchain site/lean-toolchain || true
-            exit 1
-          fi
-          toolchain="$(cut -d: -f2 lean-toolchain | tr -d '[:space:]')"  # leanprover/lean4:v4.32.0 -> v4.32.0
-          files=(README.md formalization.yaml site/Chapters/*.lean)
-          # (a) A version named in a "pinned …" sentence must be the toolchain.
-          #     Whole-file match (`-0777`, `/s`): these sentences wrap across
-          #     lines, so a line-oriented grep would miss them.
-          bad="$(perl -0777 -ne 'while (/[Pp]inned.{0,120}?(v4\.\d+\.\d+)/gs) { print "$ARGV: $1\n" }' \
-                   "${files[@]}" | grep -v ": ${toolchain}\$" || true)"
-          if [ -n "$bad" ]; then
-            echo "stated pin disagrees with lean-toolchain (${toolchain}):"
-            printf '%s\n' "$bad"
-            exit 1
-          fi
-          # (b) No stray toolchain-shaped version anywhere in those files. The
-          #     only two legitimate ones are the toolchain and the comparator
-          #     tag (which the repro instructions quote).
-          stray="$(grep -RhoE 'v4\.[0-9]+\.[0-9]+' "${files[@]}" | sort -u \
-                   | grep -vxF -e "$toolchain" -e "$COMPARATOR_TOOL_REF" || true)"
-          if [ -n "$stray" ]; then
-            echo "unrecognised version token(s) in reader-facing prose:"
-            printf '%s\n' "$stray"
-            exit 1
-          fi
-          echo "stated pins agree with lean-toolchain (${toolchain})."
-
       # --- Sandbox + second-kernel verifier binaries -------------------------
       # Real landrun (Landlock) replaces the tool's fake-landrun.sh no-op shim,
-      # and nanoda_bin provides the independent second kernel for
-      # enable_nanoda in comparator/comparator.json. Both are SHA-pinned and
-      # cached; no restore-keys on purpose — a binary at the wrong SHA must
-      # never be silently reused, a miss just rebuilds (~2-3 min).
+      # and nanoda_bin provides the independent second kernel for enable_nanoda
+      # in comparator/comparator.json. Both are SHA-pinned and cached; no
+      # restore-keys on purpose — a binary at the wrong SHA must never be
+      # silently reused, a miss just rebuilds (~2-3 min).
       - name: Restore verifier binaries (landrun + nanoda)
         id: verifier-cache
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
@@ -315,8 +412,12 @@ jobs:
 
       # landrun is invoked with --best-effort, which silently degrades to
       # no-sandbox on a Landlock-less kernel. This step turns that silent
-      # degradation into a hard failure: if the canary write is not denied,
-      # the runner image regressed and the run must not certify anything.
+      # degradation into a hard failure: if the canary write is not denied, or a
+      # TCP connect is not denied, the runner image regressed and the run must
+      # not certify anything. Both controls use exactly the ruleset the
+      # comparator itself builds (filesystem rules only, no --unrestricted-*),
+      # under which go-landlock still handles the network domain and, with no
+      # ConnectTCP rule, denies every connect.
       - name: Landlock sandbox self-test
         run: |
           set -euo pipefail
@@ -328,30 +429,104 @@ jobs:
             exit 1
           fi
           test ! -e "$HOME/landlock-canary"
+          # Network canary. Skipped (not failed) if the runner cannot reach the
+          # endpoint unsandboxed, so a network blip degrades the assertion
+          # instead of the run.
+          if curl -fsS --max-time 15 -o /dev/null https://example.com 2>/dev/null; then
+            if "$COMPARATOR_LANDRUN" --best-effort --ro / --rw /dev -ldd -add-exec \
+                 curl -fsS --max-time 15 -o /dev/null https://example.com 2>/dev/null; then
+              echo "landrun failed to block a TCP connect under a filesystem-only ruleset"
+              exit 1
+            fi
+            echo "network canary: TCP connect denied inside the sandbox"
+          else
+            echo "::warning::network canary skipped; the endpoint was unreachable unsandboxed"
+          fi
 
-      # Installs elan + the pinned toolchain, restores the Mathlib olean cache,
-      # and builds both formalization libraries. With A362583 fully pre-built,
-      # the comparator's sandboxed `lake build` steps are no-ops (the tool
-      # README's recommended trust posture), so it only exports the oleans and
-      # verifies. elan is left on PATH for the later comparator and site steps
-      # (site/lean-toolchain pins the same toolchain).
-      - name: Set up Lean and build A362583 + Challenge
+      # elan + the Mathlib packages only. `build: false` is the whole point: no
+      # Lean of this repository is elaborated in this job outside the sandbox.
+      # The Lake cache this restores is the one the build job saved under the
+      # same key (it includes github.sha), so Mathlib does not have to be
+      # re-fetched from scratch.
+      - name: Set up Lean and the Mathlib cache (no build)
         uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1.6.0
         with:
           lake-package-directory: .
-          build-args: "A362583 Challenge Solution"
+          build: "false"
           test: false
           lint: false
+          use-mathlib-cache: "true"
+
+      # Inside the sandbox every path but the project's .lake is read-only and
+      # TCP is denied, so elan can neither download a toolchain nor install one.
+      # Have the toolchain that this project and the comparator tool now share
+      # on disk before landrun starts.
+      - name: Pre-install the pinned toolchain
+        run: |
+          set -euo pipefail
+          elan toolchain install "$(tr -d '[:space:]' < lean-toolchain)"
+          elan toolchain list
+
+      # The subject library, built in the trusted job. Restoring it here keeps
+      # the sandboxed `lake build Solution` to elaborating Challenge/Solution
+      # themselves rather than rebuilding A362583 inside the sandbox.
+      - name: Download the subject oleans
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: subject-oleans
+          path: ${{ runner.temp }}/subject-oleans
+
+      - name: Unpack the subject oleans
+        run: |
+          set -euo pipefail
+          tar -xzf "${RUNNER_TEMP}/subject-oleans/subject-oleans.tar.gz" -C .
+          test -d .lake/build/lib/lean/A362583
 
       - name: Build the comparator tool and lean4export
         working-directory: comparator-tool
-        run: lake build lean4export comparator
+        run: |
+          set -euo pipefail
+          lake build lean4export comparator
+          echo "COMPARATOR_LEAN4EXPORT=${GITHUB_WORKSPACE}/comparator-tool/.lake/packages/lean4export/.lake/build/bin/lean4export" >> "$GITHUB_ENV"
+
+      # --- Integrity across the verification gap -----------------------------
+      # One script, run immediately before and immediately after the certified
+      # run, so the two manifests are computed identically and a difference can
+      # only mean the machinery or the certified sources changed mid-flight.
+      - name: Prepare the input-hash manifest script
+        run: |
+          set -euo pipefail
+          cat > "${RUNNER_TEMP}/hash-inputs.sh" <<'SH'
+          #!/usr/bin/env bash
+          set -euo pipefail
+          out="$1"
+          pairs="${out}.pairs"
+          : > "$pairs"
+          emit() { printf '%s\t%s\n' "$1" "$(sha256sum "$2" | cut -d' ' -f1)" >> "$pairs"; }
+          emit comparator        "${GITHUB_WORKSPACE}/comparator-tool/.lake/build/bin/comparator"
+          emit lean4export       "${COMPARATOR_LEAN4EXPORT}"
+          emit landrun           "${COMPARATOR_LANDRUN}"
+          emit nanoda            "${COMPARATOR_NANODA}"
+          emit comparator_config "${GITHUB_WORKSPACE}/${COMPARATOR_CONFIG}"
+          emit challenge_lean    "${GITHUB_WORKSPACE}/comparator/Challenge.lean"
+          emit solution_lean     "${GITHUB_WORKSPACE}/comparator/Solution.lean"
+          jq -Rn '[inputs | split("\t") | {(.[0]): .[1]}] | add' "$pairs" > "$out"
+          rm -f "$pairs"
+          cat "$out"
+          SH
+          chmod +x "${RUNNER_TEMP}/hash-inputs.sh"
+
+      - name: Hash the verification inputs (before)
+        run: |
+          set -euo pipefail
+          echo "COMPARATOR_STARTED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          "${RUNNER_TEMP}/hash-inputs.sh" "${RUNNER_TEMP}/hashes-before.json"
 
       - name: Run comparator
-        # COMPARATOR_LANDRUN / COMPARATOR_NANODA come from "Expose verifier
-        # binaries" via GITHUB_ENV.
-        env:
-          COMPARATOR_LEAN4EXPORT: ${{ github.workspace }}/comparator-tool/.lake/packages/lean4export/.lake/build/bin/lean4export
+        # COMPARATOR_LANDRUN / COMPARATOR_NANODA / COMPARATOR_LEAN4EXPORT all
+        # come from GITHUB_ENV. The sandboxed `lake build` steps are a real cold
+        # build now: this is where Challenge and Solution are elaborated for the
+        # first time, which is the point of the job split.
         run: |
           set -euo pipefail
           # Run from the solution repo root so `lake env` supplies A362583's
@@ -378,14 +553,222 @@ jobs:
             "${cmd[@]}"
           fi
 
-      # Resolve a *step-level* deep link to the "Run comparator" step above, so the
-      # comparator page's "View CI run" link lands the reader on the kernel replay in
-      # the logs, not just the run summary. Best-effort: ANY failure of the API / jq
-      # lookup falls back to the run-level URL — this step MUST never fail the job
-      # (hence `set -uo pipefail` without `-e`, and `|| true` on every lookup). The
-      # resolved URL is exported via $GITHUB_ENV as CI_RUN_URL for the two consumers
-      # below: "Refresh comparator-status.json" (writes it into run_url) and
-      # "Build Contents" (feeds verso.blueprint.trust.ciRunUrl).
+      - name: Hash the verification inputs (after)
+        run: |
+          set -euo pipefail
+          echo "COMPARATOR_FINISHED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
+          "${RUNNER_TEMP}/hash-inputs.sh" "${RUNNER_TEMP}/hashes-after.json"
+
+      # The CX-012 regression test. comparator/SolutionProbe.lean is
+      # comparator/Solution.lean plus a top-level `run_cmd` that tries to write
+      # outside the sandbox before any declaration is elaborated:
+      #   * every write denied -> the fixture aborts elaboration with the
+      #     sentinel, the sandboxed `lake build` fails, the comparator exits
+      #     non-zero. That is the passing outcome, and the sentinel is what
+      #     distinguishes it from an unrelated failure.
+      #   * any write accepted -> the fixture stays silent, proves the challenge
+      #     statement, the comparator exits 0 and the canary files exist. Both
+      #     signals fail this step.
+      - name: Denied-write probe
+        run: |
+          set -uo pipefail
+          log="${RUNNER_TEMP}/probe.log"
+          set +e
+          lake env "${GITHUB_WORKSPACE}/comparator-tool/.lake/build/bin/comparator" \
+            "${COMPARATOR_PROBE_CONFIG}" > "$log" 2>&1
+          rc=$?
+          set -e
+          cat "$log"
+          for canary in "${GITHUB_WORKSPACE}/comparator-probe-canary" "${HOME}/comparator-probe-canary"; do
+            if [ -e "$canary" ]; then
+              echo "SANDBOX BREACH: the probe wrote $canary from inside the sandbox"
+              exit 1
+            fi
+          done
+          if [ "$rc" -eq 0 ]; then
+            echo "SANDBOX BREACH: the probe solution elaborated and verified; its write was not denied"
+            exit 1
+          fi
+          if ! grep -q 'COMPARATOR_PROBE_WRITES_DENIED' "$log"; then
+            echo "the probe run failed without the denial sentinel: cannot conclude the sandbox blocked the write"
+            exit 1
+          fi
+          echo "probe OK: the elaboration-time writes were denied (comparator exit ${rc})"
+          jq -n --arg config "$COMPARATOR_PROBE_CONFIG" --argjson rc "$rc" \
+            '{config: $config, exit_code: $rc, denied: true}' > "${RUNNER_TEMP}/probe.json"
+
+      # The single evidence record. Everything the published status will claim is
+      # derived here, in the job that actually ran the check, from the config
+      # that was passed to the tool and from this run's own pins and hashes.
+      - name: Compose the comparator result record
+        run: |
+          set -euo pipefail
+          if ! diff <(jq -S . "${RUNNER_TEMP}/hashes-before.json") \
+                    <(jq -S . "${RUNNER_TEMP}/hashes-after.json"); then
+            echo "a verification input changed during the comparator run"
+            exit 1
+          fi
+          mkdir -p "${RUNNER_TEMP}/result"
+          jq -n \
+            --slurpfile cfg "$COMPARATOR_CONFIG" \
+            --slurpfile pre "${RUNNER_TEMP}/hashes-before.json" \
+            --slurpfile post "${RUNNER_TEMP}/hashes-after.json" \
+            --slurpfile probe "${RUNNER_TEMP}/probe.json" \
+            --arg config "$COMPARATOR_CONFIG" \
+            --arg started_at "$COMPARATOR_STARTED_AT" \
+            --arg finished_at "$COMPARATOR_FINISHED_AT" \
+            --arg repository "$GITHUB_REPOSITORY" \
+            --arg commit "$GITHUB_SHA" \
+            --arg run_id "$GITHUB_RUN_ID" \
+            --arg tool_ref "$COMPARATOR_TOOL_REF" \
+            --arg tool_sha "$COMPARATOR_TOOL_SHA" \
+            --arg tool_toolchain "$(tr -d '[:space:]' < comparator-tool/lean-toolchain)" \
+            --arg toolchain "$(tr -d '[:space:]' < lean-toolchain)" \
+            --arg landrun_ref "$LANDRUN_REF" \
+            --arg nanoda_ref "$NANODA_REF" \
+            '($cfg[0]) as $c
+             | { verdict: "verified",
+                 repository: $repository,
+                 commit: $commit,
+                 run_id: $run_id,
+                 started_at: $started_at,
+                 finished_at: $finished_at,
+                 config: $config,
+                 challenge_module: $c.challenge_module,
+                 solution_module: $c.solution_module,
+                 theorem_names: ($c.theorem_names // []),
+                 permitted_axioms: ($c.permitted_axioms // []),
+                 nanoda_replay: (($c.enable_nanoda // false) == true),
+                 toolchain: $toolchain,
+                 tool_ref: $tool_ref,
+                 tool_sha: $tool_sha,
+                 tool_toolchain: $tool_toolchain,
+                 landrun_ref: $landrun_ref,
+                 nanoda_ref: $nanoda_ref,
+                 inputs_sha256_before: $pre[0],
+                 inputs_sha256_after: $post[0],
+                 sandbox_write_probe: $probe[0] }
+             | if (.challenge_module // "") == "" or (.solution_module // "") == ""
+                  or (.theorem_names | length) == 0 or (.permitted_axioms | length) == 0 then
+                 error("comparator.json is missing challenge_module / solution_module / theorem_names / permitted_axioms")
+               else . end' > "${RUNNER_TEMP}/result/comparator-result.json"
+          cp "${RUNNER_TEMP}/hashes-before.json" "${RUNNER_TEMP}/hashes-after.json" \
+             "${RUNNER_TEMP}/probe.log" "${RUNNER_TEMP}/result/"
+          cat "${RUNNER_TEMP}/result/comparator-result.json"
+
+      - name: Upload the comparator result record
+        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5
+        with:
+          name: comparator-result
+          path: ${{ runner.temp }}/result
+          retention-days: 30
+          if-no-files-found: error
+
+      - name: Disk space after verification
+        run: df -h /
+
+  # =====================================================================
+  # 3. Trusted publication: status record -> comparator-status.json, then
+  #    the blueprint site. The only job that can write to the repository.
+  # =====================================================================
+  publish:
+    needs: comparator
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    permissions:
+      contents: write   # commit comparator-status.json back to main (push events only)
+      actions: read     # resolve the step-level deep link into the comparator job's log
+      pages: write      # actions/configure-pages
+      # No id-token: minting the Pages OIDC token stays in the deploy job.
+    steps:
+      - name: Free up disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: true
+          haskell: true
+          large-packages: true
+          docker-images: false
+          swap-storage: false
+
+      - name: Disk space after cleanup
+        run: df -h /
+
+      - name: Check out this repository (site + status file)
+        uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
+        with:
+          # Do NOT leave the write-capable token in .git/config for the whole
+          # job. The commit-back step below authenticates its single push.
+          persist-credentials: false
+
+      - name: Download the comparator result record
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: comparator-result
+          path: ${{ runner.temp }}/result
+
+      - name: Download the subject oleans
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5
+        with:
+          name: subject-oleans
+          path: ${{ runner.temp }}/subject-oleans
+
+      # The site consumes A362583 as a path dependency; unpacking the trusted
+      # build's oleans keeps `lake build Contents` from recompiling it.
+      - name: Unpack the subject oleans
+        run: |
+          set -euo pipefail
+          tar -xzf "${RUNNER_TEMP}/subject-oleans/subject-oleans.tar.gz" -C .
+          test -d .lake/build/lib/lean/A362583
+
+      # Nothing downstream may take the result record on faith: re-derive the
+      # hashes of the certified sources from THIS checkout and require them to
+      # match what the verification job recorded, and require the record to be
+      # about this commit. A mismatch means the two jobs did not check the same
+      # thing, which is exactly the condition a green badge must not survive.
+      - name: Verify the result record against this checkout
+        run: |
+          set -euo pipefail
+          res="${RUNNER_TEMP}/result/comparator-result.json"
+          cat "$res"
+          verdict="$(jq -r '.verdict' "$res")"
+          if [ "$verdict" != "verified" ]; then
+            echo "result record verdict is '${verdict}'"
+            exit 1
+          fi
+          if [ "$(jq -r '.commit' "$res")" != "$GITHUB_SHA" ]; then
+            echo "result record is for commit $(jq -r '.commit' "$res"), this checkout is $GITHUB_SHA"
+            exit 1
+          fi
+          if [ "$(jq -r '.sandbox_write_probe.denied' "$res")" != "true" ]; then
+            echo "result record does not record a denied elaboration-time write probe"
+            exit 1
+          fi
+          check() {  # check <record key> <file>
+            want="$(jq -r --arg k "$1" '.inputs_sha256_after[$k] // empty' "$res")"
+            got="$(sha256sum "$2" | cut -d' ' -f1)"
+            if [ -z "$want" ] || [ "$want" != "$got" ]; then
+              echo "hash mismatch for $2: record has '${want:-<missing>}', this checkout has $got"
+              exit 1
+            fi
+            echo "  $2 $got"
+          }
+          check comparator_config "$COMPARATOR_CONFIG"
+          check challenge_lean comparator/Challenge.lean
+          check solution_lean comparator/Solution.lean
+          echo "result record matches this checkout."
+
+      # Resolve a *step-level* deep link to the "Run comparator" step, so the
+      # comparator page's "View CI run" link lands the reader on the kernel replay
+      # in the logs, not just the run summary. The lookup is by STEP name, so it
+      # does not care that the step now lives in a different job. Best-effort: ANY
+      # failure of the API / jq lookup falls back to the run-level URL — this step
+      # MUST never fail the job (hence `set -uo pipefail` without `-e`, and
+      # `|| true` on every lookup). The resolved URL is exported via $GITHUB_ENV as
+      # CI_RUN_URL for the two consumers below: "Refresh comparator-status.json"
+      # (writes it into run_url) and "Build Contents" (feeds
+      # verso.blueprint.trust.ciRunUrl).
       - name: Resolve CI run deep link
         env:
           GH_TOKEN: ${{ github.token }}
@@ -395,7 +778,6 @@ jobs:
           deep=""
           jobs_json="$(gh api "repos/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}/jobs?per_page=100" 2>/dev/null || true)"
           if [ -n "$jobs_json" ]; then
-            # The build job is the one containing a step literally named "Run comparator".
             job="$(printf '%s' "$jobs_json" | jq -c 'first(.jobs[] | select(any(.steps[]?; .name == "Run comparator")))' 2>/dev/null || true)"
             if [ -n "$job" ] && [ "$job" != "null" ]; then
               job_id="$(printf '%s' "$job" | jq -r '.id // empty' 2>/dev/null || true)"
@@ -414,62 +796,54 @@ jobs:
           set -euo pipefail
           # This artifact is the sole evidence the blueprint's trust surfaces
           # quote, so everything in it is written here, by machine, and nothing
-          # in it is author-typed. Until 2026-08-03 the certified theorem names,
-          # the permitted axioms and the solution module were hand-committed
-          # strings that CI never touched and never cross-checked against
-          # comparator.json, and the `note` enumerating the checks was prose in
-          # this file: a stale or simply wrong claim would have rendered as a
-          # green verdict with no way to tell. Now the claim fields are copied
-          # out of the very config the "Run comparator" step passed to the tool,
-          # the pins are this run's own env, and the note is composed from those.
-          ts="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
-          # Prefer the step-level deep link resolved above; fall back to run-level.
+          # in it is author-typed: the claim fields come from the result record
+          # the verification job emitted (which in turn copied them out of the
+          # very config it passed to the tool), and the note is composed from
+          # those. Nothing is asserted that the record does not carry.
+          res="${RUNNER_TEMP}/result/comparator-result.json"
           run_url="${CI_RUN_URL:-${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}}"
           jq \
-            --slurpfile cfg "$COMPARATOR_CONFIG" \
-            --arg config "$COMPARATOR_CONFIG" \
-            --arg ts "$ts" \
+            --slurpfile res "$res" \
             --arg run_url "$run_url" \
-            --arg tool_ref "$COMPARATOR_TOOL_REF" \
-            --arg tool_sha "$COMPARATOR_TOOL_SHA" \
-            --arg landrun_ref "$LANDRUN_REF" \
-            --arg nanoda_ref "$NANODA_REF" \
             '
-            ($cfg[0]) as $c
-            | ($c.theorem_names // []) as $thms
-            | ($c.permitted_axioms // []) as $axs
-            | (($c.enable_nanoda // false) == true) as $nanoda
-            | if ($c.challenge_module // "") == "" or ($c.solution_module // "") == ""
-                 or ($thms | length) == 0 or ($axs | length) == 0 then
-                error("comparator.json is missing challenge_module / solution_module / theorem_names / permitted_axioms")
-              else . end
+            ($res[0]) as $r
+            | ($r.theorem_names) as $thms
+            | ($r.permitted_axioms) as $axs
             | . + {
-                status: "verified",
-                config: $config,
-                challenge_module: $c.challenge_module,
-                solution_module: $c.solution_module,
+                status: $r.verdict,
+                config: $r.config,
+                challenge_module: $r.challenge_module,
+                solution_module: $r.solution_module,
                 theorem_names: $thms,
                 permitted_axioms: $axs,
-                verified_at: $ts,
+                verified_at: $r.finished_at,
                 run_url: $run_url,
-                tool_ref: $tool_ref,
-                tool_sha: $tool_sha,
-                landrun_ref: $landrun_ref
+                tool_ref: $r.tool_ref,
+                tool_sha: $r.tool_sha,
+                tool_toolchain: $r.tool_toolchain,
+                landrun_ref: $r.landrun_ref,
+                nanoda_replay: $r.nanoda_replay,
+                config_sha256: $r.inputs_sha256_after.comparator_config,
+                challenge_sha256: $r.inputs_sha256_after.challenge_lean,
+                solution_sha256: $r.inputs_sha256_after.solution_lean
               }
-            | (if $nanoda then . + { nanoda_ref: $nanoda_ref } else del(.nanoda_ref) end)
+            | (if $r.nanoda_replay then . + { nanoda_ref: $r.nanoda_ref } else del(.nanoda_ref) end)
             | .note =
-                ( "Verified in CI by leanprover/comparator " + $tool_ref + " (commit " + $tool_sha
-                + "), .github/workflows/ci.yml: the " + .solution_module
-                + " module kernel-checks the exact " + .challenge_module + " statement"
-                + (if ($thms | length) == 1 then " " else "s " end) + ($thms | join(", "))
+                ( "Verified in CI by leanprover/comparator " + $r.tool_ref + " (commit " + $r.tool_sha
+                + "), built with " + $r.tool_toolchain + ", .github/workflows/ci.yml: the "
+                + $r.solution_module + " module kernel-checks the exact " + $r.challenge_module
+                + " statement" + (if ($thms | length) == 1 then " " else "s " end) + ($thms | join(", "))
                 + ", using only the permitted axioms " + ($axs | join(", "))
                 + ". Statement equality, axiom whitelist and Lean-kernel replay confirmed"
-                + (if $nanoda then
+                + (if $r.nanoda_replay then
                      ", together with an independent replay by the nanoda kernel (ammkrn/nanoda_lib "
-                     + $nanoda_ref + ")"
+                     + $r.nanoda_ref + ")"
                    else "" end)
-                + "; the solution build and the kernel export ran inside a Landlock sandbox "
-                + "(Zouuup/landrun " + $landrun_ref + ")."
+                + ". The challenge and solution modules were elaborated for the first time inside a "
+                + "Landlock sandbox (Zouuup/landrun " + $r.landrun_ref + "), as were the kernel exports; "
+                + "a fixture whose elaboration attempts a write outside the sandbox was rejected, and the "
+                + "comparator, lean4export, landrun and nanoda binaries and the certified sources hashed "
+                + "identically before and after the run."
                 )
             ' comparator/comparator-status.json > comparator/comparator-status.json.tmp
           mv comparator/comparator-status.json.tmp comparator/comparator-status.json
@@ -498,27 +872,13 @@ jobs:
             -m "Co-Authored-By: Claude Opus 4.8 <noreply@anthropic.com>"
           git push "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:main
 
-      # Free the root Mathlib (and the rest of root .lake/packages) before the
-      # site phase materializes its OWN Mathlib copy under site/.lake/packages.
-      # Safe: the A362583 oleans the site consumes live in the root .lake/build
-      # tree (a sibling, KEPT here), and the site workspace resolves Mathlib from
-      # site/.lake/packages/mathlib — its LEAN_PATH never references
-      # root/.lake/packages (verified: the only root entry is .lake/build/lib/lean).
-      # The root packages have already served their purpose (the lean-action
-      # build + the comparator's kernel replay both ran above).
-      - name: Reclaim root Mathlib before site build
-        run: |
-          set -uo pipefail
-          rm -rf .lake/packages || true
-          df -h /
-
-      # --- Blueprint site build (subsumes site.yml) ---------------------------
-      # Only the site's own build dir is cached. The repo-root .lake/build is
-      # rebuilt fresh every run by the lean-action step above — restoring a
-      # stale copy over it would overlay old oleans on the fresh build (lake's
-      # trace checks recover, but it is pure wasted work), so it is deliberately
-      # NOT in the cache paths. Key family v2 retires the old archives that
-      # still contain a root .lake/build.
+      # --- Blueprint site build ----------------------------------------------
+      # Only the site's own build dir is cached. The repo-root .lake/build comes
+      # from the trusted build job's artifact, unpacked above; restoring a stale
+      # copy over it would overlay old oleans on it, so it is deliberately NOT in
+      # the cache paths. The site workspace resolves Mathlib from
+      # site/.lake/packages — its LEAN_PATH never references the repo-root
+      # packages, which this job never materializes.
       - name: Restore Lake package cache
         uses: actions/cache@caa296126883cff596d87d8935842f9db880ef25 # v5
         with:
@@ -539,6 +899,8 @@ jobs:
       - name: Get Mathlib olean cache (site)
         working-directory: site
         run: lake exe cache get || true
+      - name: Disk space before the site build
+        run: df -h /
       - name: Build Contents
         working-directory: site
         # `-R` (reconfigure) forces the lakefile to re-elaborate so it re-reads
@@ -605,7 +967,10 @@ jobs:
 
   deploy:
     if: github.event_name != 'pull_request'
-    needs: build
+    needs: publish
+    permissions:
+      pages: write
+      id-token: write
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}

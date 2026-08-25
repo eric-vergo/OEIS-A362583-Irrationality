@@ -2,3 +2,7 @@
 .DS_Store
 _out/
 _screens/
+# Written by comparator/SolutionProbe.lean when it is elaborated outside the
+# comparator's sandbox (an editor opening the file will do it).
+comparator-probe-canary
+comparator-tool/
