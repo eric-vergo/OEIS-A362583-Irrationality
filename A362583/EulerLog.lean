@@ -128,7 +128,7 @@ lemma layerA_eq_tsum_fChi (s : ℂ) :
     _ = ∑' n : ℕ, fChi n * (n : ℂ) ^ (-s) := by
         refine tsum_congr fun n ↦ ?_
         rw [Set.indicator_apply]
-        simp only [Set.mem_setOf_eq]
+        simp only [Set.mem_ofPred_eq]
         unfold fChi
         by_cases hn : n.Prime
         · rw [if_pos hn, if_pos hn, χ_natCast_eq_kernel]

@@ -76,26 +76,26 @@ private lemma infinite_oddPrime_index {S : Set ℕ} (hS : S.Infinite)
     exact hpS
 
 /-- Infinitude of primes `≡ 3 (mod 4)` in `%`-form — Dirichlet's theorem
-(`Nat.infinite_setOf_prime_and_eq_mod`) plus the ZMod↔`%` bridge. -/
+(`Nat.infinite_setOfPred_prime_and_eq_mod`) plus the ZMod↔`%` bridge. -/
 private lemma infinite_primes_three_mod_four : {p : ℕ | p.Prime ∧ p % 4 = 3}.Infinite := by
   have h : {p : ℕ | p.Prime ∧ (p : ZMod 4) = 3}.Infinite :=
-    Nat.infinite_setOf_prime_and_eq_mod (by decide)
+    Nat.infinite_setOfPred_prime_and_eq_mod (by decide)
   have hset : {p : ℕ | p.Prime ∧ (p : ZMod 4) = 3} = {p : ℕ | p.Prime ∧ p % 4 = 3} := by
     ext p
     have hbr : (p : ZMod 4) = 3 ↔ p % 4 = 3 := by
       rw [← Nat.cast_ofNat (R := ZMod 4) (n := 3), ZMod.natCast_eq_natCast_iff']
-    simp only [Set.mem_setOf_eq, hbr]
+    simp only [Set.mem_ofPred_eq, hbr]
   rwa [hset] at h
 
 /-- Infinitude of primes `≡ 1 (mod 4)` in `%`-form (Dirichlet's theorem). -/
 private lemma infinite_primes_one_mod_four : {p : ℕ | p.Prime ∧ p % 4 = 1}.Infinite := by
   have h : {p : ℕ | p.Prime ∧ (p : ZMod 4) = 1}.Infinite :=
-    Nat.infinite_setOf_prime_and_eq_mod isUnit_one
+    Nat.infinite_setOfPred_prime_and_eq_mod isUnit_one
   have hset : {p : ℕ | p.Prime ∧ (p : ZMod 4) = 1} = {p : ℕ | p.Prime ∧ p % 4 = 1} := by
     ext p
     have hbr : (p : ZMod 4) = 1 ↔ p % 4 = 1 := by
       rw [← Nat.cast_one (R := ZMod 4), ZMod.natCast_eq_natCast_iff']
-    simp only [Set.mem_setOf_eq, hbr]
+    simp only [Set.mem_ofPred_eq, hbr]
   rwa [hset] at h
 
 /-- Infinitely many primes are `≡ 3 (mod 4)`, so the bit
@@ -272,7 +272,7 @@ private lemma exists_t_collision (h : ¬ Irrational ϱ) : ∃ m n : ℕ, m < n �
     rw [show (2 : ℝ) ^ k * ((q.num : ℝ) / ((q.den : ℕ) : ℝ))
         = ((2 ^ k * q.num : ℤ) : ℝ) / ((q.den : ℕ) : ℝ) from by push_cast; ring]
     exact Int.fract_div_intCast_eq_div_intCast_mod
-  haveI : NeZero q.den := ⟨q.den_pos.ne'⟩
+  have : NeZero q.den := ⟨q.den_pos.ne'⟩
   obtain ⟨k₁, k₂, hne, heq⟩ := Finite.exists_ne_map_eq_of_infinite
     (fun k : ℕ ↦ ((2 ^ k * q.num : ℤ) : ZMod q.den))
   have hmod : 2 ^ k₁ * q.num % (q.den : ℤ) = 2 ^ k₂ * q.num % (q.den : ℤ) :=

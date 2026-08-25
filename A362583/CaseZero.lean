@@ -72,7 +72,7 @@ lemma differentiableOn_contLog {C : ℝ}
   unfold contLog
   have h1 : DifferentiableOn ℂ (bpSeries fChi) {s : ℂ | 1 / 2 < s.re} := by
     refine (differentiableOn_bpSeries hB).mono fun s hs ↦ ?_
-    simp only [Set.mem_setOf_eq] at hs ⊢
+    simp only [Set.mem_ofPred_eq] at hs ⊢
     linarith
   exact (h1.add differentiableOn_layerB).add differentiableOn_layerT
 
@@ -110,9 +110,9 @@ lemma exp_contLog_eqOn {C : ℝ} (hB : ∀ n, ‖∑ k ∈ Finset.range (n + 1),
   have hpre : IsPreconnected {s : ℂ | 1 / 2 < s.re} :=
     (convex_halfSpace_re_gt (1 / 2 : ℝ)).isPreconnected
   have h₂O : (2 : ℂ) ∈ {s : ℂ | 1 < s.re} := by
-    norm_num [Set.mem_setOf_eq]
+    norm_num [Set.mem_ofPred_eq]
   have h₂Ω : (2 : ℂ) ∈ {s : ℂ | 1 / 2 < s.re} := by
-    norm_num [Set.mem_setOf_eq]
+    norm_num [Set.mem_ofPred_eq]
   have hev : (fun s ↦ Complex.exp (contLog s)) =ᶠ[𝓝 (2 : ℂ)]
       DirichletCharacter.LFunction χ :=
     Filter.eventuallyEq_of_mem (hO.mem_nhds h₂O) hfg
@@ -147,7 +147,7 @@ theorem norm_LFunction_eq_exp_re_contLog {C : ℝ}
     ‖DirichletCharacter.LFunction χ ((σ : ℝ) : ℂ)‖
       = Real.exp ((contLog ((σ : ℝ) : ℂ)).re) := by
   have hmem : ((σ : ℝ) : ℂ) ∈ {s : ℂ | 1 / 2 < s.re} := by
-    simp only [Set.mem_setOf_eq, Complex.ofReal_re]
+    simp only [Set.mem_ofPred_eq, Complex.ofReal_re]
     exact hσ
   have hexp : Complex.exp (contLog ((σ : ℝ) : ℂ)) = DirichletCharacter.LFunction χ σ :=
     exp_contLog_eqOn hB hmem

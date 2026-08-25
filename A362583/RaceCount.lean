@@ -45,7 +45,7 @@ private lemma oddPrime_prime (k : ℕ) : Nat.Prime (oddPrime k) :=
 /-- Odd primes exceed `2`: `2 < oddPrime k`, since the index-`0` prime `2` is skipped. -/
 private lemma two_lt_oddPrime (k : ℕ) : 2 < oddPrime k := by
   unfold oddPrime
-  have h := (Nat.nth_lt_nth Nat.infinite_setOf_prime).mpr k.succ_pos
+  have h := (Nat.nth_lt_nth Nat.infinite_setOfPred_prime).mpr k.succ_pos
   rwa [Nat.nth_prime_zero_eq_two] at h
 
 /-- Odd primes are `1` or `3` mod `4`. -/
