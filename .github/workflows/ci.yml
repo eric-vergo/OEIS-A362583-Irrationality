@@ -6,7 +6,7 @@ name: CI
 #      shared definitions are byte-identical across A362583/Defs.lean,
 #      comparator/Challenge.lean and comparator/Solution.lean; the version pins
 #      stated in reader-facing prose match lean-toolchain.
-#   1. Set up Lean (elan + v4.32.0), restore the Mathlib cache, and build the
+#   1. Set up Lean (elan + the pinned toolchain), restore the Mathlib cache, and build the
 #      formalization libraries A362583 + Challenge + Solution (subsumes the old
 #      lean_action_ci.yml plain-build check).
 #   2. Build the sandbox + verifier binaries (real landrun for Landlock
@@ -58,24 +58,23 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 240
     env:
-      # Zouuup/landrun main-branch HEAD (the comparator README requires landrun
-      # built from main), resolved 2026-07-16. Bump deliberately; the verifier
-      # cache key derives from these SHAs, so a bump forces a rebuild.
-      LANDRUN_REF: "5ed4a3db3a4ad930d577215c6b9abaa19df7f99f"
-      # ammkrn/nanoda_lib default-branch HEAD (ahead of tag v0.3.2), resolved
-      # 2026-07-16.
-      NANODA_REF: "f58f2f6d535e189a40fcb02ede8eb95f97a92d37"
+      # Zouuup/landrun v0.1.17. Bump deliberately; the verifier cache key
+      # derives from these SHAs, so a bump forces a rebuild.
+      LANDRUN_REF: "811cfff51ceaf3d9843708aa6d22e9b84ccac8b4"
+      # ammkrn/nanoda_lib default-branch HEAD, carrying the kernel fixes that
+      # match the Lean version this project pins.
+      NANODA_REF: "05055695879dfebb6628a67da88ceca6cd6b0421"
       # leanprover/comparator, pinned by COMMIT like the other two verifiers —
       # a tag is a mutable pointer, and what this repository certifies must not
       # change because someone upstream moved one. COMPARATOR_TOOL_REF is kept
       # only as the human-readable name of that commit: it is what the blueprint
       # tells readers to clone and what `tool_ref` records, and the "Assert
       # comparator tool pin" step below fails the run if the tag stops resolving
-      # to COMPARATOR_TOOL_SHA. Resolved 2026-08-03 with
-      #   git ls-remote https://github.com/leanprover/comparator.git refs/tags/v4.32.0
+      # to COMPARATOR_TOOL_SHA. Resolved with
+      #   git ls-remote https://github.com/leanprover/comparator.git refs/tags/v4.33.0
       # (lightweight tag; no peeled `^{}` entry). Bump the two together.
-      COMPARATOR_TOOL_REF: "v4.32.0"
-      COMPARATOR_TOOL_SHA: "07bc4ea40f2266dcb861820a2ec1fa3244ed307f"
+      COMPARATOR_TOOL_REF: "v4.33.0"
+      COMPARATOR_TOOL_SHA: "3927ad383f208ae977c340a91c48ac9b497d2097"
       # The comparator configuration this run certifies. Single source of truth:
       # the "Run comparator" step invokes exactly this file and the status
       # refresh copies its contents and records this path, so the artifact can
@@ -164,6 +163,29 @@ jobs:
             exit 1
           fi
           echo "comparator pin OK: ${COMPARATOR_TOOL_REF} = ${COMPARATOR_TOOL_SHA}"
+
+      # Two reasons the tool must be built with THIS project's toolchain rather
+      # than its own: (1) lean4export and the comparator read the project's
+      # oleans, which carry a compiler stamp — a tool built on a different Lean
+      # release cannot load them; (2) the replay then runs on the kernel of the
+      # release this project actually pins, which is the kernel a reader
+      # reproducing the check would use. The comparator's sources are a patch
+      # release apart at most (the pinned tag names the same minor version as the
+      # toolchain, asserted here), so they compile unchanged.
+      - name: Pin the comparator tool to this project's toolchain
+        run: |
+          set -euo pipefail
+          toolchain="$(tr -d '[:space:]' < lean-toolchain)"          # leanprover/lean4:v4.33.1
+          minor="${COMPARATOR_TOOL_REF%.*}"                          # v4.33.0 -> v4.33
+          case "$toolchain" in
+            *:"$minor".*) ;;
+            *)
+              echo "comparator ${COMPARATOR_TOOL_REF} is only known to build on ${minor}.x, but lean-toolchain is ${toolchain}"
+              exit 1
+              ;;
+          esac
+          printf '%s\n' "$toolchain" > comparator-tool/lean-toolchain
+          cat comparator-tool/lean-toolchain
 
       # The comparator certifies that Solution proves the Challenge statement —
       # it says nothing about whether the Challenge is the claim this project
@@ -307,14 +329,14 @@ jobs:
           fi
           test ! -e "$HOME/landlock-canary"
 
-      # Installs elan + the v4.32.0 toolchain, restores the Mathlib olean cache,
+      # Installs elan + the pinned toolchain, restores the Mathlib olean cache,
       # and builds both formalization libraries. With A362583 fully pre-built,
       # the comparator's sandboxed `lake build` steps are no-ops (the tool
       # README's recommended trust posture), so it only exports the oleans and
       # verifies. elan is left on PATH for the later comparator and site steps
-      # (site/lean-toolchain pins the same v4.32.0).
+      # (site/lean-toolchain pins the same toolchain).
       - name: Set up Lean and build A362583 + Challenge
-        uses: leanprover/lean-action@38fbc41a8c28c4cbaec22d7f7de508ec2e7c0dd9 # v1
+        uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1.6.0
         with:
           lake-package-directory: .
           build-args: "A362583 Challenge Solution"
