@@ -10,12 +10,25 @@
     "Quot.sound",
     "Classical.choice"
   ],
-  "verified_at": "2026-08-04T02:15:05Z",
-  "note": "Verified in CI by leanprover/comparator v4.32.0 (commit 07bc4ea40f2266dcb861820a2ec1fa3244ed307f), .github/workflows/ci.yml: the Solution module kernel-checks the exact Challenge statement Challenge.irrational_ϱ, using only the permitted axioms propext, Quot.sound, Classical.choice. Statement equality, axiom whitelist and Lean-kernel replay confirmed, together with an independent replay by the nanoda kernel (ammkrn/nanoda_lib f58f2f6d535e189a40fcb02ede8eb95f97a92d37); the solution build and the kernel export ran inside a Landlock sandbox (Zouuup/landrun 5ed4a3db3a4ad930d577215c6b9abaa19df7f99f).",
-  "run_url": "https://github.com/eric-vergo/OEIS-A362583-Irrationality/actions/runs/30870798371/job/91872215568#step:17:1",
-  "tool_ref": "v4.32.0",
+  "verified_at": "2026-08-26T13:42:50Z",
+  "note": "Verified in CI by leanprover/comparator v4.33.0 (commit 3927ad383f208ae977c340a91c48ac9b497d2097), built with leanprover/lean4:v4.33.1, .github/workflows/ci.yml, against eric-vergo/OEIS-A362583-Irrationality at commit 5b3a478ec1c2e21afc66b25eec789a82bc29013d: the Solution module kernel-checks the exact Challenge statement Challenge.irrational_ϱ, using only the permitted axioms propext, Quot.sound, Classical.choice. Statement equality, axiom whitelist and Lean-kernel replay confirmed, together with an independent replay by the nanoda kernel (ammkrn/nanoda_lib 05055695879dfebb6628a67da88ceca6cd6b0421). The challenge and solution modules were elaborated for the first time inside a Landlock sandbox (Zouuup/landrun 811cfff51ceaf3d9843708aa6d22e9b84ccac8b4), as were the kernel exports, under a systemd-run AF_UNIX guard (recorded as active; the run fails closed if that guard is unavailable). Before that elaboration, a probe written by the workflow itself — importing only core Lean, with write targets chosen per run — was put through the same sandbox wrapper: its writes outside the sandbox were refused, while an unsandboxed control confirmed the same probe does write when nothing stops it. After the run, a repository-side fixture attempting the same writes was also rejected, as defense in depth. The comparator, lean4export, landrun and nanoda binaries and the certified sources hashed identically before and after the run.",
+  "run_url": "https://github.com/eric-vergo/OEIS-A362583-Irrationality/actions/runs/32973480899/job/98197542109#step:23:1",
+  "tool_ref": "v4.33.0",
   "challenge_module": "Challenge",
-  "tool_sha": "07bc4ea40f2266dcb861820a2ec1fa3244ed307f",
-  "landrun_ref": "5ed4a3db3a4ad930d577215c6b9abaa19df7f99f",
-  "nanoda_ref": "f58f2f6d535e189a40fcb02ede8eb95f97a92d37"
+  "tool_sha": "3927ad383f208ae977c340a91c48ac9b497d2097",
+  "landrun_ref": "811cfff51ceaf3d9843708aa6d22e9b84ccac8b4",
+  "nanoda_ref": "05055695879dfebb6628a67da88ceca6cd6b0421",
+  "repository": "eric-vergo/OEIS-A362583-Irrationality",
+  "commit": "5b3a478ec1c2e21afc66b25eec789a82bc29013d",
+  "tool_toolchain": "leanprover/lean4:v4.33.1",
+  "nanoda_replay": true,
+  "config_sha256": "46ea560e396b36f901046343c3451443026d973595ca1f4cec9e4d8271ec41dc",
+  "challenge_sha256": "8b9cb1533e0ccbf2ca64292c17eaa00788d8e175742643273832c31d8d27ba57",
+  "solution_sha256": "5833bb4be8f0d8f9d86476cab769fcc6607edbf6327c9366ba7ceb4a2520ae21",
+  "challenge_chain": [
+    {
+      "path": "comparator/Challenge.lean",
+      "sha256": "8b9cb1533e0ccbf2ca64292c17eaa00788d8e175742643273832c31d8d27ba57"
+    }
+  ]
 }
