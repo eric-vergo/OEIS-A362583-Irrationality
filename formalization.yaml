@@ -11,14 +11,36 @@ project:
     - "Claude Fable 5 (Anthropic, via Claude Code)"
   license: "Apache-2.0"
 
+# `sources` records what was formalized. The theorem is first presented by this
+# formalization, so per the v0.4 standard the principal entry is an
+# `original-proof` entry, and the human-authored specification that preceded the
+# Lean code is identified in its `note` with immutable metadata. The blueprint
+# site under site/ is generated FROM this repository — a derived presentation of
+# the formalization, not an antecedent source — and is deliberately not listed
+# here; an earlier revision of this file used it as the principal source's only
+# locator, which left no retrievable antecedent (codex-audit CX-056).
 sources:
-  - title: "A362583 Irrationality — informal proof blueprint"
+  - title: "A362583 Irrationality — original proof (non-degeneracy of the mod-4 prime race)"
     authors: ["Eric Vergo"]
-    id: "self-authored informal proof blueprint for this project; realized as the browsable blueprint site generated from this repository"
-    type: "specification / informal blueprint"
-    license: "Apache-2.0"
+    id: "eric-vergo/OEIS-A362583-Irrationality@e94c322:PROOF.md (git blob 28dda8e9c498f249c91f578ddd40e580f87583b6; sha256 1fb715ab9ad45f1aa6fbfff2abf87e318135bb462c0e070fc720a33ccde72633)"
+    type: "original-proof"
+    location: "§2, 'The proof to formalize (complete informal argument)'"
+    license: "Apache-2.0 (the cited revision predates the CC0-1.0 → Apache-2.0 relicense at 7efa1ec, 2026-07-05)"
     relationship: "formalizes"
     author_endorsement: "n/a"        # self-authored
+    note: >-
+      Antecedent specification: `a362583-lean-irrationality-spec.md`, private
+      `prime_race` repository, dated 2026-07-03. That file is not public, so an
+      external reader cannot retrieve the pre-formalization original directly.
+      Its mathematical content is retrievable: §2 of the specification was
+      transcribed into this repository as PROOF.md before any proof work, and
+      the PROOF.md header records the transcription — "It transcribes §2 of the
+      project specification (a362583-lean-irrationality-spec.md, prime_race repo,
+      2026-07-03) verbatim in mathematical content." The identifier above pins
+      that transcription by commit and content digest. PROOF.md was removed from
+      the working tree by commit a5160dd (2026-07-04), when the documentation was
+      rewritten to be self-contained; it remains readable at the pinned commit,
+      which is on this repository's main-branch history.
   - title: "OEIS A362583 — Concatenation of ((p mod 4) - 1)/2 for primes 3..prime(n), read as binary"
     authors: ["Eric Vergo"]
     id: "https://oeis.org/A362583"
