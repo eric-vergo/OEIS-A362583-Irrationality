@@ -205,6 +205,13 @@ jobs:
           fi
           echo "stated pins agree with lean-toolchain (${toolchain})."
 
+      # The publish job's validator decides what becomes a dated verifier claim,
+      # so its rejection behaviour is itself CI-checked, here, in seconds, before
+      # anything expensive runs. The fixtures are forged result records that a
+      # weaker validator accepts (codex-audit CX-052).
+      - name: Test the comparator result validator against forged records
+        run: python3 scripts/tests/test_validate_comparator_result.py
+
       # formalization.yaml is read by third parties (and by the blueprint's
       # metadata page) as structured data, so it has to actually satisfy the
       # published schema rather than merely look like it does.
@@ -932,42 +939,43 @@ jobs:
           tar -xzf "${RUNNER_TEMP}/subject-oleans/subject-oleans.tar.gz" -C .
           test -d .lake/build/lib/lean/A362583
 
-      # Nothing downstream may take the result record on faith: re-derive the
-      # hashes of the certified sources from THIS checkout and require them to
-      # match what the verification job recorded, and require the record to be
-      # about this commit. A mismatch means the two jobs did not check the same
-      # thing, which is exactly the condition a green badge must not survive.
-      - name: Verify the result record against this checkout
+      # Nothing downstream may take the result record on faith. The record is the
+      # sole input to the write-capable status refresh below, so every field it
+      # publishes is re-derived or compared here against something this job
+      # trusts: the workflow constants above, the checked-out comparator config,
+      # the GitHub context, this checkout's own source digests, and this job's
+      # clock. Unknown keys are rejected too — a validator that ignores the
+      # fields it was not taught about is how a record with correct public claims
+      # and forged provenance gets republished as verifier evidence
+      # (codex-audit CX-052). The validator's rejection behaviour is itself
+      # tested, in the build job, against forged fixtures.
+      - name: Validate the result record against this job's trusted inputs
         run: |
           set -euo pipefail
-          res="${RUNNER_TEMP}/result/comparator-result.json"
-          cat "$res"
-          verdict="$(jq -r '.verdict' "$res")"
-          if [ "$verdict" != "verified" ]; then
-            echo "result record verdict is '${verdict}'"
-            exit 1
-          fi
-          if [ "$(jq -r '.commit' "$res")" != "$GITHUB_SHA" ]; then
-            echo "result record is for commit $(jq -r '.commit' "$res"), this checkout is $GITHUB_SHA"
-            exit 1
-          fi
-          if [ "$(jq -r '.sandbox_write_probe.denied' "$res")" != "true" ]; then
-            echo "result record does not record a denied elaboration-time write probe"
-            exit 1
-          fi
-          check() {  # check <record key> <file>
-            want="$(jq -r --arg k "$1" '.inputs_sha256_after[$k] // empty' "$res")"
-            got="$(sha256sum "$2" | cut -d' ' -f1)"
-            if [ -z "$want" ] || [ "$want" != "$got" ]; then
-              echo "hash mismatch for $2: record has '${want:-<missing>}', this checkout has $got"
-              exit 1
-            fi
-            echo "  $2 $got"
-          }
-          check comparator_config "$COMPARATOR_CONFIG"
-          check challenge_lean comparator/Challenge.lean
-          check solution_lean comparator/Solution.lean
-          echo "result record matches this checkout."
+          cat "${RUNNER_TEMP}/result/comparator-result.json"
+          toolchain="$(tr -d '[:space:]' < lean-toolchain)"
+          python3 scripts/validate_comparator_result.py \
+            --result "${RUNNER_TEMP}/result/comparator-result.json" \
+            --config-file "$COMPARATOR_CONFIG" \
+            --config-path "$COMPARATOR_CONFIG" \
+            --probe-config "$COMPARATOR_PROBE_CONFIG" \
+            --repository "$GITHUB_REPOSITORY" \
+            --run-id "$GITHUB_RUN_ID" \
+            --commit "$GITHUB_SHA" \
+            --toolchain "$toolchain" \
+            --tool-ref "$COMPARATOR_TOOL_REF" \
+            --tool-sha "$COMPARATOR_TOOL_SHA" \
+            --tool-toolchain "$toolchain" \
+            --landrun-ref "$LANDRUN_REF" \
+            --nanoda-ref "$NANODA_REF" \
+            --af-unix-guard active \
+            --selftest-tier pre-run-trusted \
+            --probe-tier defense-in-depth \
+            --now "$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            --max-age-seconds 43200 \
+            --hash-file "comparator_config=${COMPARATOR_CONFIG}" \
+            --hash-file "challenge_lean=comparator/Challenge.lean" \
+            --hash-file "solution_lean=comparator/Solution.lean"
 
       # Resolve a *step-level* deep link to the "Run comparator" step, so the
       # comparator page's "View CI run" link lands the reader on the kernel replay
