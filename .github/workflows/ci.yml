@@ -620,12 +620,46 @@ jobs:
           LEAN
           cat "$scratch/SelfTest.lean"
 
-          # 1. Positive control, unsandboxed. Without this the sandboxed run
-          #    below cannot distinguish "the writes were refused" from "the
-          #    fixture never attempted them".
+          # 1. Resolve the toolchain the way the real run resolves it. The
+          #    comparator is launched as `lake env <comparator> <config>` (see
+          #    "Run comparator" below), so by the time it calls
+          #    osexec.LookPath("lake") its PATH already starts with
+          #    <leanPrefix>/bin: the binary it sandboxes is the TOOLCHAIN lake,
+          #    which its own `--rox <leanPrefix>` rule covers, and so is
+          #    everything that lake goes on to exec.
+          #
+          #    This matters because landrun's `-add-exec` adds only the ONE
+          #    resolved command binary to --rox (cmd/landrun/main.go at the
+          #    pinned LANDRUN_REF: `binary, err := osexec.LookPath(args[0])`,
+          #    then `readOnlyExecutablePaths = append(..., binary)` under
+          #    `if c.Bool("add-exec")`). `--ro /` grants read, never exec. An
+          #    earlier version of this step left PATH alone, so args[0]
+          #    resolved to the elan shim at ~/.elan/bin/lake; the shim was
+          #    execable, the toolchain lake it proxies to was not, and the run
+          #    died in 17ms with `Permission denied (os error 13)` before
+          #    reaching any elaboration — which the "certifies nothing" gate
+          #    below correctly failed the job on. Name the toolchain binary
+          #    explicitly and put its bin dir first, as `lake env` does.
+          lean_prefix="$(cd "$scratch" && lean --print-prefix)"
+          lake_bin="${lean_prefix}/bin/lake"
+          if [ ! -x "$lake_bin" ]; then
+            echo "no lake at ${lake_bin}: the toolchain layout changed, and resolving lake through"
+            echo "PATH would sandbox the elan shim instead of the binary it proxies to."
+            exit 1
+          fi
+          git_location="$(command -v git)"
+          sandbox_path="${lean_prefix}/bin:${PATH}"
+          echo "self-test toolchain: ${lake_bin}"
+
+          # 2. Positive control, unsandboxed, with the same binary and the same
+          #    PATH as the sandboxed run below, so the sandbox is the only
+          #    difference between them. Without this control the sandboxed run
+          #    cannot distinguish "the writes were refused" from "the fixture
+          #    never attempted them".
           pos="${RUNNER_TEMP}/selftest-unsandboxed.log"
           set +e
-          ( cd "$scratch" && LEAN_ABORT_ON_PANIC=1 lake build SelfTest ) > "$pos" 2>&1
+          ( cd "$scratch" && PATH="$sandbox_path" LEAN_ABORT_ON_PANIC=1 \
+              "$lake_bin" build SelfTest ) > "$pos" 2>&1
           pos_rc=$?
           set -e
           cat "$pos"
@@ -641,26 +675,27 @@ jobs:
           rm -f "$target_a" "$target_b"
           echo "self-test positive control: both writes succeeded outside the sandbox"
 
-          # 2. The same bytes, through the full wrapper. Clearing .lake/build is
+          # 3. The same bytes, through the full wrapper. Clearing .lake/build is
           #    what forces re-elaboration: a warm build directory is exactly how
           #    CX-012 turned the sandboxed build into a no-op. lake-manifest.json
           #    and .lake itself stay, as they do in the real project checkout.
+          #    PATH is set on systemd-run rather than only forwarded, because
+          #    landrun resolves args[0] against its OWN environment before
+          #    applying the sandbox.
           rm -rf "$scratch/.lake/build"
-          lean_prefix="$(cd "$scratch" && lean --print-prefix)"
-          git_location="$(command -v git)"
           sand="${RUNNER_TEMP}/selftest-sandboxed.log"
           set +e
           systemd-run --user --pipe --wait --collect \
             -p RestrictAddressFamilies=~AF_UNIX \
             --working-directory "$scratch" \
-            -E PATH="$PATH" \
+            -E PATH="$sandbox_path" \
             -E HOME="$HOME" \
             -E LEAN_ABORT_ON_PANIC=1 \
             -- "$COMPARATOR_LANDRUN" --best-effort --ro / --rw /dev -ldd -add-exec \
                  --env PATH --env HOME --env LEAN_ABORT_ON_PANIC \
                  --ro "$scratch" --rwx "$scratch/.lake" \
                  --rox "$lean_prefix" --rox "$git_location" \
-                 -- lake build SelfTest > "$sand" 2>&1
+                 -- "$lake_bin" build SelfTest > "$sand" 2>&1
           sand_rc=$?
           set -e
           cat "$sand"
@@ -681,6 +716,9 @@ jobs:
           if ! grep -q "SELFTEST_WRITES_DENIED_${nonce}" "$sand"; then
             echo "the sandboxed self-test failed without reaching the write attempt (exit ${sand_rc}):"
             echo "no containment conclusion can be drawn, so this run certifies nothing."
+            echo "if the log shows a permission error on exec rather than on a write, the ruleset"
+            echo "no longer covers the toolchain this step resolved (${lake_bin}); compare it against"
+            echo "buildLandrunArgs / safeLakeBuild in the pinned comparator before touching the gates."
             exit 1
           fi
           echo "pre-run self-test OK: elaboration-time writes denied inside the sandbox (exit ${sand_rc})"
