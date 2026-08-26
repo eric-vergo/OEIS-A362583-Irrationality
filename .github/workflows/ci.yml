@@ -220,6 +220,17 @@ jobs:
       - name: Test the comparator result validator against forged records
         run: python3 scripts/tests/test_validate_comparator_result.py
 
+      # The other write boundary: the publish job's provenance gate decides what
+      # evidence page may be published, and the same argument applies to it — its
+      # refusals are checked here, in seconds, against committed forged records
+      # (codex-audit CX-078). This suite also holds two couplings the workflow
+      # cannot state to itself: that every comparator input site/lakefile.lean
+      # configures also has a Lake `input_file` edge, and that the deploy
+      # predicate handed to the gate is textually the predicate `deploy.if`
+      # decides on (codex-audit CX-079).
+      - name: Test the trust-provenance gate against forged records
+        run: python3 scripts/tests/test_trust_provenance_gate.py
+
       # formalization.yaml is read by third parties (and by the blueprint's
       # metadata page) as structured data, so it has to actually satisfy the
       # published schema rather than merely look like it does.
@@ -1242,6 +1253,17 @@ jobs:
           lake env lean --run Main.lean --output _out/site
       - name: Gates
         working-directory: site
+        env:
+          # Whether this run's artifact can reach Pages. Spelled here EXACTLY as
+          # the `deploy` job spells its `if:` — a job-level `if` has no access to
+          # the `env` context, so the predicate cannot be shared by reference and
+          # has to be written twice. scripts/tests/test_trust_provenance_gate.py
+          # asserts the two spellings are the same expression, which is what
+          # keeps "dirty is refused for deployable runs" from decaying into
+          # "dirty is refused for the runs someone once thought were deployable"
+          # (codex-audit CX-079). Change one and the build job fails before this
+          # one starts.
+          DEPLOYABLE: ${{ github.event_name != 'pull_request' }}
         run: |
           set -euo pipefail
           test -f _out/site/html-multi/index.html
@@ -1324,7 +1346,7 @@ jobs:
               sys.exit(1)
           print("source-link gate: {} project-local source links all name {}".format(checked, sha))
           PY
-          # --- Comparator-evidence provenance gate (codex-audit CX-075) ---------
+          # --- Comparator-evidence provenance gate (CX-075, CX-078, CX-079) ----
           # The trust surfaces are captured at ELABORATION from files Lake does
           # not track: the comparator status artifact, its config, Challenge and
           # Solution. Change only those four and rebuild, and a warm
@@ -1336,76 +1358,40 @@ jobs:
           # independently here, against the CHECKOUT, so a regression in the
           # generator's own gate does not take the check with it.
           #
+          # The gate lives in scripts/check_trust_provenance.py rather than in a
+          # heredoc here, so that what it REFUSES is covered by committed
+          # fixtures (scripts/tests/test_trust_provenance_gate.py, run in the
+          # build job in seconds) instead of only by the runs that happen to trip
+          # it. CX-078 showed the inline version accepting an unknown schema, an
+          # absent or arbitrary generation revision, and a required role label
+          # attached to the wrong configured file — re-hashing what the producer
+          # listed authenticates bytes against the producer's own claims and
+          # nothing else, which is not what an independent boundary is for.
+          #
+          # Two values it is HANDED rather than allowed to read back out of the
+          # record it is authenticating:
+          #   * --build-revision: the revision sampled from this worktree, the
+          #     same `git rev-parse HEAD` the source-link gate above uses and for
+          #     the same reason (on push runs the status commit-back moves HEAD
+          #     past github.sha before the site build).
+          #   * --deployable: whether this run's artifact can reach Pages. Dirty
+          #     provenance is admissible only for an artifact that cannot deploy
+          #     — a property of the deploy predicate, not of the event name.
+          #     "push" stood in for "deployable" until CX-079, which left
+          #     workflow_dispatch in the gap: exempted by the gate, admitted by
+          #     deploy. DEPLOYABLE below is spelled exactly as `deploy.if` is,
+          #     and test_deploy_predicate_is_coupled asserts the two spellings
+          #     are the same expression — GitHub does not expose the `env`
+          #     context to a job-level `if`, so they cannot share a reference.
+          #
           # Paths in the record are relative to the site build's CWD, which is
           # this step's working directory.
-          provenance="_out/site/html-multi/-verso-data/trust-provenance.json"
-          test -f "$provenance"
-          python3 - "$provenance" "$GITHUB_EVENT_NAME" <<'PY'
-          import hashlib, json, sys
-
-          path, event = sys.argv[1:3]
-          with open(path, encoding="utf-8") as handle:
-              record = json.load(handle)
-
-          inputs = record.get("inputs") or []
-          if not inputs:
-              print("comparator-provenance gate: the published site records no trust inputs.")
-              print("Either the verso.blueprint.trust.* options stopped being set, or the payload")
-              print("stopped recording what it was read from — both silently weaken the evidence page.")
-              sys.exit(1)
-
-          problems = []
-          for entry in inputs:
-              rel, want, role = entry.get("path"), entry.get("sha256"), entry.get("role", "?")
-              if not rel or not want:
-                  problems.append("a record carries no path or no digest: {}".format(entry))
-                  continue
-              try:
-                  with open(rel, "rb") as handle:
-                      got = hashlib.sha256(handle.read()).hexdigest()
-              except OSError as err:
-                  problems.append("{} ({}) cannot be read from this checkout: {}".format(rel, role, err))
-                  continue
-              if got != want:
-                  problems.append(
-                      "{} ({}) was elaborated from {} and is {} here".format(rel, role, want, got))
-
-          # The four files the evidence page is made of have to be among them. A
-          # comparator page rendered from a payload that lost one of its inputs is
-          # a page bound to less than it looks bound to.
-          roles = {entry.get("role") for entry in inputs}
-          for required in ("comparator-status", "comparator-config", "challenge", "solution"):
-              if required not in roles:
-                  problems.append("no {} input was recorded".format(required))
-
-          revision = record.get("buildRevision") or {}
-          # A dirty stamp means the site was generated from bytes that are in no
-          # commit, so nothing a reader checks out reproduces it. Gated on push
-          # only: on pull_request the refreshed comparator-status.json is
-          # deliberately left uncommitted (the commit-back step is push-only), so
-          # the worktree is legitimately dirty there.
-          if revision.get("dirty"):
-              if event == "push":
-                  problems.append(
-                      "the site was generated from a worktree with uncommitted changes, so its"
-                      " stamp names a commit that does not contain what it published")
-              else:
-                  print("comparator-provenance gate: worktree dirty, as expected on a {} run"
-                        " (the refreshed status file is not committed on this event).".format(event))
-
-          if problems:
-              print("comparator-provenance gate: the published comparator evidence does not match")
-              print("this checkout.")
-              for problem in problems:
-                  print("  " + problem)
-              print("A digest that disagrees means the page was rendered from a cached elaboration")
-              print("of different bytes: re-elaborate the site's Contents library")
-              print("(`lake build Contents -R`) and regenerate, rather than publishing a verdict")
-              print("beside a statement this build never read.")
-              sys.exit(1)
-          print("comparator-provenance gate: {} trust input(s) match this checkout"
-                " (site stamped {}).".format(len(inputs), revision.get("commit") or "an unrecorded commit"))
-          PY
+          python3 ../scripts/check_trust_provenance.py \
+            --provenance _out/site/html-multi/-verso-data/trust-provenance.json \
+            --lakefile lakefile.lean \
+            --build-revision "$build_rev" \
+            --deployable "$DEPLOYABLE" \
+            --event "$GITHUB_EVENT_NAME"
           # --- Off-origin asset gates ------------------------------------------
           # The published site must load nothing from another origin. Only ASSET
           # positions are matched: outbound <a href="https://…"> links are the
