@@ -133,9 +133,9 @@ fidelity:
   divergences: >-
     Statement lock. The statements were frozen before any proof work, at commit
     9404b1d70dcfced842a2f389a27e3acae7b725ed (2026-07-03), in
-    A362583/Statements.lean and A362583/Defs.lean. A local tag `statement-lock`
-    names that commit; the tag has not been pushed, so the commit id is the
-    identifier that resolves for a reader. The current statements are NOT
+    A362583/Statements.lean and A362583/Defs.lean. The published annotated tag
+    `statement-lock` resolves on the remote and peels to that commit; the full
+    commit id remains the immutable identifier. The current statements are NOT
     byte-identical to that frozen set. Three post-lock commits touched
     statement-bearing text. The claim made here is semantic equivalence, not byte
     identity, and it is a claim: the reviewable artifact is
