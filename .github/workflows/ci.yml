@@ -1029,6 +1029,14 @@ jobs:
             | ($r.permitted_axioms) as $axs
             | . + {
                 status: $r.verdict,
+                # The subject identity the validator above authenticated against
+                # this checkout. Dropping it here left the published artifact
+                # describing WHICH programs did the checking but not WHICH
+                # project revision was checked, so the reproduce-it-yourself flow
+                # on the site pinned both verifiers and cloned the subject
+                # unpinned (codex-audit CX-068).
+                repository: $r.repository,
+                commit: $r.commit,
                 config: $r.config,
                 challenge_module: $r.challenge_module,
                 solution_module: $r.solution_module,
@@ -1048,7 +1056,8 @@ jobs:
             | (if $r.nanoda_replay then . + { nanoda_ref: $r.nanoda_ref } else del(.nanoda_ref) end)
             | .note =
                 ( "Verified in CI by leanprover/comparator " + $r.tool_ref + " (commit " + $r.tool_sha
-                + "), built with " + $r.tool_toolchain + ", .github/workflows/ci.yml: the "
+                + "), built with " + $r.tool_toolchain + ", .github/workflows/ci.yml, against "
+                + $r.repository + " at commit " + $r.commit + ": the "
                 + $r.solution_module + " module kernel-checks the exact " + $r.challenge_module
                 + " statement" + (if ($thms | length) == 1 then " " else "s " end) + ($thms | join(", "))
                 + ", using only the permitted axioms " + ($axs | join(", "))
