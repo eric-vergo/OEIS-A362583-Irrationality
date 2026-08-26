@@ -1232,7 +1232,13 @@ jobs:
           # published contract is revision identity.
           registry="_out/site/html-multi/-verso-data/decl-registry.json"
           test -f "$registry"
-          python3 - "$registry" "$GITHUB_REPOSITORY" "$GITHUB_SHA" <<'PY'
+          # Compare against the revision the site was actually generated from —
+          # git HEAD in this workdir — NOT github.sha: on push runs the status
+          # commit-back moves HEAD past github.sha before the site build, and
+          # the links (correctly) name the moved HEAD. github.sha would fail
+          # every attesting run.
+          build_rev="$(git rev-parse HEAD)"
+          python3 - "$registry" "$GITHUB_REPOSITORY" "$build_rev" <<'PY'
           import json, re, sys
 
           path, repository, sha = sys.argv[1:4]
