@@ -1128,6 +1128,17 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-site-build-v2-${{ hashFiles('site/lean-toolchain', 'site/lake-manifest.json', 'site/lakefile.lean') }}-
             ${{ runner.os }}-site-build-v2-
+      # elan + the site package's toolchain. This job runs on its own runner
+      # since the trust-boundary split, so nothing else installs Lean here and
+      # every `lake` invocation below would otherwise exit 127.
+      - name: Set up Lean for the site build
+        uses: leanprover/lean-action@50fcf42d2e460296f1a34b402e990d1b24f8b596 # v1.6.0
+        with:
+          lake-package-directory: site
+          build: "false"
+          test: false
+          lint: false
+
       - name: Get Mathlib olean cache (site)
         working-directory: site
         run: lake exe cache get || true
