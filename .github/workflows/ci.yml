@@ -1111,14 +1111,16 @@ jobs:
                 challenge_sha256: $r.inputs_sha256_after.challenge_lean,
                 solution_sha256: $r.inputs_sha256_after.solution_lean,
                 # The ordered challenge chain this run verified. It is what the
-                # site's statement-closure surface binds against: the closure is
-                # presented as adjacent to the verdict only when the chain the
-                # tool hashed matches this list, in order and by digest, so a
-                # dependency edited without touching the primary Challenge drops
-                # the binding rather than quietly keeping it. This project's
-                # chain is the single Challenge file, which imports nothing of
-                # its own; the digest is the one the manifest already computed
-                # over exactly those bytes, not a second hash of them.
+                # statement-closure surface on the site binds against: the
+                # closure is presented as adjacent to the verdict only when the
+                # chain the tool hashed matches this list, in order and by
+                # digest, so a dependency edited without touching the primary
+                # Challenge drops the binding rather than quietly keeping it.
+                # The chain here is the single Challenge file, which imports
+                # nothing of its own; the digest is the one the manifest already
+                # computed over exactly those bytes, not a second hash of them.
+                # (No apostrophes in this comment: it lives inside the single-
+                # quoted jq program, and one would terminate the shell string.)
                 challenge_chain: [ { path: $challenge, sha256: $r.inputs_sha256_after.challenge_lean } ]
               }
             | (if $r.nanoda_replay then . + { nanoda_ref: $r.nanoda_ref } else del(.nanoda_ref) end)
