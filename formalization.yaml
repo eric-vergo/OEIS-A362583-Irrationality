@@ -102,16 +102,61 @@ automation:
     not hand-edit proofs.
 
 fidelity:
+  # Statement-lock history. The earlier wording here claimed the current
+  # statements are byte-identical to the frozen set; they are not (the constant
+  # was renamed after the lock), so the claim below is semantic equivalence,
+  # stated as a claim, with the post-lock edits enumerated and the diff named as
+  # the artifact a reader can check. The tag is not moved to make the older
+  # sentence true.
   divergences: >-
-    Statements were frozen before any proof work and are byte-identical to that
-    frozen set. Proof-route deviations from the informal argument: the k=1
-    layer's analytic continuation is *defined* as the discrete by-parts series
-    rather than continued after the fact; the Euler-sum split uses a per-prime
-    identity instead of a double-sum rearrangement; in both cases (c ≠ 0 and
-    c = 0) the contradiction is evaluated at a single explicit point instead of
-    via limits (one plain
-    one-sided limit remains, pinning L(1) real-positive); constants are
-    deliberately generous rather than sharp.
+    Statement lock. The statements were frozen before any proof work, at commit
+    9404b1d70dcfced842a2f389a27e3acae7b725ed (2026-07-03), in
+    A362583/Statements.lean and A362583/Defs.lean. A local tag `statement-lock`
+    names that commit; the tag has not been pushed, so the commit id is the
+    identifier that resolves for a reader. The current statements are NOT
+    byte-identical to that frozen set. Three post-lock commits touched
+    statement-bearing text. The claim made here is semantic equivalence, not byte
+    identity, and it is a claim: the reviewable artifact is
+    `git diff 9404b1d..HEAD -- A362583/`.
+
+    (1) 7d54cdd (2026-07-05) renamed the constant and the primary deliverable:
+    A362583.x → A362583.ϱ and A362583.irrational_x → A362583.irrational_ϱ. An
+    identifier rename; the type expressions are otherwise unchanged.
+
+    (2) 9e6a2ab (2026-07-09) hoisted the summand of raceSum into a new public
+    definition A362583.raceKernel, so raceSum's body reads
+    `∑ p ∈ (Finset.range (N + 1)).filter Nat.Prime, raceKernel p` where the frozen
+    body inlined the if-expression. The two are definitionally equal by
+    delta-reduction of raceKernel (A362583.raceSum_eq_sum_raceKernel holds by
+    `rfl`). raceKernel is a new declaration that was not in the frozen set.
+
+    (3) 326682f (2026-07-03) dissolved A362583/Statements.lean across the proof
+    phases: the six locked declarations moved into Main.lean, CaseZero.lean,
+    DigitLayer.lean and RaceCount.lean, and their `sorry` bodies were replaced by
+    proofs. A relocation, not a restatement.
+
+    Modulo the rename in (1) and the raceSum refactor in (2), the six locked
+    declaration types and the four locked definition bodies are textually
+    unchanged. Docstrings and module documentation were rewritten (a5160dd,
+    9e6a2ab) and carry no statement content.
+
+    The comparator's certified statement is a separate, derived artifact with its
+    own history: the challenge module was introduced after the lock (1d2aeb8,
+    2026-07-03), restating the frozen definitions and both theorems in namespace
+    A362583; ec0e5da (2026-07-05) narrowed the certified set to the primary
+    deliverable, dropping raceSum_not_linear and raceSum from the challenge; and
+    152cd0e (2026-07-09) re-namespaced it to Challenge.*. What CI certifies is
+    therefore Challenge.irrational_ϱ, proved from A362583.irrational_ϱ across
+    `Challenge.ϱ_eq : ϱ = A362583.ϱ := rfl`, with the shared definitions asserted
+    byte-identical to A362583/Defs.lean on every run.
+
+    Proof-route deviations from the informal argument: the k=1 layer's analytic
+    continuation is *defined* as the discrete by-parts series rather than
+    continued after the fact; the Euler-sum split uses a per-prime identity
+    instead of a double-sum rearrangement; in both cases (c ≠ 0 and c = 0) the
+    contradiction is evaluated at a single explicit point instead of via limits
+    (one plain one-sided limit remains, pinning L(1) real-positive); constants
+    are deliberately generous rather than sharp.
 
 review:
   status: "self-assessed"
@@ -131,7 +176,7 @@ alignment:
   namespace: "A362583"
   statements:
     - source: "definitions (odd primes, bits, the prime race constant ϱ, race sum S)"
-      lean: "A362583.oddPrime, A362583.bit, A362583.ϱ, A362583.raceSum"
+      lean: "A362583.oddPrime, A362583.bit, A362583.ϱ, A362583.raceKernel, A362583.raceSum"
       module: "A362583/Defs.lean"
       status: "proved"
       note: "statement-hygiene: elementary %-arithmetic and tsums only; sanity pins proved in A362583/Pins.lean"
