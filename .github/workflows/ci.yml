@@ -73,6 +73,14 @@ env:
   # and the status refresh copies its contents, so the published artifact can
   # never describe a different config than the one that was checked.
   COMPARATOR_CONFIG: "comparator/comparator.json"
+  # The challenge chain this project certifies — one file, since the Challenge
+  # imports nothing of its own. A variable rather than a literal because it now
+  # has two consumers that must not drift: the input-hash manifest, and the
+  # `challenge_chain` the status refresh records for the site's statement-closure
+  # surface to bind against. The site binds a closure to the verdict only when
+  # the chain it hashed matches this one, in order, so a chain recorded at a path
+  # the manifest did not hash would silently unbind it.
+  COMPARATOR_CHALLENGE: "comparator/Challenge.lean"
   # Same config with `solution_module` swapped for the sandbox regression
   # fixture; see the "Denied-write probe" step.
   COMPARATOR_PROBE_CONFIG: "comparator/comparator-probe.json"
@@ -747,7 +755,7 @@ jobs:
           emit landrun           "${COMPARATOR_LANDRUN}"
           emit nanoda            "${COMPARATOR_NANODA}"
           emit comparator_config "${GITHUB_WORKSPACE}/${COMPARATOR_CONFIG}"
-          emit challenge_lean    "${GITHUB_WORKSPACE}/comparator/Challenge.lean"
+          emit challenge_lean    "${GITHUB_WORKSPACE}/${COMPARATOR_CHALLENGE}"
           emit solution_lean     "${GITHUB_WORKSPACE}/comparator/Solution.lean"
           jq -Rn '[inputs | split("\t") | {(.[0]): .[1]}] | add' "$pairs" > "$out"
           rm -f "$pairs"
@@ -1061,6 +1069,7 @@ jobs:
           jq \
             --slurpfile res "$res" \
             --arg run_url "$run_url" \
+            --arg challenge "$COMPARATOR_CHALLENGE" \
             '
             ($res[0]) as $r
             | ($r.theorem_names) as $thms
@@ -1089,7 +1098,17 @@ jobs:
                 nanoda_replay: $r.nanoda_replay,
                 config_sha256: $r.inputs_sha256_after.comparator_config,
                 challenge_sha256: $r.inputs_sha256_after.challenge_lean,
-                solution_sha256: $r.inputs_sha256_after.solution_lean
+                solution_sha256: $r.inputs_sha256_after.solution_lean,
+                # The ordered challenge chain this run verified. It is what the
+                # site's statement-closure surface binds against: the closure is
+                # presented as adjacent to the verdict only when the chain the
+                # tool hashed matches this list, in order and by digest, so a
+                # dependency edited without touching the primary Challenge drops
+                # the binding rather than quietly keeping it. This project's
+                # chain is the single Challenge file, which imports nothing of
+                # its own; the digest is the one the manifest already computed
+                # over exactly those bytes, not a second hash of them.
+                challenge_chain: [ { path: $challenge, sha256: $r.inputs_sha256_after.challenge_lean } ]
               }
             | (if $r.nanoda_replay then . + { nanoda_ref: $r.nanoda_ref } else del(.nanoda_ref) end)
             | .note =
@@ -1182,6 +1201,28 @@ jobs:
         run: lake exe cache get || true
       - name: Disk space before the site build
         run: df -h /
+      # The statement-closure tool, built BEFORE Contents because the driver
+      # probes for it during ELABORATION of the dashboard block, not at
+      # generation. It computes what a reader must read to know what
+      # `Challenge.irrational_ϱ` says, in a subprocess importing exactly the
+      # challenge chain's declared imports — not this site's environment, where
+      # the subject library and Verso are in scope and a short name could
+      # resolve to something the verifier never saw.
+      #
+      # `VersoBlueprint/statement-closure` is the package-qualified exe target;
+      # building it from the site workspace puts the binary at
+      # site/.lake/packages/VersoBlueprint/.lake/build/bin/statement-closure,
+      # which is the second of the two paths the driver probes, so no
+      # `verso.blueprint.trust.statementClosureTool` option is needed.
+      #
+      # NOT `continue-on-error`: the driver probe-and-degrades, so a build
+      # failure here would otherwise publish the surface's honest "tool
+      # unavailable" notice instead of the closure, quietly and forever. A
+      # consumer that configures the surface should fail when it cannot produce
+      # it.
+      - name: Build the statement-closure tool
+        working-directory: site
+        run: lake build VersoBlueprint/statement-closure
       - name: Build Contents
         working-directory: site
         # `-R` (reconfigure) forces the lakefile to re-elaborate so it re-reads
