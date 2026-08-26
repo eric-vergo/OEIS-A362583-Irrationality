@@ -11,17 +11,21 @@ name: CI
 #              to the next job as an artifact. contents: read.
 #   comparator UNTRUSTED. The first elaboration of Challenge and Solution happens
 #              here and happens inside landrun, driven by leanprover/comparator.
-#              No write token, no OIDC, no Pages scope. Hashes every executable
-#              and certified input immediately before and after the run, proves an
-#              elaboration-time write is denied (the CX-012 regression test), and
-#              emits comparator-result.json as the sole evidence record.
-#   publish    TRUSTED. Re-derives the input hashes from its own checkout, checks
-#              them against the result record, writes comparator/comparator-status.json
-#              from that record (committing it back to main on push events — this
-#              is the only job with contents: write), then builds, gates and
-#              uploads the blueprint site. The status file must be on disk before
-#              the site build: the site bakes it into its comparator page at
-#              elaboration time (verso.blueprint.trust.comparatorStatus).
+#              No write token, no OIDC, no Pages scope. Fails closed unless the
+#              AF_UNIX guard is available (CX-048), gates the sandbox on a
+#              deterministic loopback network canary (CX-049), establishes
+#              containment BEFORE any repository Lean is elaborated with a
+#              workflow-owned probe (CX-050/CX-051), hashes every executable and
+#              certified input immediately before and after the run, and emits
+#              comparator-result.json as the sole evidence record.
+#   publish    TRUSTED. Validates the result record field by field against its own
+#              trusted inputs (scripts/validate_comparator_result.py, CX-052),
+#              writes comparator/comparator-status.json from that record
+#              (committing it back to main on push events — this is the only job
+#              with contents: write), then builds, gates and uploads the blueprint
+#              site. The status file must be on disk before the site build: the
+#              site bakes it into its comparator page at elaboration time
+#              (verso.blueprint.trust.comparatorStatus).
 #   deploy     Publishes the Pages artifact.
 #
 # create-release.yml stays separate (workflow_dispatch only).
@@ -284,6 +288,27 @@ jobs:
       - name: Disk space after cleanup
         run: df -h /
 
+      # The pinned comparator documents its guarantee under a systemd-run wrapper
+      # with RestrictAddressFamilies=~AF_UNIX, and says the restriction guards a
+      # known landrun escape. Whether the runner happens to have a user manager
+      # session must not silently change the security property behind an
+      # unchanged `verified` verdict (codex-audit CX-048), so the probe is a gate
+      # rather than a hint and it runs first: nothing untrusted is elaborated in
+      # this job unless the guard is available. The result record carries
+      # af_unix_guard, and the publish validator requires it to be "active".
+      - name: Assert the AF_UNIX guard is available
+        run: |
+          set -euo pipefail
+          if ! timeout 30 systemd-run --user --pipe --wait --collect \
+                 -p RestrictAddressFamilies=~AF_UNIX -- true >/dev/null 2>&1; then
+            echo "systemd-run --user with RestrictAddressFamilies=~AF_UNIX is unavailable here."
+            echo "The comparator's documented guarantee assumes that guard; this job fails closed"
+            echo "rather than elaborating untrusted Lean without it."
+            exit 1
+          fi
+          echo "COMPARATOR_AF_UNIX_GUARD=active" >> "$GITHUB_ENV"
+          echo "systemd-run AF_UNIX guard: active"
+
       - name: Check out this repository (solution + challenge)
         uses: actions/checkout@fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09 # v5
         with:
@@ -429,19 +454,42 @@ jobs:
             exit 1
           fi
           test ! -e "$HOME/landlock-canary"
-          # Network canary. Skipped (not failed) if the runner cannot reach the
-          # endpoint unsandboxed, so a network blip degrades the assertion
-          # instead of the run.
-          if curl -fsS --max-time 15 -o /dev/null https://example.com 2>/dev/null; then
-            if "$COMPARATOR_LANDRUN" --best-effort --ro / --rw /dev -ldd -add-exec \
-                 curl -fsS --max-time 15 -o /dev/null https://example.com 2>/dev/null; then
-              echo "landrun failed to block a TCP connect under a filesystem-only ruleset"
-              exit 1
+          # Network canary (codex-audit CX-049). The listener is started here, on
+          # loopback, so the assertion depends on nothing outside this runner: no
+          # DNS, no egress policy, no third-party endpoint whose availability can
+          # quietly remove a stated sandbox assertion. Both branches are hard
+          # failures — an unestablished positive control means landrun's denial
+          # was never exercised, which is not a green condition.
+          port=18923
+          mkdir -p "${RUNNER_TEMP}/canary-root"
+          python3 -m http.server "$port" --bind 127.0.0.1 --directory "${RUNNER_TEMP}/canary-root" \
+            > "${RUNNER_TEMP}/canary-listener.log" 2>&1 &
+          listener_pid=$!
+          trap 'kill "$listener_pid" 2>/dev/null || true' EXIT
+          control=""
+          for _ in $(seq 1 50); do
+            if curl -fsS --max-time 2 -o /dev/null "http://127.0.0.1:${port}/" 2>/dev/null; then
+              control="up"
+              break
             fi
-            echo "network canary: TCP connect denied inside the sandbox"
-          else
-            echo "::warning::network canary skipped; the endpoint was unreachable unsandboxed"
+            sleep 0.2
+          done
+          if [ -z "$control" ]; then
+            echo "network canary positive control failed: the loopback listener never accepted a connection,"
+            echo "so a denial inside the sandbox would prove nothing about landrun."
+            cat "${RUNNER_TEMP}/canary-listener.log" || true
+            exit 1
           fi
+          echo "network canary: positive control connected unsandboxed"
+          if "$COMPARATOR_LANDRUN" --best-effort --ro / --rw /dev -ldd -add-exec \
+               curl -fsS --max-time 5 -o /dev/null "http://127.0.0.1:${port}/" 2>/dev/null; then
+            echo "landrun failed to block a TCP connect under a filesystem-only ruleset"
+            exit 1
+          fi
+          echo "network canary: TCP connect denied inside the sandbox"
+          kill "$listener_pid" 2>/dev/null || true
+          wait "$listener_pid" 2>/dev/null || true
+          trap - EXIT
 
       # elan + the Mathlib packages only. `build: false` is the whole point: no
       # Lean of this repository is elaborated in this job outside the sandbox.
@@ -489,6 +537,152 @@ jobs:
           lake build lean4export comparator
           echo "COMPARATOR_LEAN4EXPORT=${GITHUB_WORKSPACE}/comparator-tool/.lake/packages/lean4export/.lake/build/bin/lean4export" >> "$GITHUB_ENV"
 
+      # --- Trusted pre-run containment evidence (CX-050 / CX-051) ------------
+      # Containment has to be established BEFORE the repository's own Lean is
+      # elaborated: a probe that runs afterwards cannot retroactively protect the
+      # boundary the first elaboration already crossed (CX-050), and a probe that
+      # IS a repository file is not independent evidence — a fixture edited to
+      # print the expected words while attempting nothing satisfies every
+      # acceptance predicate (CX-051).
+      #
+      # This step is neither. Everything it runs is written here, by this
+      # workflow, into a scratch package outside the checkout; the package
+      # imports only core Lean (no repository modules, no Mathlib); its two write
+      # targets and its denial sentinel are randomised per run and baked into the
+      # heredoc, so no repository content can name or forge them; and the outcome
+      # is classified from OS-level facts — do the target files exist? — with an
+      # unsandboxed positive control first, proving the fixture really does write
+      # when nothing stops it. A run that fails without the sentinel is a run
+      # that proved nothing, and fails the job.
+      #
+      # The landrun invocation is the comparator's own, argument for argument
+      # (leanprover/comparator Main.lean, buildLandrunArgs + safeLakeBuild at the
+      # pinned commit), with the scratch package in place of the project, and it
+      # is wrapped in the same systemd-run AF_UNIX guard as the real run.
+      - name: Trusted pre-run sandbox self-test
+        run: |
+          set -euo pipefail
+          test "${COMPARATOR_AF_UNIX_GUARD}" = "active"
+          nonce="$(head -c 16 /dev/urandom | od -An -tx1 | tr -d ' \n')"
+          scratch="${RUNNER_TEMP}/sandbox-selftest"
+          target_a="${RUNNER_TEMP}/selftest-canary-a-${nonce}"
+          target_b="${HOME}/selftest-canary-b-${nonce}"
+          rm -rf "$scratch" "$target_a" "$target_b"
+          mkdir -p "$scratch/.lake"
+          cp lean-toolchain "$scratch/lean-toolchain"
+          cat > "$scratch/lakefile.toml" <<'TOML'
+          name = "selftest"
+          defaultTargets = ["SelfTest"]
+
+          [[lean_lib]]
+          name = "SelfTest"
+          TOML
+          # Unquoted heredoc: the two target paths and the sentinel are expanded
+          # into the source at generation time. Keep the body free of $ and
+          # backticks so nothing else is expanded.
+          cat > "$scratch/SelfTest.lean" <<LEAN
+          import Lean.Elab.Command
+
+          namespace SelfTest
+
+          private def targets : Array String :=
+            #["${target_a}", "${target_b}"]
+
+          private def tryWrite (target : String) : IO Bool := do
+            try
+              IO.FS.writeFile (System.FilePath.mk target) "sandbox self-test write"
+              return true
+            catch _ =>
+              return false
+
+          private def attemptEscape : IO (Array String) := do
+            let mut written : Array String := #[]
+            for target in targets do
+              if (← tryWrite target) then
+                written := written.push target
+            return written
+
+          end SelfTest
+
+          run_cmd do
+            let written ← SelfTest.attemptEscape
+            if written.isEmpty then
+              throwError "SELFTEST_WRITES_DENIED_${nonce}"
+            else
+              IO.println "SELFTEST_WRITES_ACCEPTED_${nonce}"
+          LEAN
+          cat "$scratch/SelfTest.lean"
+
+          # 1. Positive control, unsandboxed. Without this the sandboxed run
+          #    below cannot distinguish "the writes were refused" from "the
+          #    fixture never attempted them".
+          pos="${RUNNER_TEMP}/selftest-unsandboxed.log"
+          set +e
+          ( cd "$scratch" && LEAN_ABORT_ON_PANIC=1 lake build SelfTest ) > "$pos" 2>&1
+          pos_rc=$?
+          set -e
+          cat "$pos"
+          if [ ! -e "$target_a" ] || [ ! -e "$target_b" ]; then
+            echo "self-test positive control failed (exit ${pos_rc}): the probe did not write both targets"
+            echo "outside any sandbox, so a later denial would prove nothing."
+            exit 1
+          fi
+          if ! grep -q "SELFTEST_WRITES_ACCEPTED_${nonce}" "$pos"; then
+            echo "self-test positive control failed: the acceptance sentinel was not emitted"
+            exit 1
+          fi
+          rm -f "$target_a" "$target_b"
+          echo "self-test positive control: both writes succeeded outside the sandbox"
+
+          # 2. The same bytes, through the full wrapper. Clearing .lake/build is
+          #    what forces re-elaboration: a warm build directory is exactly how
+          #    CX-012 turned the sandboxed build into a no-op. lake-manifest.json
+          #    and .lake itself stay, as they do in the real project checkout.
+          rm -rf "$scratch/.lake/build"
+          lean_prefix="$(cd "$scratch" && lean --print-prefix)"
+          git_location="$(command -v git)"
+          sand="${RUNNER_TEMP}/selftest-sandboxed.log"
+          set +e
+          systemd-run --user --pipe --wait --collect \
+            -p RestrictAddressFamilies=~AF_UNIX \
+            --working-directory "$scratch" \
+            -E PATH="$PATH" \
+            -E HOME="$HOME" \
+            -E LEAN_ABORT_ON_PANIC=1 \
+            -- "$COMPARATOR_LANDRUN" --best-effort --ro / --rw /dev -ldd -add-exec \
+                 --env PATH --env HOME --env LEAN_ABORT_ON_PANIC \
+                 --ro "$scratch" --rwx "$scratch/.lake" \
+                 --rox "$lean_prefix" --rox "$git_location" \
+                 -- lake build SelfTest > "$sand" 2>&1
+          sand_rc=$?
+          set -e
+          cat "$sand"
+          for target in "$target_a" "$target_b"; do
+            if [ -e "$target" ]; then
+              echo "SANDBOX BREACH: the pre-run self-test wrote ${target} from inside the sandbox"
+              exit 1
+            fi
+          done
+          if [ "$sand_rc" -eq 0 ]; then
+            echo "SANDBOX BREACH: the pre-run self-test elaborated successfully inside the sandbox"
+            exit 1
+          fi
+          if grep -q "SELFTEST_WRITES_ACCEPTED_${nonce}" "$sand"; then
+            echo "SANDBOX BREACH: the pre-run self-test reported an accepted write inside the sandbox"
+            exit 1
+          fi
+          if ! grep -q "SELFTEST_WRITES_DENIED_${nonce}" "$sand"; then
+            echo "the sandboxed self-test failed without reaching the write attempt (exit ${sand_rc}):"
+            echo "no containment conclusion can be drawn, so this run certifies nothing."
+            exit 1
+          fi
+          echo "pre-run self-test OK: elaboration-time writes denied inside the sandbox (exit ${sand_rc})"
+          jq -n --arg tier "pre-run-trusted" --argjson rc "$sand_rc" \
+                --arg a "$target_a" --arg b "$target_b" \
+            '{tier: $tier, exit_code: $rc, denied: true, sentinel_observed: true, targets: [$a, $b]}' \
+            > "${RUNNER_TEMP}/selftest.json"
+          rm -rf "$scratch"
+
       # --- Integrity across the verification gap -----------------------------
       # One script, run immediately before and immediately after the certified
       # run, so the two manifests are computed identically and a difference can
@@ -533,25 +727,20 @@ jobs:
           # LEAN_PATH (Mathlib et al.) to the comparator and its child `lake`
           # invocations.
           cmd=(lake env "${GITHUB_WORKSPACE}/comparator-tool/.lake/build/bin/comparator" "${COMPARATOR_CONFIG}")
-          # Best-effort AF_UNIX guard (comparator README): a known landrun
-          # escape uses AF_UNIX; systemd-run can mask it. Probe first — hosted
-          # runners may lack a user manager session — and degrade to unwrapped
-          # (the Landlock sandbox itself is still active either way).
-          if timeout 30 systemd-run --user --pipe --wait --collect \
-               -p RestrictAddressFamilies=~AF_UNIX -- true >/dev/null 2>&1; then
-            echo "systemd-run AF_UNIX guard: active"
-            exec systemd-run --user --pipe --wait --collect \
-              -p RestrictAddressFamilies=~AF_UNIX \
-              --working-directory "$PWD" \
-              -E PATH="$PATH" \
-              -E COMPARATOR_LANDRUN="$COMPARATOR_LANDRUN" \
-              -E COMPARATOR_NANODA="$COMPARATOR_NANODA" \
-              -E COMPARATOR_LEAN4EXPORT="$COMPARATOR_LEAN4EXPORT" \
-              -- "${cmd[@]}"
-          else
-            echo "::warning::systemd-run --user unavailable; comparator runs without the AF_UNIX guard (Landlock sandbox still active)"
-            "${cmd[@]}"
-          fi
+          # The AF_UNIX guard (comparator README: a known landrun escape uses
+          # AF_UNIX, and systemd-run masks it) was asserted available at the top
+          # of this job and is applied unconditionally here. There is no
+          # unwrapped fallback: a run without the guard is a different security
+          # property and must not reach the same verdict (CX-048).
+          test "${COMPARATOR_AF_UNIX_GUARD}" = "active"
+          exec systemd-run --user --pipe --wait --collect \
+            -p RestrictAddressFamilies=~AF_UNIX \
+            --working-directory "$PWD" \
+            -E PATH="$PATH" \
+            -E COMPARATOR_LANDRUN="$COMPARATOR_LANDRUN" \
+            -E COMPARATOR_NANODA="$COMPARATOR_NANODA" \
+            -E COMPARATOR_LEAN4EXPORT="$COMPARATOR_LEAN4EXPORT" \
+            -- "${cmd[@]}"
 
       - name: Hash the verification inputs (after)
         run: |
@@ -559,9 +748,24 @@ jobs:
           echo "COMPARATOR_FINISHED_AT=$(date -u +%Y-%m-%dT%H:%M:%SZ)" >> "$GITHUB_ENV"
           "${RUNNER_TEMP}/hash-inputs.sh" "${RUNNER_TEMP}/hashes-after.json"
 
-      # The CX-012 regression test. comparator/SolutionProbe.lean is
-      # comparator/Solution.lean plus a top-level `run_cmd` that tries to write
-      # outside the sandbox before any declaration is elaborated:
+      # DEFENSE IN DEPTH, not the containment evidence. The containment evidence
+      # is the trusted pre-run self-test above; this step re-runs the same shape
+      # of check through the comparator's own driver and against the real
+      # solution's imports, which the scratch package deliberately does not have.
+      #
+      # Its known limitation (codex-audit CX-051): comparator/SolutionProbe.lean
+      # is a repository file, and the source-integrity assertion in the build job
+      # covers only the shared oddPrime/bit/ϱ block, not the write attempt. A
+      # fixture edited to throw the sentinel without attempting anything would
+      # satisfy all three predicates below. That is precisely why it is no longer
+      # the first or the only evidence: the pre-run self-test runs
+      # workflow-owned bytes with workflow-chosen targets and classifies the
+      # result from the filesystem. The predicates are kept because they still
+      # detect a real regression in the driver, and they still fail closed.
+      #
+      # comparator/SolutionProbe.lean is comparator/Solution.lean plus a
+      # top-level `run_cmd` that tries to write outside the sandbox before any
+      # declaration is elaborated:
       #   * every write denied -> the fixture aborts elaboration with the
       #     sentinel, the sandboxed `lake build` fails, the comparator exits
       #     non-zero. That is the passing outcome, and the sentinel is what
@@ -569,7 +773,7 @@ jobs:
       #   * any write accepted -> the fixture stays silent, proves the challenge
       #     statement, the comparator exits 0 and the canary files exist. Both
       #     signals fail this step.
-      - name: Denied-write probe
+      - name: Denied-write probe (defense in depth)
         run: |
           set -uo pipefail
           log="${RUNNER_TEMP}/probe.log"
@@ -595,7 +799,8 @@ jobs:
           fi
           echo "probe OK: the elaboration-time writes were denied (comparator exit ${rc})"
           jq -n --arg config "$COMPARATOR_PROBE_CONFIG" --argjson rc "$rc" \
-            '{config: $config, exit_code: $rc, denied: true}' > "${RUNNER_TEMP}/probe.json"
+                --arg tier "defense-in-depth" \
+            '{config: $config, exit_code: $rc, denied: true, tier: $tier}' > "${RUNNER_TEMP}/probe.json"
 
       # The single evidence record. Everything the published status will claim is
       # derived here, in the job that actually ran the check, from the config
@@ -614,7 +819,9 @@ jobs:
             --slurpfile pre "${RUNNER_TEMP}/hashes-before.json" \
             --slurpfile post "${RUNNER_TEMP}/hashes-after.json" \
             --slurpfile probe "${RUNNER_TEMP}/probe.json" \
+            --slurpfile selftest "${RUNNER_TEMP}/selftest.json" \
             --arg config "$COMPARATOR_CONFIG" \
+            --arg af_unix_guard "$COMPARATOR_AF_UNIX_GUARD" \
             --arg started_at "$COMPARATOR_STARTED_AT" \
             --arg finished_at "$COMPARATOR_FINISHED_AT" \
             --arg repository "$GITHUB_REPOSITORY" \
@@ -645,15 +852,18 @@ jobs:
                  tool_toolchain: $tool_toolchain,
                  landrun_ref: $landrun_ref,
                  nanoda_ref: $nanoda_ref,
+                 af_unix_guard: $af_unix_guard,
                  inputs_sha256_before: $pre[0],
                  inputs_sha256_after: $post[0],
+                 sandbox_selftest: $selftest[0],
                  sandbox_write_probe: $probe[0] }
              | if (.challenge_module // "") == "" or (.solution_module // "") == ""
                   or (.theorem_names | length) == 0 or (.permitted_axioms | length) == 0 then
                  error("comparator.json is missing challenge_module / solution_module / theorem_names / permitted_axioms")
                else . end' > "${RUNNER_TEMP}/result/comparator-result.json"
           cp "${RUNNER_TEMP}/hashes-before.json" "${RUNNER_TEMP}/hashes-after.json" \
-             "${RUNNER_TEMP}/probe.log" "${RUNNER_TEMP}/result/"
+             "${RUNNER_TEMP}/probe.log" "${RUNNER_TEMP}/selftest-unsandboxed.log" \
+             "${RUNNER_TEMP}/selftest-sandboxed.log" "${RUNNER_TEMP}/result/"
           cat "${RUNNER_TEMP}/result/comparator-result.json"
 
       - name: Upload the comparator result record
@@ -840,10 +1050,15 @@ jobs:
                      + $r.nanoda_ref + ")"
                    else "" end)
                 + ". The challenge and solution modules were elaborated for the first time inside a "
-                + "Landlock sandbox (Zouuup/landrun " + $r.landrun_ref + "), as were the kernel exports; "
-                + "a fixture whose elaboration attempts a write outside the sandbox was rejected, and the "
-                + "comparator, lean4export, landrun and nanoda binaries and the certified sources hashed "
-                + "identically before and after the run."
+                + "Landlock sandbox (Zouuup/landrun " + $r.landrun_ref + "), as were the kernel exports, "
+                + "under a systemd-run AF_UNIX guard (recorded as " + $r.af_unix_guard
+                + "; the run fails closed if that guard is unavailable). Before that elaboration, a probe "
+                + "written by the workflow itself — importing only core Lean, with write targets chosen "
+                + "per run — was put through the same sandbox wrapper: its writes outside the sandbox were "
+                + "refused, while an unsandboxed control confirmed the same probe does write when nothing "
+                + "stops it. After the run, a repository-side fixture attempting the same writes was also "
+                + "rejected, as defense in depth. The comparator, lean4export, landrun and nanoda binaries "
+                + "and the certified sources hashed identically before and after the run."
                 )
             ' comparator/comparator-status.json > comparator/comparator-status.json.tmp
           mv comparator/comparator-status.json.tmp comparator/comparator-status.json
