@@ -131,7 +131,7 @@ lemma tsum_primes_cpow_eq_tsum_ite (s : ℂ) :
     _ = ∑' n : ℕ, (if n.Prime then (1 : ℂ) else 0) * (n : ℂ) ^ (-s) := by
         refine tsum_congr fun n ↦ ?_
         rw [Set.indicator_apply]
-        simp only [Set.mem_setOf_eq]
+        simp only [Set.mem_ofPred_eq]
         by_cases hn : n.Prime
         · rw [if_pos hn, if_pos hn, one_mul]
         · rw [if_neg hn, if_neg hn, zero_mul]

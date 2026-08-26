@@ -52,7 +52,7 @@ asserted: building this site runs collectAxioms over every declaration it presen
 every declaration named in formalization.yaml, and the build fails if an axiom closure falls
 outside propext, Classical.choice, Quot.sound. sorryAx is an axiom for that purpose, so the
 same check also rules out a sorry reached through a dependency, not only one written here.
-Mathlib is pinned at toolchain v4.32.0.
+Mathlib is pinned at toolchain v4.33.1.
 
 The analytic footprint stayed as small as promised in the Introduction: the continued
 $`L(s, \chi_4)` and its entirety, $`L(1, \chi_4) \ne 0`, the exponential Euler product, the

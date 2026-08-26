@@ -1,5 +1,8 @@
-# formalization.yaml (v0.3) — see https://github.com/mathlib-initiative/formalization.yaml
-version: "v0.3"
+# yaml-language-server: $schema=https://raw.githubusercontent.com/mathlib-initiative/formalization.yaml/99c678e569c7c4c0772db297c5ddd5e4c9b6322e/schema/v0.4.schema.json
+# formalization.yaml (v0.4) — see https://github.com/mathlib-initiative/formalization.yaml
+# CI validates this file against the schema at the commit pinned above
+# (FORMALIZATION_SCHEMA_REF in .github/workflows/ci.yml); keep the two in step.
+version: "v0.4"
 
 project:
   name: "A362583 Irrationality"
@@ -8,20 +11,53 @@ project:
     - "Claude Fable 5 (Anthropic, via Claude Code)"
   license: "Apache-2.0"
 
+# `sources` records what was formalized. The theorem is first presented by this
+# formalization, so per the v0.4 standard the principal entry is an
+# `original-proof` entry, and the human-authored specification that preceded the
+# Lean code is identified in its `note` with immutable metadata. The blueprint
+# site under site/ is generated FROM this repository — a derived presentation of
+# the formalization, not an antecedent source — and is deliberately not listed
+# here; an earlier revision of this file used it as the principal source's only
+# locator, which left no retrievable antecedent (codex-audit CX-056).
 sources:
-  - title: "A362583 Irrationality — informal proof blueprint"
+  - title: "A362583 Irrationality — original proof (non-degeneracy of the mod-4 prime race)"
     authors: ["Eric Vergo"]
-    id: "self-authored informal proof blueprint for this project; realized as the browsable blueprint site generated from this repository"
-    type: "specification / informal blueprint"
-    license: "Apache-2.0"
-    author_contacted: "n/a"          # self-authored
-    prior_work: ""                   # none known; novelty of the race-oscillation statement not yet independently verified
+    id: "eric-vergo/OEIS-A362583-Irrationality@e94c322:PROOF.md (git blob 28dda8e9c498f249c91f578ddd40e580f87583b6; sha256 1fb715ab9ad45f1aa6fbfff2abf87e318135bb462c0e070fc720a33ccde72633)"
+    type: "original-proof"
+    location: "§2, 'The proof to formalize (complete informal argument)'"
+    license: "Apache-2.0 (the cited revision predates the CC0-1.0 → Apache-2.0 relicense at 7efa1ec, 2026-07-05)"
+    relationship: "formalizes"
+    author_endorsement: "n/a"        # self-authored
+    note: >-
+      Antecedent specification: `a362583-lean-irrationality-spec.md`, private
+      `prime_race` repository, dated 2026-07-03. That file is not public, so an
+      external reader cannot retrieve the pre-formalization original directly.
+      Its mathematical content is retrievable: §2 of the specification was
+      transcribed into this repository as PROOF.md before any proof work, and
+      the PROOF.md header records the transcription — "It transcribes §2 of the
+      project specification (a362583-lean-irrationality-spec.md, prime_race repo,
+      2026-07-03) verbatim in mathematical content." The identifier above pins
+      that transcription by commit and content digest. PROOF.md was removed from
+      the working tree by commit a5160dd (2026-07-04), when the documentation was
+      rewritten to be self-contained; it remains readable at the pinned commit,
+      which is on this repository's main-branch history.
   - title: "OEIS A362583 — Concatenation of ((p mod 4) - 1)/2 for primes 3..prime(n), read as binary"
     authors: ["Eric Vergo"]
     id: "https://oeis.org/A362583"
     type: "OEIS entry (integer sequence: successive binary-integer digit prefixes; a(35) = 12032782746 used as a numeric cross-pin)"
     license: "CC BY-NC 4.0 (OEIS)"
-    author_contacted: "n/a"          # self-authored
+    relationship: "background"
+    author_endorsement: "n/a"        # self-authored
+
+# None known. The novelty of the race-oscillation statement has not been
+# independently verified.
+related_formalizations: []
+
+classification:
+  arxiv: ["math.NT"]
+  msc2020:
+    - "11J72"   # irrationality
+    - "11N13"   # primes in progressions (the mod-4 Chebyshev race)
 
 status:
   scope: >-
@@ -88,22 +124,81 @@ automation:
     not hand-edit proofs.
 
 fidelity:
+  # Statement-lock history. The earlier wording here claimed the current
+  # statements are byte-identical to the frozen set; they are not (the constant
+  # was renamed after the lock), so the claim below is semantic equivalence,
+  # stated as a claim, with the post-lock edits enumerated and the diff named as
+  # the artifact a reader can check. The tag is not moved to make the older
+  # sentence true.
   divergences: >-
-    Statements were frozen before any proof work and are byte-identical to that
-    frozen set. Proof-route deviations from the informal argument: the k=1
-    layer's analytic continuation is *defined* as the discrete by-parts series
-    rather than continued after the fact; the Euler-sum split uses a per-prime
-    identity instead of a double-sum rearrangement; in both cases (c ≠ 0 and
-    c = 0) the contradiction is evaluated at a single explicit point instead of
-    via limits (one plain
-    one-sided limit remains, pinning L(1) real-positive); constants are
-    deliberately generous rather than sharp.
+    Statement lock. The statements were frozen before any proof work, at commit
+    9404b1d70dcfced842a2f389a27e3acae7b725ed (2026-07-03), in
+    A362583/Statements.lean and A362583/Defs.lean. The published annotated tag
+    `statement-lock` resolves on the remote and peels to that commit; the full
+    commit id remains the immutable identifier. The current statements are NOT
+    byte-identical to that frozen set. Three post-lock commits touched
+    statement-bearing text. The claim made here is semantic equivalence, not byte
+    identity, and it is a claim: the reviewable artifact is
+    `git diff 9404b1d..HEAD -- A362583/`.
+
+    (1) 7d54cdd (2026-07-05) renamed the constant and the primary deliverable:
+    A362583.x → A362583.ϱ and A362583.irrational_x → A362583.irrational_ϱ. An
+    identifier rename; the type expressions are otherwise unchanged.
+
+    (2) 9e6a2ab (2026-07-09) hoisted the summand of raceSum into a new public
+    definition A362583.raceKernel, so raceSum's body reads
+    `∑ p ∈ (Finset.range (N + 1)).filter Nat.Prime, raceKernel p` where the frozen
+    body inlined the if-expression. The two are definitionally equal by
+    delta-reduction of raceKernel (A362583.raceSum_eq_sum_raceKernel holds by
+    `rfl`). raceKernel is a new declaration that was not in the frozen set.
+
+    (3) 326682f (2026-07-03) dissolved A362583/Statements.lean across the proof
+    phases: the six locked declarations moved into Main.lean, CaseZero.lean,
+    DigitLayer.lean and RaceCount.lean, and their `sorry` bodies were replaced by
+    proofs. A relocation, not a restatement.
+
+    Modulo the rename in (1) and the raceSum refactor in (2), the six locked
+    declaration types and the four locked definition bodies are textually
+    unchanged. Docstrings and module documentation were rewritten (a5160dd,
+    9e6a2ab) and carry no statement content.
+
+    The comparator's certified statement is a separate, derived artifact with its
+    own history: the challenge module was introduced after the lock (1d2aeb8,
+    2026-07-03), restating the frozen definitions and both theorems in namespace
+    A362583; ec0e5da (2026-07-05) narrowed the certified set to the primary
+    deliverable, dropping raceSum_not_linear and raceSum from the challenge; and
+    152cd0e (2026-07-09) re-namespaced it to Challenge.*. What CI certifies is
+    therefore Challenge.irrational_ϱ, proved from A362583.irrational_ϱ across
+    `Challenge.ϱ_eq : ϱ = A362583.ϱ := rfl`, with the shared definitions asserted
+    byte-identical to A362583/Defs.lean on every run.
+
+    Proof-route deviations from the informal argument: the k=1 layer's analytic
+    continuation is *defined* as the discrete by-parts series rather than
+    continued after the fact; the Euler-sum split uses a per-prime identity
+    instead of a double-sum rearrangement; in both cases (c ≠ 0 and c = 0) the
+    contradiction is evaluated at a single explicit point instead of via limits
+    (one plain one-sided limit remains, pinning L(1) real-positive); constants
+    are deliberately generous rather than sharp.
+
+review:
+  status: "self-assessed"
+  notes: >-
+    No external review. What the repository establishes mechanically, on every
+    CI run: the A362583 library is sorry-free and no declaration under its root
+    namespace reaches an axiom outside propext, Classical.choice and Quot.sound
+    (axiom audit); and leanprover/comparator kernel-replays
+    Challenge.irrational_ϱ against an independently stated challenge module,
+    inside a Landlock sandbox, with a second, independent kernel (nanoda).
+    Statement fidelity — that the formal statement is the intended mathematical
+    claim — rests on the author's review at the Phase-1 statement lock and on
+    the agent auditors described under `automation`, not on an independent
+    reader.
 
 alignment:
   namespace: "A362583"
   statements:
     - source: "definitions (odd primes, bits, the prime race constant ϱ, race sum S)"
-      lean: "A362583.oddPrime, A362583.bit, A362583.ϱ, A362583.raceSum"
+      lean: "A362583.oddPrime, A362583.bit, A362583.ϱ, A362583.raceKernel, A362583.raceSum"
       module: "A362583/Defs.lean"
       status: "proved"
       note: "statement-hygiene: elementary %-arithmetic and tsums only; sanity pins proved in A362583/Pins.lean"
@@ -154,7 +249,7 @@ alignment:
       status: "proved"
 
 acknowledgements: >-
-  Built on mathlib4 (pinned v4.32.0). The proof route is only feasible because
+  Built on mathlib4 (pinned v4.33.1). The proof route is only feasible because
   mathlib already contains the analytically continued Dirichlet L-function,
   its nonvanishing at s = 1, the exponential form of the Euler product, the
   divergence of the sum of prime reciprocals, and the identity theorem.

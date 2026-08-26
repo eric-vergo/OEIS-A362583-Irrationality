@@ -2,7 +2,7 @@
 
 A complete, `sorry`-free Lean 4 formalization that the
 [OEIS A362583](https://oeis.org/A362583) constant is irrational. Pinned to Lean
-and Mathlib `v4.32.0`.
+and Mathlib `v4.33.1`.
 
 The *prime race constant* `ϱ` is the sum of the series
 
@@ -106,17 +106,21 @@ run it from the repository root. The commands below are the ones CI runs, at the
 commits; they need a Go toolchain and a Rust toolchain in addition to `elan`.
 
 ```bash
-# The comparator tool, at the exact commit CI uses (tag v4.32.0).
+# The comparator tool, at the exact commit CI uses (tag v4.33.0).
 git clone https://github.com/leanprover/comparator.git comparator-tool
-git -C comparator-tool checkout --detach 07bc4ea40f2266dcb861820a2ec1fa3244ed307f
+git -C comparator-tool checkout --detach 3927ad383f208ae977c340a91c48ac9b497d2097
+# Build it with THIS project's toolchain, as CI does: lean4export has to load the
+# project's oleans, which carry a compiler stamp, and the replay then runs on the
+# kernel of the release this project pins.
+cp lean-toolchain comparator-tool/lean-toolchain
 ( cd comparator-tool && lake build lean4export comparator )
 
 # The Landlock sandbox and the independent second kernel, at the commits CI uses.
 mkdir -p verifier-bin
 GOBIN="$PWD/verifier-bin" go install \
-  github.com/zouuup/landrun/cmd/landrun@5ed4a3db3a4ad930d577215c6b9abaa19df7f99f
+  github.com/zouuup/landrun/cmd/landrun@811cfff51ceaf3d9843708aa6d22e9b84ccac8b4
 git clone https://github.com/ammkrn/nanoda_lib.git nanoda_lib
-git -C nanoda_lib checkout --detach f58f2f6d535e189a40fcb02ede8eb95f97a92d37
+git -C nanoda_lib checkout --detach 05055695879dfebb6628a67da88ceca6cd6b0421
 cargo build --release --locked --manifest-path nanoda_lib/Cargo.toml
 install -m 0755 nanoda_lib/target/release/nanoda_bin verifier-bin/nanoda_bin
 
