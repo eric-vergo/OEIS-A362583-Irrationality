@@ -1169,6 +1169,65 @@ jobs:
           test -f _out/site/html-multi/Trust-model/index.html
           count="$(find _out/site/html-multi -type f | wc -l | tr -d ' ')"
           [ "$count" -ge 50 ] || { echo "only $count files"; exit 1; }
+          # --- Source-link revision gate (codex-audit CX-066) -------------------
+          # The declaration registry bakes its "View source" URLs at ELABORATION
+          # time; the build stamp on the project-management page is probed at
+          # GENERATION time. Those are two independently sampled revisions, and
+          # the site-build cache key above has restore fallbacks that omit
+          # github.sha — so a warm site/.lake/build carried across commits can
+          # replay a registry whose links all name an older commit under a clean
+          # current-HEAD stamp. The trust-model page promises, verbatim, that the
+          # source links point at the commit the site was built from; this gate
+          # is what makes that promise checkable before anything is uploaded.
+          # Byte-identical sources at the two revisions do not satisfy it: the
+          # published contract is revision identity.
+          registry="_out/site/html-multi/-verso-data/decl-registry.json"
+          test -f "$registry"
+          python3 - "$registry" "$GITHUB_REPOSITORY" "$GITHUB_SHA" <<'PY'
+          import json, re, sys
+
+          path, repository, sha = sys.argv[1:4]
+          pattern = re.compile(
+              r"\Ahttps://github\.com/" + re.escape(repository) + r"/blob/([0-9a-f]{40})/"
+          )
+          with open(path, encoding="utf-8") as handle:
+              registry = json.load(handle)
+
+          checked = 0
+          stale = {}
+
+          def visit(node):
+              global checked
+              if isinstance(node, dict):
+                  href = node.get("sourceHref")
+                  if isinstance(href, str):
+                      found = pattern.match(href)
+                      if found:
+                          checked += 1
+                          if found.group(1) != sha:
+                              stale[found.group(1)] = stale.get(found.group(1), 0) + 1
+                  for value in node.values():
+                      visit(value)
+              elif isinstance(node, list):
+                  for value in node:
+                      visit(value)
+
+          visit(registry)
+
+          if checked == 0:
+              print("source-link gate: no project-local sourceHref in the registry — the gate is vacuous,")
+              print("which means either the registry moved or the links stopped naming this repository.")
+              sys.exit(1)
+          if stale:
+              print("source-link gate: {} of {} project-local source links do not name this run's commit {}".format(
+                  sum(stale.values()), checked, sha))
+              for revision, occurrences in sorted(stale.items()):
+                  print("  {} link(s) name {}".format(occurrences, revision))
+              print("the registry was replayed from a build cache warmed at another revision;")
+              print("rebuild it under this commit rather than publishing a stamp it does not match.")
+              sys.exit(1)
+          print("source-link gate: {} project-local source links all name {}".format(checked, sha))
+          PY
           # --- Off-origin asset gates ------------------------------------------
           # The published site must load nothing from another origin. Only ASSET
           # positions are matched: outbound <a href="https://…"> links are the
