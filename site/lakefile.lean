@@ -7,22 +7,19 @@ import Lake
 open Lake DSL
 
 -- Root-level git requires for the three forks, tracking their `blueprint`
--- branches.  Lake resolves dependencies by NAME and honours the ROOT package's
--- `require`s first, so requiring subverso / verso / VersoBlueprint here shadows
--- every transitive `require` of the same name: verso's own
--- `require subverso from "../subverso"`, verso-blueprint's
--- `require verso from "../verso"` path specs are never materialized, and
--- verso-slides' transitive pin of the upstream `leanprover/verso` is out-ranked.
--- That keeps the site building against the forks (preserving the offline /
--- self-hosted-`marked` invariant they provide) rather than whatever sibling
--- working trees happen to be on disk.  The exact commit is recorded in
--- lake-manifest.json; a `lake update subverso verso VersoBlueprint` re-pins to
--- the current `blueprint` HEAD of each fork.
+-- branches.  The forks require each other from git too, so they build
+-- standalone; requiring them HERE as well is what out-ranks verso-slides'
+-- transitive pin of the upstream `leanprover/verso` (Lake resolves by NAME and
+-- honours the ROOT package's `require`s first), keeping the site on the forks
+-- and preserving the offline / self-hosted-`marked` invariant they provide.
+-- The resolved commits are recorded in lake-manifest.json; a
+-- `lake update subverso verso VersoBlueprint` re-pins to the current
+-- `blueprint` HEAD of each fork.
 require subverso from git "https://github.com/eric-vergo/subverso.git" @ "blueprint"
 require verso from git "https://github.com/eric-vergo/verso.git" @ "blueprint"
 require VersoBlueprint from git "https://github.com/eric-vergo/Showcase.git" @ "blueprint"
 require A362583 from ".."
-require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.32.0"
+require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.33.1"
 
 /-- URL of the CI run that produced these checks, read from the `CI_RUN_URL`
 environment variable at configuration time.  Empty on a local build (the env var
