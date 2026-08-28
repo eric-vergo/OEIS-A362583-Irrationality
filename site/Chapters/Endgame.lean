@@ -105,7 +105,7 @@ $`\mathrm{Re}\, G(\sigma) \ge B(\sigma) - C - c_T`. $`\blacksquare`
 *Main analytic theorem.* There are no constants $`c, C` with
 $$`\bigl| S(N) - c\,\pi(N) \bigr| \;\le\; C \qquad \text{for all } N.`
 The mod-4 prime race is never linear in the prime count. The statement is meaningful
-independently of the prime race constant $`\varrho`, quantifies only over elementary objects,
+independently of Rokicki's constant $`\varrho`, quantifies only over elementary objects,
 and is the analytic core underlying the irrationality theorem.
 :::
 

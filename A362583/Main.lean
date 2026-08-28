@@ -27,7 +27,7 @@ to be `c·π + O(1)`, which `raceSum_not_linear` rules out.
 
 namespace A362583
 
-/-- **Primary deliverable**: the prime race constant `ϱ = Σ_{k ≥ 0} bₖ · 2^{-(k+1)}` (the
+/-- **Primary deliverable**: Rokicki's constant `ϱ = Σ_{k ≥ 0} bₖ · 2^{-(k+1)}` (the
 A362583 constant) — the number whose binary expansion is `0.b₀b₁b₂…₂`, where `bₖ = 1` iff
 the `k`-th odd prime is `≡ 3 (mod 4)` — is irrational. -/
 theorem irrational_ϱ : Irrational ϱ := by

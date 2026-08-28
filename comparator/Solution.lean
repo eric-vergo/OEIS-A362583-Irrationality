@@ -33,7 +33,7 @@ The `b_{k+1}` of the 1-based bit sequence; first values `1 0 1 1 0 0 1 1`
 (primes `3, 5, 7, 11, 13, 17, 19, 23`). -/
 noncomputable def bit (k : ℕ) : ℕ := if oddPrime k % 4 = 3 then 1 else 0
 
-/-- The prime race constant (the A362583 constant): the sum of the series
+/-- Rokicki's constant (the A362583 constant): the sum of the series
 `ϱ = Σ_{k ≥ 0} bit k · 2^{-(k+1)}`, i.e. the real number whose `k`-th binary digit is
 `bit k` — in binary `0.b₀b₁b₂…₂ ≈ 0.7004001…` (decimal). OEIS A362583 lists the
 successive digit prefixes read as binary integers. -/

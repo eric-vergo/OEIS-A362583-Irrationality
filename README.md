@@ -4,7 +4,7 @@ A complete, `sorry`-free Lean 4 formalization that the
 [OEIS A362583](https://oeis.org/A362583) constant is irrational. Pinned to Lean
 and Mathlib `v4.33.1`.
 
-The *prime race constant* `ϱ` is the sum of the series
+The *Rokicki's constant* `ϱ` is the sum of the series
 
 ```
 ϱ = Σ_{k ≥ 0} bₖ · 2^{-(k+1)},   bₖ = 1  ⟺  the k-th odd prime is ≡ 3 (mod 4).

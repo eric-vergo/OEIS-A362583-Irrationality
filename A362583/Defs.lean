@@ -19,7 +19,7 @@ is confined to proofs, never to statements.
 * `A362583.oddPrime k` — the `k`-th odd prime (`oddPrime 0 = 3`); the `p_{k+1}`
   of the 1-based enumeration of odd primes.
 * `A362583.bit k` — the `k`-th binary digit of the constant.
-* `A362583.ϱ` — the prime race constant `ϱ = Σ_{k ≥ 0} bit k · 2^{-(k+1)}` (the A362583
+* `A362583.ϱ` — Rokicki's constant `ϱ = Σ_{k ≥ 0} bit k · 2^{-(k+1)}` (the A362583
   constant); its binary expansion is `0.b₀b₁b₂…₂ ≈ 0.7004001…` (decimal).
 * `A362583.raceKernel n` — the summand of the Chebyshev race sum: `+1` on `n ≡ 1 (mod 4)`,
   `-1` on `n ≡ 3 (mod 4)`, `0` otherwise.
@@ -38,7 +38,7 @@ The `b_{k+1}` of the 1-based bit sequence; first values `1 0 1 1 0 0 1 1`
 (primes `3, 5, 7, 11, 13, 17, 19, 23`). -/
 noncomputable def bit (k : ℕ) : ℕ := if oddPrime k % 4 = 3 then 1 else 0
 
-/-- The prime race constant (the A362583 constant): the sum of the series
+/-- Rokicki's constant (the A362583 constant): the sum of the series
 `ϱ = Σ_{k ≥ 0} bit k · 2^{-(k+1)}`, i.e. the real number whose `k`-th binary digit is
 `bit k` — in binary `0.b₀b₁b₂…₂ ≈ 0.7004001…` (decimal). OEIS A362583 lists the
 successive digit prefixes read as binary integers. -/

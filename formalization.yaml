@@ -61,7 +61,7 @@ classification:
 
 status:
   scope: >-
-    Complete. The prime race constant ϱ = Σ_{k≥0} b_k·2^{-(k+1)} — the number whose binary
+    Complete. Rokicki's constant ϱ = Σ_{k≥0} b_k·2^{-(k+1)} — the number whose binary
     expansion is 0.b0b1b2..._2, with b_k = 1 iff the k-th odd prime is ≡ 3 mod 4 — is
     irrational, via a non-degeneracy theorem for the mod-4
     Chebyshev prime race: the race sum is never c·π(N) + O(1). The analytic
@@ -197,7 +197,7 @@ review:
 alignment:
   namespace: "A362583"
   statements:
-    - source: "definitions (odd primes, bits, the prime race constant ϱ, race sum S)"
+    - source: "definitions (odd primes, bits, Rokicki's constant ϱ, race sum S)"
       lean: "A362583.oddPrime, A362583.bit, A362583.ϱ, A362583.raceKernel, A362583.raceSum"
       module: "A362583/Defs.lean"
       status: "proved"
