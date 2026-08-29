@@ -1,0 +1,55 @@
+name: Deploy
+
+# Pages serves the release asset the committed pin names, and only after the deploy workflow
+# has verified the asset's digest against that pin and authenticated the pin against this
+# checkout. Pinned to the same Showcase commit as `ci.yml` and `site/lakefile.lean`.
+#
+# This replaces the direct-from-run Pages deploy the old `ci.yml` carried, and
+# `site/deploy-ghpages.sh` before it. The Pages source stays "GitHub Actions" — no repository
+# setting changes.
+
+on:
+  push:
+    branches: [main]
+    # Only the pin. A change to the workflow or its scripts without a new pin is re-verified
+    # by hand, not by a run that would refuse an unchanged release.
+    paths:
+      - 'site/trust/site-build.json'
+  # How the pin commit-back actually reaches this workflow: a GITHUB_TOKEN push does not
+  # fire `push:`, so the `paths:` trigger above catches a human's pin commit and nothing
+  # else. site-release signals this event instead.
+  repository_dispatch:
+    types: [blueprint-site-pin]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: site-deploy
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
+    uses: eric-vergo/Showcase/.github/workflows/blueprint-deploy.yml@97637a6baf27e9d2f71d83d8b75ba9017b64ab80
+    with:
+      showcase_sha: "97637a6baf27e9d2f71d83d8b75ba9017b64ab80"
+      publish_branch: main
+      # The pin's recorded trust-input paths resolve against this.
+      site_dir: site
+      site_pin: site/trust/site-build.json
+      # NB this is the tarball's single top-level member, not the generated path `ci.yml`
+      # names: `package_site.sh` archives `basename` of the site root.
+      site_out: html-multi
+      # The same gate `ci.yml` runs before packaging, run again against what was unpacked.
+      # Read off a real build (379 files), never copied: page slugs derive from page TITLES.
+      required_site_files: >-
+        index.html -verso-data/blueprint-manifest.json -verso-data/decl-registry.json
+        -verso-data/trust-provenance.json comparator/index.html Trust-model/index.html
+        Formalization-Metadata/index.html Dependency-Graph/index.html
+        Showcase-Summary/index.html pm/index.html
+      min_site_files: 245

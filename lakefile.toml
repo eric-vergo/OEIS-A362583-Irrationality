@@ -1,7 +1,12 @@
 name = "A362583"
 version = "0.1.0"
 keywords = ["math"]
-defaultTargets = ["A362583", "Challenge", "Solution"]
+# Only the subject library. The comparator libraries below stay declared —
+# the comparator tool builds them by name, and `Challenge`/`Solution` are
+# how it does that — but a bare `lake build` must never elaborate them:
+# their FIRST elaboration belongs inside the comparator's sandbox, in the
+# CI job that holds no write token (codex-audit CX-012).
+defaultTargets = ["A362583"]
 
 [leanOptions]
 pp.unicode.fun = true # pretty-prints `fun a ↦ b`
@@ -41,8 +46,9 @@ leanOptions = { weak.linter.style.header = false }
 name = "SolutionProbe"
 srcDir = "comparator"
 # CI-only sandbox regression fixture (see comparator/SolutionProbe.lean and the
-# "Denied-write probe" step of .github/workflows/ci.yml): the solution plus an
-# elaboration-time write that the comparator's Landlock sandbox must refuse.
+# "Denied-write probe" step of the shared verification workflow this repository
+# calls, eric-vergo/Showcase `.github/workflows/blueprint-verify.yml`): the
+# solution plus an elaboration-time write that Landlock must refuse.
 # Deliberately NOT in defaultTargets and imported by nothing — elaborating it
 # outside the sandbox writes the canary files it exists to prove impossible.
 leanOptions = { weak.linter.style.header = false }

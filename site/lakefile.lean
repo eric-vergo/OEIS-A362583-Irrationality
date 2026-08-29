@@ -22,14 +22,15 @@ require A362583 from ".."
 require mathlib from git "https://github.com/leanprover-community/mathlib4" @ "v4.33.1"
 
 /-- URL of the CI run that produced these checks, read from the `CI_RUN_URL`
-environment variable at configuration time.  Empty on a local build (the env var
-is unset) ⇒ the comparator page renders no "View CI run" link, which is the
-expected local behaviour.  CI (`.github/workflows/ci.yml`) sets `CI_RUN_URL` to
-a step-level deep link into the "Run comparator" step and
-passes `-R`/`--reconfigure` on the `lake build Contents` step so this value is
-re-read fresh each run — Lake's config trace keys off the lakefile *text* hash
-(plus toolchain/platform), not env vars, so without `-R` a warm-cache run would
-splice in a stale URL. -/
+environment variable at configuration time.  Empty ⇒ the comparator page falls
+back to the `run_url` recorded in `../comparator/comparator-status.json`, which
+is the link a reader wants anyway: the run that last *changed* the verdict, not
+whichever run happened to regenerate the site.
+
+The shared CI standard deliberately sets `CI_RUN_URL` EMPTY for the site build
+(and passes no `-R`): a run id baked into the page made every run's bytes differ,
+which cut a release every run.  So this reads as the fallback both locally and in
+CI, and stays here for a build that wants to override it. -/
 def ciRunUrl : String :=
   run_io return ((← IO.getEnv "CI_RUN_URL").getD "")
 
@@ -53,8 +54,10 @@ package Contents where
     -- The build-time axiom audit (`Lean.collectAxioms` over every presented
     -- declaration, every registry entry, and every declaration named in
     -- formalization.yaml) is advisory by default: a decl whose closure carries
-    -- `sorryAx` or a nonstandard axiom is badged and warned about.  This project
-    -- claims a clean audit in its prose, so here it is a build error instead.
+    -- `sorryAx` or a nonstandard axiom is badged and warned about.  Here it is a
+    -- build error instead: the audit is the check behind the `sorry_count: 0` /
+    -- standard-axiom declaration in `../formalization.yaml`, so a finding is not
+    -- something this site may render around.
     ⟨`weak.verso.blueprint.trust.requireAuditClean, true⟩,
     -- comparator.live project id for the "check this claim yourself" permalinks
     -- on the comparator page: "mathlib-stable" is the toolchain-matched
