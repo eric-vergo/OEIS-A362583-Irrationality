@@ -17,8 +17,9 @@ succeed — the failure recorded as CX-012, where the workspace prebuilt
 `Challenge` and `Solution` and the sandboxed `lake build` was left a no-op.
 
 The fixture is driven by `comparator/comparator-probe.json` from the
-"Denied-write probe" step of `.github/workflows/ci.yml`, and it is expected to
-FAIL:
+"Denied-write probe" step of the shared verification workflow this repository
+calls (eric-vergo/Showcase `.github/workflows/blueprint-verify.yml`, pinned by
+SHA in `.github/workflows/ci.yml`), and it is expected to FAIL:
 
 * every write denied — elaboration aborts with the sentinel
   `COMPARATOR_PROBE_WRITES_DENIED`, the sandboxed `lake build` fails and the

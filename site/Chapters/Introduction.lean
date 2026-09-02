@@ -30,8 +30,9 @@ set_option pp.rawOnError true
 We further the study of 'the prime race' by encoding the results of the race via an integer sequence,
 converting that sequence to an infinite series, and analyzing its convergent value.
 
-In 2023 after watching 9this video9, it was observed that the results of the race could be recorded as a
-number sequence, leading to {citet oeis.a362583}[]. After sharing with Tom Rockiki, he immediately commented that
+In 2023, after watching a Numberphile video on the prime race {citep "numberphile.prime-race"}[], it was
+observed that the results of the race could be recorded as a
+number sequence, leading to {citet oeis.a362583}[]. After sharing with Tomas Rokicki, he immediately commented that
 this naturally leads to a convergent sequence, which ultimately led to this result. We denote that that number
 $`\varrho`, for "Rokicki's constant". Precisely:
 

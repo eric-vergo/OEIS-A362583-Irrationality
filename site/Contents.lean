@@ -4,7 +4,23 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Eric Vergo, Claude Fable 5 (Claude Code)
 -/
 /-
-A362583 irrationality blueprint — top-level document.
+A362583 irrationality blueprint — top-level document, and the source of `index.html`.
+
+The landing page is written here.  Its prose is the paragraph between the
+`{blueprint_dashboard …}` block and the first `{include …}` below; the blocks around it
+are generated surfaces (the dashboard's trust strip and featured node cards above, the
+chapters and the graph/summary/trust pages below), so that paragraph is the only part of
+the page authored by hand, and this is the only file it is written in.
+
+Ordinary Verso markup works there, including references that resolve against the rest of
+the document instead of being retyped: `{bpref "def:rho"}[…]` for a blueprint node,
+`{citep "label"}[]` for a bibliography entry from `Bibliography.lean`, and a plain
+`[text](url)` link.  Note that Verso document syntax has no line comments — `--` inside
+the document body renders as text — so notes like this one belong up here.
+
+Off-origin *assets* must not be added to the page (an embedded player, a remote image or
+script): the site is offline / self-contained and ships a `default-src 'self'`
+content-security policy, which blocks them.  Link out and cite instead.
 -/
 
 import Verso
@@ -50,6 +66,17 @@ authors := ["Eric Vergo", "Claude Fable 5"]
 %%%
 
 {blueprint_dashboard (featured := "def:rho, thm:irrational")}
+
+List the odd primes in order and record one binary digit for each: $`b_k = 1` if the $`k`-th
+odd prime is congruent to $`3` modulo $`4`, and $`b_k = 0` if it is congruent to $`1`. Reading
+those digits as a binary expansion gives {bpref "def:rho"}[Rokicki's constant $`\varrho`]
+
+$$`\varrho \;=\; 0.10110011\ldots_2 \;=\; \sum_{k \ge 0} b_k\, 2^{-(k+1)} \;\approx\; 0.7004.`
+
+Those digits record the mod-4 prime race, measured by $`S(N) = \sum_{p \le N} \chi_4(p)`, where
+$`\chi_4` is the nonprincipal character mod $`4`. {bpref "thm:irrational"}[The main theorem] is
+that $`\varrho` is irrational, so its digits are not eventually periodic and the race never
+settles into a repeating pattern of leads and deficits.
 
 {include 0 Chapters.Introduction}
 
