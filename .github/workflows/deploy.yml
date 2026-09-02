@@ -35,9 +35,9 @@ jobs:
       contents: read
       pages: write
       id-token: write
-    uses: eric-vergo/Showcase/.github/workflows/blueprint-deploy.yml@97637a6baf27e9d2f71d83d8b75ba9017b64ab80
+    uses: eric-vergo/Showcase/.github/workflows/blueprint-deploy.yml@c8c4514101806d57aa45872e0746ed646a185557
     with:
-      showcase_sha: "97637a6baf27e9d2f71d83d8b75ba9017b64ab80"
+      showcase_sha: "c8c4514101806d57aa45872e0746ed646a185557"
       publish_branch: main
       # The pin's recorded trust-input paths resolve against this.
       site_dir: site

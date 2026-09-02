@@ -65,7 +65,7 @@ shortTitle := "A362583"
 authors := ["Eric Vergo", "Claude Fable 5"]
 %%%
 
-{blueprint_dashboard (featured := "def:rho, thm:irrational")}
+{blueprint_dashboard (featured := "thm:irrational")}
 
 List the odd primes in order and record one binary digit for each: $`b_k = 1` if the $`k`-th
 odd prime is congruent to $`3` modulo $`4`, and $`b_k = 0` if it is congruent to $`1`. Reading
