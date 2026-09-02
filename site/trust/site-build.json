@@ -1,13 +1,13 @@
 {
-  "generatedAt": "2026-09-02T00:59:43Z",
-  "generationRevision": "568c17676e264df300cc405cc8e0c590d3239a04",
+  "generatedAt": "2026-09-02T02:21:10Z",
+  "generationRevision": "f5f81640d825bd59c69871cc615a4ee8d0422bac",
   "pins": {
     "A362583": null,
     "Cli": "6130a47896ce867c6a4a55373441e59e565bad0f",
     "LeanSearchClient": "5f4d51b81cbd3f6b32b156bfad9056621a040404",
     "MD4Lean": "31907cc18f48a95384f99cee5582c00fb39e0f67",
     "Qq": "92c15be17b7caf78c2ad767ec40f89052d908d81",
-    "VersoBlueprint": "97637a6baf27e9d2f71d83d8b75ba9017b64ab80",
+    "VersoBlueprint": "c8c4514101806d57aa45872e0746ed646a185557",
     "aesop": "3448c0bcc5ce01b2d1546e483ec3620e32df3d0e",
     "batteries": "4488d40d070b9700d4d5a6aa342f0d40c31b2a2d",
     "illuminate": "6bc815869cba1f19515715dc6b47795acd521f1c",
@@ -21,18 +21,18 @@
     "\u00abverso-slides\u00bb": "ddea15f92035c6de1d76e3afa5476f7ab3de955d"
   },
   "producer": {
-    "run_id": "33575254306",
-    "run_url": "https://github.com/eric-vergo/OEIS-A362583-Irrationality/actions/runs/33575254306",
-    "workflow_ref": "eric-vergo/Showcase/.github/workflows/blueprint-verify.yml@97637a6baf27e9d2f71d83d8b75ba9017b64ab80",
+    "run_id": "33580627640",
+    "run_url": "https://github.com/eric-vergo/OEIS-A362583-Irrationality/actions/runs/33580627640",
+    "workflow_ref": "eric-vergo/Showcase/.github/workflows/blueprint-verify.yml@c8c4514101806d57aa45872e0746ed646a185557",
     "workflow_repository": "eric-vergo/Showcase",
-    "workflow_sha": "97637a6baf27e9d2f71d83d8b75ba9017b64ab80"
+    "workflow_sha": "c8c4514101806d57aa45872e0746ed646a185557"
   },
   "release": {
-    "asset": "site-568c176.tar.gz",
-    "bytes": 5111216,
+    "asset": "site-f5f8164.tar.gz",
+    "bytes": 5110688,
     "files": 379,
-    "sha256": "22ae4e6d81ec636f0b4c6cf72ffc3531df88dd92dc4a3e633cf8f57e38e5a5ca",
-    "tag": "site-20260902-568c176"
+    "sha256": "e8ace946caad038790bd72fa61ab8e56bc3498645a12aba54e5ff96ad0cba131",
+    "tag": "site-20260902-f5f8164"
   },
   "schemaVersion": 2
 }
