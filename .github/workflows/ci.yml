@@ -47,9 +47,9 @@ jobs:
       # in the pipeline needs `actions: write` — the deploy signal is a repository_dispatch,
       # which is a contents-scope call. Neither `pages:` nor `id-token:` appears in this file
       # at all: minting a Pages token is `deploy.yml`'s business.
-    uses: eric-vergo/Showcase/.github/workflows/blueprint-verify.yml@97637a6baf27e9d2f71d83d8b75ba9017b64ab80
+    uses: eric-vergo/Showcase/.github/workflows/blueprint-verify.yml@c8c4514101806d57aa45872e0746ed646a185557
     with:
-      showcase_sha: "97637a6baf27e9d2f71d83d8b75ba9017b64ab80"
+      showcase_sha: "c8c4514101806d57aa45872e0746ed646a185557"
       publish_branch: main
       # The subject library and the site both build against Mathlib v4.33.1.
       mathlib: true

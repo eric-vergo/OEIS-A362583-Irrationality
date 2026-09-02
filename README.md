@@ -4,7 +4,7 @@ A complete Lean 4 formalization that the
 [OEIS A362583](https://oeis.org/A362583) constant is irrational. Pinned to Lean
 and Mathlib `v4.33.1`.
 
-The *Rokicki's constant* `ϱ` is the sum of the series
+*Rokicki's constant* `ϱ` is the sum of the series
 
 ```
 ϱ = Σ_{k ≥ 0} bₖ · 2^{-(k+1)},   bₖ = 1  ⟺  the k-th odd prime is ≡ 3 (mod 4).
@@ -32,19 +32,18 @@ result, not a separately advertised claim; the comparator (below) certifies only
 `irrational_ϱ`.
 
 The argument is elementary at the boundary and analytic in the middle. If `ϱ` were
-rational its binary digits would be eventually periodic (Steps A–B: Dirichlet's
-theorem on primes in residue classes, plus a pigeonhole on binary tails), which would
-force the race sum `S(N)` to be linear in `π(N)` (Step C). Step D refutes that using
-only the analytically continued Dirichlet L-function `L(s, χ₄)`, its nonvanishing at
-`s = 1`, the exponential form of the Euler product, the divergence of `Σ 1/p`, and the
-identity theorem — no prime number theorem, no zero-free regions, no quantitative
-oscillation results.
+rational its binary digits would be eventually periodic (Dirichlet's theorem on primes in
+residue classes, plus a pigeonhole on binary tails), which would force the race sum
+`S(N)` to be linear in `π(N)`. The analytic core refutes that using only the analytically
+continued Dirichlet L-function `L(s, χ₄)`, its nonvanishing at `s = 1`, the exponential
+form of the Euler product, the divergence of `Σ 1/p`, and the identity theorem — no prime
+number theorem, no zero-free regions, no quantitative oscillation results.
 
 ## Repository layout
 
 | Path | Contents |
 |------|----------|
-| `A362583/` | The formalization library. `Defs.lean` (the four elementary definitions), `Pins.lean` (sanity checks), `DigitLayer.lean` (Steps A, B), `RaceCount.lean` (Step C), `Character.lean` (the mod-4 Dirichlet character `χ` and the Euler-product layers built from it), `Divergence.lean` (the sole use of the divergence of `Σ 1/p`, isolated as two blow-up statements), `Layers.lean` / `EulerLog.lean` / `BoundedHolo.lean` / `CaseNonzero.lean` / `CaseZero.lean` (Step D), `Main.lean` (final assembly). |
+| `A362583/` | The formalization library. `Defs.lean` (the four elementary definitions), `Pins.lean` (sanity checks), `DigitLayer.lean` (the digit layer: infinitely many bits of each value, and eventual periodicity of a rational's digits), `RaceCount.lean` (the race bookkeeping: periodic bits make the race linear), `Character.lean` (the mod-4 Dirichlet character `χ` and the Euler-product layers built from it), `Divergence.lean` (the sole use of the divergence of `Σ 1/p`, isolated as two blow-up statements), `Layers.lean` / `EulerLog.lean` / `BoundedHolo.lean` / `CaseNonzero.lean` / `CaseZero.lean` (the analytic core: the race is never linear), `Main.lean` (final assembly). |
 | `A362583.lean` | Library root; imports every module. |
 | `comparator/` | Independent-verification bundle for the [comparator](https://github.com/leanprover/comparator) (see below): `Challenge.lean` (the `sorry`d restatement of the main theorem), `Solution.lean` (its proof, derived from `A362583`), `SolutionProbe.lean` (a CI-only sandbox fixture — see the warning below), and `comparator.json` / `comparator-probe.json` / `comparator-status.json` (their configuration and the recorded result). |
 | `formalization.yaml` | Project metadata in the [formalization.yaml](https://github.com/mathlib-initiative/formalization.yaml) standard. |

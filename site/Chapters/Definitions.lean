@@ -56,22 +56,21 @@ first eight bits are $`1,0,1,1,0,0,1,1` (from the primes $`3, 5, 7, 11, 13, 17, 
 :::
 
 :::definition "def:rho" (lean := "A362583.ϱ") (parent := "defs") (uses := "def:bit")
-The *Rokicki's constant* $`\varrho` is the sum of the series
+*Rokicki's constant* is the sum of the series
 $$`\varrho \;=\; \sum_{k \ge 0} \frac{b_k}{2^{\,k+1}} \;=\; 0.7004001\ldots,`
 which converges absolutely by comparison with the geometric series. Since each $`b_k` is
-$`0` or $`1`, the series is exactly the place-value reading of the binary numeral
-$`0.b_0 b_1 b_2 \ldots_2` — and these are genuinely *the* binary digits of $`\varrho`:
-infinitely many $`b_k` are $`0` (Dirichlet's theorem), so the digit string is not
-eventually all $`1`s and no carry ambiguity arises. Reading successive digit prefixes as
-binary integers recovers the OEIS sequence A362583, which is why we call $`\varrho` the
-A362583 constant. The theorem of this blueprint is that $`\varrho` is irrational.
+$`0` or $`1`, the series is the place-value reading of the binary numeral
+$`0.b_0 b_1 b_2 \ldots_2`, and these are the binary digits of $`\varrho`: infinitely many
+$`b_k` are $`0` (Dirichlet's theorem), so the digit string is not eventually all $`1`s and
+the expansion is unique. Reading successive digit prefixes as binary integers gives the OEIS
+sequence A362583.
 :::
 
 :::definition "def:raceSum" (lean := "A362583.raceSum") (parent := "defs") (uses := "def:raceKernel")
 The *Chebyshev race sum* is the integer
 $$`S(N) \;=\; \sum_{\substack{p \le N \\ p \text{ prime}}} \begin{cases} +1 & p \equiv 1 \pmod 4 \\ -1 & p \equiv 3 \pmod 4 \\ \;\;\,0 & p = 2, \end{cases}`
-i.e. $`S(N) = \sum_{p \le N} \chi_4(p)` — but stated with plain remainder arithmetic rather
-than a character, per the statement-hygiene principle. The convention "primes $`\le N`"
+i.e. $`S(N) = \sum_{p \le N} \chi_4(p)`, stated with plain remainder arithmetic rather than
+a character so that the statement can be read without any analytic definition. The convention "primes $`\le N`"
 matches Mathlib's prime-counting function $`\pi(N)` (Nat.primeCounting), which the race-sum
 theorems quantify against.
 :::

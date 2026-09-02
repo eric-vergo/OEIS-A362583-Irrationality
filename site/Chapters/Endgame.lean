@@ -33,7 +33,8 @@ an explicitly divergent term — which the finite value L(1/2, χ₄) forbids.
 :::
 
 With the slope forced to zero, assume $`|S(N)| \le C` for all $`N`. This is the classical
-"prime-square term" mechanism behind oscillation results for real characters, specialized to
+"prime-square term" mechanism behind oscillation results for real characters
+{citep "rubinstein-sarnak.1994"}[], specialized to
 the weakest usable statement: the $`k = 2` layer $`B` diverges at $`1/2^{+}` while everything
 else stays bounded, so the identity $`e^{G} = L` cannot survive down to $`1/2`.
 
